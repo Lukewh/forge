@@ -4,9 +4,9 @@ Forge is an AI issue factory for Linear-backed engineering work. It turns an iss
 
 It can run as:
 
-- a **standalone backend**: scheduler, agents, SQLite DB, REST/SSE dashboard
+- a **standalone backend**: scheduler, agents, [SQLite](https://www.sqlite.org/) DB, REST/SSE dashboard
 - a **desktop app**: native macOS window plus local CLI bridge for tools that must run on your laptop
-- an optional **pi extension shim**: `/forge` commands inside pi
+- an optional **[pi](https://github.com/earendil-works/pi-coding-agent) extension shim**: `/forge` commands inside pi
 
 Dashboard: <http://localhost:3142>
 
@@ -93,7 +93,7 @@ Special states: `PAUSED`, `FAILED`, `IGNORED`, `IN_MERGE_QUEUE`, `DONE`.
 ### Code implementation
 
 - Create isolated git worktrees for each issue.
-- Support raw `git worktree` and optional Worktrunk (`wt`) worktree creation.
+- Support raw [`git worktree`](https://git-scm.com/docs/git-worktree) and optional Worktrunk (`wt`) worktree creation.
 - Run a coder agent against the issue plan, Linear context, steering, and review feedback.
 - Preserve per-issue logs and agent output.
 - Support configurable agent concurrency.
@@ -145,7 +145,7 @@ Special states: `PAUSED`, `FAILED`, `IGNORED`, `IN_MERGE_QUEUE`, `DONE`.
 
 ### Desktop app and bridge
 
-- Native macOS desktop window powered by Deno Desktop.
+- Native macOS desktop window powered by [Deno Desktop](https://docs.deno.com/runtime/reference/desktop/).
 - Connect to a local or VM-hosted Forge backend.
 - Persist backend selection in `~/.config/forge/forge-desktop.json`.
 - Run Linear CLI jobs locally on macOS while the VM owns the database.
@@ -181,16 +181,36 @@ Special states: `PAUSED`, `FAILED`, `IGNORED`, `IN_MERGE_QUEUE`, `DONE`.
 
 | Piece | Purpose |
 |---|---|
-| `forge.db` | SQLite source of truth for issues, decisions, runs, PR stack, settings, desktop jobs |
+| `forge.db` | [SQLite](https://www.sqlite.org/) source of truth for issues, decisions, runs, PR stack, settings, desktop jobs |
 | `scheduler.ts` | Picks schedulable issues and starts agents |
 | `setup.js` | Creates worktrees and project files |
-| `agent-runner.js` | Runs planner/coder/reviewer/git/fixer agents via the pi SDK |
+| `agent-runner.js` | Runs planner/coder/reviewer/git/fixer agents via the [pi SDK](https://github.com/earendil-works/pi-coding-agent) |
 | `watcher.js` | Polls GitHub PR/review/merge state |
-| `dashboard/server.js` | Express API + SSE dashboard backend |
-| `dashboard/frontend/src/` | Preact dashboard source |
-| `desktop/main.ts` | Deno Desktop wrapper and local CLI bridge |
+| `dashboard/server.js` | [Express](https://expressjs.com/) API + SSE dashboard backend |
+| `dashboard/frontend/src/` | [Preact](https://preactjs.com/) dashboard source |
+| `desktop/main.ts` | [Deno Desktop](https://docs.deno.com/runtime/reference/desktop/) wrapper and local CLI bridge |
 | `agents/*.md` | Editable system prompts for each agent |
 | `projects/{id}/plan.md` | Per-issue working document |
+
+---
+
+## External projects Forge builds on
+
+| Project | Forge uses it for |
+|---|---|
+| [pi coding agent](https://github.com/earendil-works/pi-coding-agent) | LLM model registry, provider auth, and agent session execution |
+| [Linear CLI (`schpet/linear-cli`)](https://github.com/schpet/linear-cli) | Linear issue fetch, assigned issue listing, and state sync |
+| [Git](https://git-scm.com/) / [`git worktree`](https://git-scm.com/docs/git-worktree) | Branches, commits, diffs, pushes, and isolated per-issue worktrees |
+| [GitHub CLI (`gh`)](https://cli.github.com/) | PR creation support, PR status, reviews, checks, comments, and merge state |
+| [SQLite](https://www.sqlite.org/) | Local durable state in `forge.db` |
+| [`better-sqlite3`](https://github.com/WiseLibs/better-sqlite3) | Node.js SQLite driver |
+| [Express](https://expressjs.com/) | Dashboard/API server |
+| [Preact](https://preactjs.com/) | Dashboard frontend |
+| [Deno](https://deno.com/) and [Deno Desktop](https://docs.deno.com/runtime/reference/desktop/) | Native desktop wrapper and macOS CLI bridge |
+| [Worktrunk (`wt`)](https://github.com/lukewh/worktrunk) | Optional worktree provider |
+| [Node.js](https://nodejs.org/) / [npm](https://www.npmjs.com/) | Runtime and dependency management |
+| [Vite](https://vite.dev/) | Dashboard frontend build |
+| [TypeScript](https://www.typescriptlang.org/) | Dashboard type checking and Forge TS modules |
 
 ---
 
@@ -200,20 +220,20 @@ Install these **before** running setup.
 
 ### Required everywhere Forge backend/agents run
 
-- **Node.js 22+** and **npm**
-- **git**
-- Native build tooling for `better-sqlite3`:
+- **[Node.js](https://nodejs.org/) 22+** and **[npm](https://www.npmjs.com/)**
+- **[git](https://git-scm.com/)**
+- Native build tooling for [`better-sqlite3`](https://github.com/WiseLibs/better-sqlite3):
   - macOS: Xcode Command Line Tools (`xcode-select --install`)
   - Linux/Orb VM: `build-essential`, `python3`, `make`, `g++`
-- **pi SDK credentials/config** for the user running Forge agents
-  - Forge imports `@earendil-works/pi-coding-agent` and uses the same model/provider auth as pi.
+- **[pi SDK](https://github.com/earendil-works/pi-coding-agent) credentials/config** for the user running Forge agents
+  - Forge imports [`@earendil-works/pi-coding-agent`](https://www.npmjs.com/package/@earendil-works/pi-coding-agent) and uses the same model/provider auth as pi.
   - Verify pi can run with the model configured in Forge settings.
 - Access to the target git repository.
 - A writable worktree directory.
 
 ### Required for GitHub automation
 
-- **GitHub CLI**: `gh`
+- **[GitHub CLI](https://cli.github.com/)**: `gh`
 - Authenticated GitHub session for the user running the Forge backend/scheduler:
 
 ```bash
@@ -244,7 +264,7 @@ linear --help
 
 ### Required for the desktop app
 
-- macOS with **Deno 2.9+** and Deno Desktop support
+- macOS with **[Deno](https://deno.com/) 2.9+** and [Deno Desktop](https://docs.deno.com/runtime/reference/desktop/) support
 - Local macOS CLI tools:
   - [`linear`](https://github.com/schpet/linear-cli) authenticated for issue fetch/state sync through the desktop bridge
   - `gh` authenticated for opening, inspecting, and manually debugging GitHub state from the same desktop environment
@@ -269,7 +289,7 @@ Current desktop bridge jobs are Linear-focused. GitHub automation still runs on 
 
 ### Optional
 
-- **Worktrunk** (`wt`) if you want `worktree_provider=wt` instead of raw `git worktree`.
+- **[Worktrunk](https://github.com/lukewh/worktrunk)** (`wt`) if you want `worktree_provider=wt` instead of raw [`git worktree`](https://git-scm.com/docs/git-worktree).
 - SSH access to your VM, e.g. `ssh orb`, if running Forge in Orb.
 
 ---
@@ -311,7 +331,7 @@ Recommended VM answers:
 
 | Prompt | Typical value |
 |---|---|
-| Worktree provider | `git` |
+| Worktree provider | [`git`](https://git-scm.com/) |
 | Main git repo path | absolute path to your repo inside the VM |
 | Directory for new git worktrees | `/home/$USER/Projects` or another VM path |
 | Branch prefix | your GitHub username or preferred branch namespace |
@@ -482,7 +502,7 @@ Open <http://localhost:3142> for approvals, steering, logs, diffs, PR stack, set
 
 ## Optional pi slash commands
 
-If the optional pi extension shim is loaded:
+If the optional [pi](https://github.com/earendil-works/pi-coding-agent) extension shim is loaded:
 
 | Command | Description |
 |---|---|
