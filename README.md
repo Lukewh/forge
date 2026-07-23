@@ -122,10 +122,10 @@ Forge uses `gh` for PR discovery, PR status, review comments, CI checks, and mer
 Choose one of these modes:
 
 1. **Recommended for VM backend:** run Linear through the macOS desktop bridge.
-   - Install/authenticate `linear` on macOS.
+   - Install/authenticate [`linear`](https://github.com/schpet/linear-cli) on macOS.
    - Run the Forge desktop app on macOS.
    - Keep `linear_enabled=false` on the VM backend.
-2. **Local-only backend:** install/authenticate `linear` on the same machine as Forge and set `linear_enabled=true`.
+2. **Local-only backend:** install/authenticate [`linear`](https://github.com/schpet/linear-cli) on the same machine as Forge and set `linear_enabled=true`.
 
 Verify:
 
@@ -139,7 +139,7 @@ linear --help
 
 - macOS with **Deno 2.9+** and Deno Desktop support
 - Local macOS CLI tools:
-  - `linear` authenticated for issue fetch/state sync through the desktop bridge
+  - [`linear`](https://github.com/schpet/linear-cli) authenticated for issue fetch/state sync through the desktop bridge
   - `gh` authenticated for opening, inspecting, and manually debugging GitHub state from the same desktop environment
 
 ```bash
@@ -253,7 +253,8 @@ brew install gh deno
 gh auth login
 gh auth status
 
-# Install/auth Linear locally using your organization's preferred Linear CLI install/auth flow
+# Install/auth Linear locally with schpet/linear-cli:
+# https://github.com/schpet/linear-cli
 linear --version
 linear --help
 ```
