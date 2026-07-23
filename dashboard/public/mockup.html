@@ -1,0 +1,1971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forge — Design Mockup v3</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚒️</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..700;1,14..32,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:            #08090a;
+      --bg-panel:      #0f1011;
+      --bg-surface:    #131415;
+      --bg-raised:     #1e1f22;
+      --bg-card:       rgba(255,255,255,0.022);
+      --bg-card-hover: rgba(255,255,255,0.042);
+      --text:          #f7f8f8;
+      --text-2:        #d0d6e0;
+      --text-3:        #8a8f98;
+      --text-4:        #52565d;
+      --accent:        #5e6ad2;
+      --accent-vivid:  #7170ff;
+      --accent-hover:  #828fff;
+      --green:         #27a644;
+      --emerald:       #10b981;
+      --red:           #e5484d;
+      --yellow:        #f5a623;
+      --purple:        #a78bfa;
+      --sky:           #7dd3fc;
+      --pink:          #f472b6;
+      --border:        rgba(255,255,255,0.09);
+      --border-subtle: rgba(255,255,255,0.05);
+      --border-solid:  #1f2124;
+      --r-xs:2px; --r-sm:4px; --r:6px; --r-md:8px; --r-lg:12px; --r-xl:20px;
+      --sidebar-w: 216px;
+      --panel-w:   440px;
+    }
+
+    html, body { height:100%; background:var(--bg); color:var(--text-2); font-family:'Inter',system-ui,sans-serif; font-size:13px; line-height:1.5; -webkit-font-smoothing:antialiased; font-feature-settings:"cv01","ss03"; }
+
+    /* ══ APP SHELL ══════════════════════════════════════════════════════ */
+    .app { display:flex; height:100vh; overflow:hidden; }
+
+    /* ══ SIDEBAR ════════════════════════════════════════════════════════ */
+    .sidebar { width:var(--sidebar-w); flex-shrink:0; background:var(--bg-panel); border-right:1px solid var(--border-subtle); display:flex; flex-direction:column; overflow:hidden; }
+
+    .sidebar-logo { display:flex; align-items:center; gap:9px; padding:13px 14px 11px; border-bottom:1px solid var(--border-subtle); flex-shrink:0; }
+    .logo-mark { width:24px; height:24px; background:linear-gradient(135deg,#5e6ad2 0%,#7170ff 100%); border-radius:var(--r-sm); display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
+    .logo-name { font-size:13.5px; font-weight:600; color:var(--text); letter-spacing:-0.3px; }
+    .logo-ver  { font-size:10px; color:var(--text-4); font-family:'JetBrains Mono',monospace; margin-left:auto; }
+
+    .sidebar-nav { padding:6px 6px 0; flex:1; overflow-y:auto; }
+    .nav-section { font-size:10px; font-weight:600; color:var(--text-4); text-transform:uppercase; letter-spacing:0.6px; padding:10px 8px 3px; }
+    .nav-btn { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:var(--r); cursor:pointer; color:var(--text-3); font-size:12.5px; font-weight:400; border:none; background:none; width:100%; text-align:left; transition:background 0.1s,color 0.1s; }
+    .nav-btn:hover { background:rgba(255,255,255,0.04); color:var(--text-2); }
+    .nav-btn.active { background:rgba(113,112,255,0.10); color:var(--text); }
+    .nav-btn.active .nav-icon { color:var(--accent-vivid); }
+    .nav-icon { font-size:14px; width:16px; text-align:center; flex-shrink:0; }
+    .nav-badge { margin-left:auto; background:var(--yellow); color:#000; font-size:10px; font-weight:700; border-radius:9999px; min-width:17px; height:17px; display:flex; align-items:center; justify-content:center; padding:0 4px; animation:pulse-badge 2s ease-in-out infinite; }
+    .nav-count { margin-left:auto; font-size:10px; color:var(--text-4); font-family:'JetBrains Mono',monospace; }
+    .kbd { font-size:9px; background:rgba(255,255,255,0.05); border:1px solid var(--border-solid); border-radius:3px; padding:1px 4px; color:var(--text-4); font-family:'JetBrains Mono',monospace; margin-left:auto; }
+    @keyframes pulse-badge { 0%,100%{box-shadow:0 0 0 0 rgba(245,166,35,0.5)} 50%{box-shadow:0 0 0 4px rgba(245,166,35,0)} }
+
+    .sidebar-footer { border-top:1px solid var(--border-subtle); padding:10px 12px; display:flex; flex-direction:column; gap:9px; flex-shrink:0; }
+    .sched-row { display:flex; align-items:center; gap:7px; }
+    .sched-dot { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 5px rgba(39,166,68,0.5); animation:sched-pulse 2.5s ease-in-out infinite; flex-shrink:0; }
+    .sched-label { font-size:11.5px; color:var(--text-3); }
+    .sched-toggle { margin-left:auto; font-size:10.5px; color:var(--text-4); background:none; border:none; cursor:pointer; }
+    .sched-toggle:hover { color:var(--red); }
+    @keyframes sched-pulse { 0%,100%{opacity:1;box-shadow:0 0 4px rgba(39,166,68,0.4)} 50%{opacity:0.7;box-shadow:0 0 8px rgba(39,166,68,0.7)} }
+
+    .concurrency-wrap { display:flex; align-items:center; gap:7px; }
+    .pips { display:flex; gap:3px; }
+    .pip { width:18px; height:5px; border-radius:2px; background:var(--accent-vivid); opacity:0.85; box-shadow:0 0 4px rgba(113,112,255,0.4); }
+    .pip.empty { background:var(--border-solid); opacity:1; box-shadow:none; }
+    .concurrency-label { font-size:10.5px; color:var(--text-4); }
+
+    .sidebar-stats { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+    .stat-pill { background:rgba(255,255,255,0.02); border:1px solid var(--border-subtle); border-radius:var(--r); padding:5px 8px; text-align:center; }
+    .stat-num { font-size:15px; font-weight:600; color:var(--text); letter-spacing:-0.5px; display:block; }
+    .stat-lbl { font-size:10px; color:var(--text-4); text-transform:uppercase; letter-spacing:0.3px; }
+
+    .vm-row { display:flex; align-items:center; gap:6px; background:rgba(245,166,35,0.06); border:1px solid rgba(245,166,35,0.2); border-radius:var(--r); padding:5px 8px; }
+    .vm-dot { width:6px; height:6px; border-radius:50%; background:var(--yellow); box-shadow:0 0 5px rgba(245,166,35,0.6); animation:sched-pulse 2s ease-in-out infinite; flex-shrink:0; }
+    .vm-text { font-size:10.5px; color:var(--yellow); font-family:'JetBrains Mono',monospace; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .model-row { display:flex; align-items:center; gap:5px; font-size:10.5px; color:var(--text-4); font-family:'JetBrains Mono',monospace; }
+
+    /* ══ MAIN AREA ══════════════════════════════════════════════════════ */
+    .main { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+
+    /* Views */
+    .view { display:none; flex:1; flex-direction:column; overflow:hidden; }
+    .view.active { display:flex; }
+    .view-scroll { flex:1; overflow-y:auto; }
+
+    /* ══ QUEUE VIEW SPECIFICS ═══════════════════════════════════════════ */
+    .queue-shell { flex:1; display:flex; flex-direction:column; overflow:hidden; transition:margin-right 0.25s ease; }
+    .queue-shell.panel-open { margin-right:var(--panel-w); }
+
+    /* Decision Inbox */
+    .decisions-inbox { flex-shrink:0; border-bottom:1px solid rgba(245,166,35,0.18); background:linear-gradient(90deg,rgba(245,166,35,0.055),rgba(245,166,35,0.015)); overflow:hidden; max-height:160px; transition:max-height 0.3s ease; }
+    .decisions-inbox.collapsed { max-height:36px; }
+    .inbox-bar { display:flex; align-items:center; gap:9px; padding:7px 14px 6px; flex-shrink:0; }
+    .inbox-flash { width:7px; height:7px; border-radius:50%; background:var(--yellow); box-shadow:0 0 6px rgba(245,166,35,0.7); animation:sched-pulse 1.8s ease-in-out infinite; flex-shrink:0; }
+    .inbox-title { font-size:11.5px; font-weight:600; color:var(--yellow); }
+    .inbox-sub   { font-size:11px; color:rgba(245,166,35,0.6); }
+    .inbox-toggle { margin-left:auto; font-size:11px; color:var(--text-4); background:none; border:none; cursor:pointer; padding:2px 0; }
+    .inbox-toggle:hover { color:var(--text-3); }
+    .inbox-cards { display:flex; gap:8px; padding:0 14px 9px; overflow-x:auto; }
+    .inbox-card { flex-shrink:0; min-width:270px; max-width:360px; border-radius:var(--r-md); padding:9px 11px; cursor:pointer; display:flex; align-items:flex-start; gap:9px; border:1px solid rgba(245,166,35,0.22); background:rgba(245,166,35,0.05); position:relative; overflow:hidden; transition:background 0.12s,border-color 0.12s; }
+    .inbox-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:2.5px; background:var(--yellow); }
+    .inbox-card:hover { background:rgba(245,166,35,0.09); border-color:rgba(245,166,35,0.35); }
+    .inbox-card.code { border-color:rgba(113,112,255,0.28); background:rgba(113,112,255,0.06); }
+    .inbox-card.code::before { background:var(--accent-vivid); }
+    .inbox-card.plan { border-color:rgba(16,185,129,0.25); background:rgba(16,185,129,0.05); }
+    .inbox-card.plan::before { background:var(--emerald); }
+    .inbox-card.split { border-color:rgba(244,114,182,0.28); background:rgba(244,114,182,0.05); }
+    .inbox-card.split::before { background:var(--pink); }
+    .inbox-icon-wrap { width:26px; height:26px; border-radius:var(--r); display:flex; align-items:center; justify-content:center; font-size:13px; background:rgba(245,166,35,0.1); border:1px solid rgba(245,166,35,0.2); flex-shrink:0; }
+    .inbox-card.code .inbox-icon-wrap { background:rgba(113,112,255,0.1); border-color:rgba(113,112,255,0.2); }
+    .inbox-card.plan .inbox-icon-wrap { background:rgba(16,185,129,0.1); border-color:rgba(16,185,129,0.2); }
+    .inbox-card.split .inbox-icon-wrap { background:rgba(244,114,182,0.1); border-color:rgba(244,114,182,0.2); }
+    .inbox-body { flex:1; min-width:0; }
+    .inbox-kind { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--yellow); margin-bottom:2px; }
+    .inbox-card.code .inbox-kind  { color:var(--accent-vivid); }
+    .inbox-card.plan .inbox-kind  { color:var(--emerald); }
+    .inbox-card.split .inbox-kind { color:var(--pink); }
+    .inbox-card-title { font-size:12px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:3px; }
+    .inbox-meta { font-size:10.5px; color:var(--text-4); margin-bottom:5px; }
+    .inbox-actions { display:flex; gap:5px; }
+    .ibtn { font-size:10.5px; font-weight:500; padding:2px 8px; border-radius:9999px; border:1px solid; cursor:pointer; font-family:inherit; transition:background 0.1s; }
+    .ibtn-view   { color:var(--text-3); border-color:var(--border-solid); background:rgba(255,255,255,0.03); }
+    .ibtn-view:hover { background:rgba(255,255,255,0.07); color:var(--text-2); }
+    .ibtn-ok { color:var(--emerald); border-color:rgba(16,185,129,0.3); background:rgba(16,185,129,0.07); }
+    .ibtn-ok:hover { background:rgba(16,185,129,0.14); }
+    .ibtn-bad { color:var(--red); border-color:rgba(229,72,77,0.22); background:rgba(229,72,77,0.04); }
+    .ibtn-bad:hover { background:rgba(229,72,77,0.10); }
+
+    /* Toolbar */
+    .toolbar { display:flex; align-items:center; gap:7px; padding:8px 14px; border-bottom:1px solid var(--border-subtle); background:var(--bg-panel); flex-shrink:0; }
+    .search-wrap { position:relative; }
+    .search-icon { position:absolute; left:8px; top:50%; transform:translateY(-50%); color:var(--text-4); font-size:11px; pointer-events:none; }
+    .toolbar-search { background:rgba(255,255,255,0.03); border:1px solid var(--border-solid); border-radius:var(--r); color:var(--text-2); font-size:12px; padding:5px 10px 5px 27px; width:200px; font-family:inherit; transition:border-color 0.12s,width 0.2s; }
+    .toolbar-search:focus { outline:none; border-color:var(--accent-vivid); width:250px; }
+    .toolbar-search::placeholder { color:var(--text-4); }
+    .filter-chips { display:flex; gap:3px; }
+    .chip { background:transparent; border:1px solid var(--border-solid); color:var(--text-4); border-radius:9999px; padding:4px 10px; font-size:11px; font-weight:500; cursor:pointer; transition:all 0.1s; white-space:nowrap; font-family:inherit; }
+    .chip:hover { color:var(--text-3); border-color:var(--border); background:rgba(255,255,255,0.03); }
+    .chip.active { color:var(--accent-vivid); border-color:rgba(113,112,255,0.38); background:rgba(113,112,255,0.08); }
+    .chip.needs  { color:var(--yellow); border-color:rgba(245,166,35,0.32); background:rgba(245,166,35,0.07); }
+    .toolbar-right { margin-left:auto; display:flex; align-items:center; gap:6px; }
+    .t-sort { background:rgba(255,255,255,0.03); border:1px solid var(--border-solid); border-radius:var(--r); color:var(--text-3); font-size:11px; padding:5px 7px; cursor:pointer; font-family:inherit; }
+    .t-btn { display:flex; align-items:center; gap:5px; background:rgba(255,255,255,0.03); border:1px solid var(--border-solid); border-radius:var(--r); color:var(--text-3); font-size:11px; font-weight:500; padding:5px 10px; cursor:pointer; font-family:inherit; white-space:nowrap; transition:background 0.1s,color 0.1s; }
+    .t-btn:hover { background:rgba(255,255,255,0.06); color:var(--text-2); }
+    .t-btn.rnext { color:var(--yellow); border-color:rgba(245,166,35,0.32); background:rgba(245,166,35,0.07); }
+    .t-btn.rnext:hover { background:rgba(245,166,35,0.13); }
+    .t-btn.add   { color:var(--accent-vivid); border-color:rgba(113,112,255,0.3); background:rgba(113,112,255,0.08); }
+    .t-btn.add:hover { background:rgba(113,112,255,0.15); }
+
+    /* Pipeline */
+    .pipeline-wrap { flex:1; overflow:hidden; display:flex; }
+    .pipeline { display:flex; width:100%; height:100%; overflow-x:auto; overflow-y:hidden; }
+    .p-col { flex:0 0 266px; display:flex; flex-direction:column; border-right:1px solid var(--border-subtle); overflow:hidden; }
+    .p-col:last-child { border-right:none; flex:1 1 0; min-width:220px; }
+    .p-col.needs-col { background:rgba(245,166,35,0.014); border-right-color:rgba(245,166,35,0.1); }
+    .col-head { display:flex; align-items:center; gap:6px; padding:9px 12px 8px; border-bottom:1px solid var(--border-subtle); flex-shrink:0; }
+    .col-head.needs-head { border-bottom-color:rgba(245,166,35,0.15); }
+    .col-label { font-size:10.5px; font-weight:600; color:var(--text-4); text-transform:uppercase; letter-spacing:0.5px; flex:1; }
+    .col-label.needs { color:rgba(245,166,35,0.85); }
+    .col-count { font-size:10.5px; color:var(--text-4); font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,0.04); border:1px solid var(--border-solid); border-radius:9999px; padding:0 6px; min-width:20px; height:18px; display:flex; align-items:center; justify-content:center; }
+    .col-count.live  { color:var(--accent-vivid); border-color:rgba(113,112,255,0.22); background:rgba(113,112,255,0.06); }
+    .col-count.needs { color:var(--yellow); border-color:rgba(245,166,35,0.22); background:rgba(245,166,35,0.06); }
+    .col-count.bad   { color:var(--red); border-color:rgba(229,72,77,0.22); background:rgba(229,72,77,0.06); }
+    .col-head-btn { font-size:11px; color:var(--text-4); background:none; border:1px solid var(--border-solid); border-radius:var(--r-sm); padding:1px 6px; cursor:pointer; font-family:inherit; transition:color 0.1s,background 0.1s; }
+    .col-head-btn:hover { color:var(--text-3); background:rgba(255,255,255,0.03); }
+    .col-cards { flex:1; overflow-y:auto; padding:7px; display:flex; flex-direction:column; gap:4px; }
+    .col-sub { font-size:10px; color:var(--text-4); text-transform:uppercase; letter-spacing:0.4px; padding:7px 12px 3px; flex-shrink:0; display:flex; align-items:center; gap:8px; }
+    .col-sub::before,.col-sub::after { content:''; flex:1; height:1px; background:var(--border-subtle); }
+
+    /* Issue Cards */
+    .ic { background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--r-md); cursor:pointer; position:relative; overflow:hidden; transition:background 0.12s,border-color 0.12s,box-shadow 0.12s; }
+    .ic:hover { background:var(--bg-card-hover); border-color:var(--border); box-shadow:0 2px 8px rgba(0,0,0,0.2); }
+    .ic.selected { border-color:rgba(113,112,255,0.45); background:rgba(113,112,255,0.06); box-shadow:0 0 0 1px rgba(113,112,255,0.18); }
+    .ic::before { content:''; position:absolute; left:0; top:0; bottom:0; width:2.5px; }
+    .ic-pending::before   { background:transparent; }
+    .ic-planning::before  { background:var(--purple); }
+    .ic-working::before   { background:var(--accent-vivid); }
+    .ic-reviewing::before { background:var(--purple); }
+    .ic-awaiting::before  { background:var(--yellow); }
+    .ic-watching::before  { background:var(--sky); }
+    .ic-merge::before     { background:var(--accent-vivid); }
+    .ic-failed::before    { background:var(--red); }
+    .ic-paused::before    { background:var(--text-4); }
+    .ic-split::before     { background:var(--pink); }
+    .ic-body { padding:9px 11px 0; }
+    .ic-top { display:flex; align-items:flex-start; justify-content:space-between; gap:6px; margin-bottom:4px; }
+    .ic-id  { font-size:10.5px; font-family:'JetBrains Mono',monospace; color:var(--text-4); }
+    .ic-pri { font-size:10px; color:var(--text-4); font-family:'JetBrains Mono',monospace; letter-spacing:1.5px; }
+    .ic-title { font-size:13px; font-weight:400; color:var(--text); line-height:1.35; letter-spacing:-0.13px; margin-bottom:6px; }
+    .ic-state { display:flex; align-items:center; gap:5px; flex-wrap:wrap; margin-bottom:5px; }
+    .sp { font-size:9.5px; font-weight:600; padding:1.5px 6px; border-radius:9999px; border:1px solid transparent; white-space:nowrap; }
+    .sp-pending   { color:var(--text-4); border-color:var(--border-solid); }
+    .sp-planning  { color:var(--purple); border-color:rgba(167,139,250,0.25); background:rgba(167,139,250,0.07); }
+    .sp-working   { color:var(--emerald); border-color:rgba(16,185,129,0.25); background:rgba(16,185,129,0.07); }
+    .sp-reviewing { color:var(--purple); border-color:rgba(167,139,250,0.25); background:rgba(167,139,250,0.07); }
+    .sp-awaiting  { color:var(--yellow); border-color:rgba(245,166,35,0.28); background:rgba(245,166,35,0.07); }
+    .sp-code      { color:var(--accent-vivid); border-color:rgba(113,112,255,0.28); background:rgba(113,112,255,0.07); }
+    .sp-watching  { color:var(--sky); border-color:rgba(125,211,252,0.25); background:rgba(125,211,252,0.07); }
+    .sp-merge     { color:var(--accent-vivid); border-color:rgba(113,112,255,0.25); background:rgba(113,112,255,0.07); }
+    .sp-failed    { color:var(--red); border-color:rgba(229,72,77,0.28); background:rgba(229,72,77,0.07); }
+    .sp-paused    { color:var(--text-4); border-color:var(--border-solid); background:rgba(255,255,255,0.02); }
+    .sp-split     { color:var(--pink); border-color:rgba(244,114,182,0.25); background:rgba(244,114,182,0.06); }
+    .sp-done      { color:var(--emerald); border-color:rgba(16,185,129,0.25); background:rgba(16,185,129,0.06); }
+    .spinner { display:inline-block; width:7px; height:7px; border-radius:50%; border:1.5px solid rgba(113,112,255,0.2); border-top-color:var(--accent-vivid); animation:spin 0.8s linear infinite; flex-shrink:0; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .live-badge { display:inline-flex; align-items:center; gap:4px; font-size:9.5px; font-weight:600; color:var(--emerald); background:rgba(16,185,129,0.07); border:1px solid rgba(16,185,129,0.2); border-radius:9999px; padding:1.5px 7px; }
+    .live-dot { width:5px; height:5px; border-radius:50%; background:var(--emerald); animation:sched-pulse 2s ease-in-out infinite; }
+    .steer-badge { display:inline-flex; align-items:center; gap:3px; font-size:9.5px; color:var(--purple); background:rgba(167,139,250,0.07); border:1px solid rgba(167,139,250,0.2); border-radius:9999px; padding:1px 6px; }
+    .elapsed-badge { font-size:9.5px; font-family:'JetBrains Mono',monospace; color:var(--text-4); background:rgba(255,255,255,0.03); border:1px solid var(--border-solid); border-radius:9999px; padding:0 6px; }
+    .elapsed-badge.long { color:var(--yellow); border-color:rgba(245,166,35,0.25); background:rgba(245,166,35,0.06); }
+    .ic-snippet { font-size:11px; color:var(--text-4); line-height:1.4; margin-bottom:6px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .ic-snippet strong { color:var(--text-3); font-weight:500; }
+    .ic-snippet code { font-family:'JetBrains Mono',monospace; font-size:10px; background:rgba(255,255,255,0.05); border-radius:2px; padding:0 3px; }
+    .ic-meta { display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--text-4); padding-bottom:9px; }
+    .pr-link { color:var(--accent-vivid); font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:600; background:rgba(113,112,255,0.07); border:1px solid rgba(113,112,255,0.2); border-radius:9999px; padding:1px 7px; text-decoration:none; display:inline-flex; align-items:center; gap:3px; }
+    .pr-dot { width:5px; height:5px; border-radius:50%; display:inline-block; }
+    .pr-open   { background:var(--emerald); box-shadow:0 0 4px rgba(16,185,129,0.5); }
+    .pr-merged { background:var(--accent-vivid); }
+    .ci-pass { color:var(--emerald); font-size:10px; }
+    .ci-fail { color:var(--red); font-size:10px; }
+    .ci-run  { color:var(--yellow); font-size:10px; }
+    .pr-approved { font-size:9.5px; font-weight:600; color:var(--emerald); background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.22); border-radius:9999px; padding:1px 6px; }
+    .autofix-badge { font-size:9.5px; font-weight:600; color:var(--green); background:rgba(39,166,68,0.07); border:1px solid rgba(39,166,68,0.2); border-radius:9999px; padding:1px 6px; }
+    .ic-progress { height:2px; background:var(--border-subtle); margin:0 -1px; position:relative; overflow:hidden; border-radius:0 0 var(--r-md) var(--r-md); }
+    .ic-fill { position:absolute; left:0; top:0; bottom:0; border-radius:0 2px 2px 0; transition:width 0.5s ease; }
+    .prog-pending   { background:var(--border-solid); }
+    .prog-planning  { background:linear-gradient(90deg,var(--purple),rgba(167,139,250,0.5)); }
+    .prog-working   { background:linear-gradient(90deg,var(--accent-vivid),rgba(113,112,255,0.5)); animation:prog-pulse 2s ease-in-out infinite; }
+    .prog-reviewing { background:linear-gradient(90deg,var(--purple),var(--accent-vivid)); }
+    .prog-awaiting  { background:linear-gradient(90deg,var(--yellow),rgba(245,166,35,0.5)); animation:prog-pulse 1.6s ease-in-out infinite; }
+    .prog-watching  { background:linear-gradient(90deg,var(--sky),rgba(125,211,252,0.4)); }
+    .prog-merge     { background:linear-gradient(90deg,var(--accent-vivid),var(--emerald)); }
+    .prog-failed    { background:var(--red); }
+    .prog-paused    { background:var(--text-4); opacity:0.3; }
+    @keyframes prog-pulse { 0%,100%{opacity:1} 50%{opacity:0.65} }
+    .ic-hover { display:none; position:absolute; top:8px; right:8px; gap:4px; }
+    .ic:hover .ic-hover { display:flex; }
+    .hact { background:var(--bg-raised); border:1px solid var(--border-solid); border-radius:var(--r-sm); color:var(--text-4); font-size:10.5px; padding:2px 6px; cursor:pointer; font-family:inherit; transition:color 0.1s,border-color 0.1s,background 0.1s; }
+    .hact:hover { color:var(--text-2); border-color:var(--border); background:rgba(255,255,255,0.06); }
+
+    .li-item { background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--r-md); padding:8px 11px; cursor:pointer; display:flex; align-items:center; gap:8px; transition:background 0.1s,border-color 0.1s; }
+    .li-item:hover { background:var(--bg-card-hover); border-color:var(--border); }
+    .li-body { flex:1; min-width:0; }
+    .li-title { font-size:12.5px; color:var(--text-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .li-meta  { font-size:10.5px; color:var(--text-4); margin-top:2px; display:flex; gap:5px; }
+    .enqueue-btn { flex-shrink:0; background:rgba(113,112,255,0.08); border:1px solid rgba(113,112,255,0.2); border-radius:var(--r); color:var(--accent-vivid); font-size:11px; font-weight:500; padding:3px 9px; cursor:pointer; font-family:inherit; transition:background 0.1s; }
+    .enqueue-btn:hover { background:rgba(113,112,255,0.16); }
+
+    /* ══ DETAIL PANEL ════════════════════════════════════════════════════ */
+    .detail-panel { position:fixed; right:0; top:0; bottom:0; width:var(--panel-w); background:var(--bg-panel); border-left:1px solid var(--border); display:flex; flex-direction:column; transform:translateX(100%); transition:transform 0.25s ease; z-index:60; overflow:hidden; }
+    .detail-panel.open { transform:translateX(0); }
+    .dp-header { display:flex; align-items:flex-start; gap:8px; padding:12px 14px 10px; border-bottom:1px solid var(--border-subtle); flex-shrink:0; }
+    .dp-close { background:none; border:none; color:var(--text-4); cursor:pointer; font-size:16px; padding:0 2px; line-height:1; margin-top:1px; transition:color 0.1s; flex-shrink:0; }
+    .dp-close:hover { color:var(--text); }
+    .dp-header-body { flex:1; min-width:0; }
+    .dp-id    { font-size:10.5px; color:var(--text-4); font-family:'JetBrains Mono',monospace; margin-bottom:3px; }
+    .dp-title { font-size:14px; font-weight:500; color:var(--text); line-height:1.35; letter-spacing:-0.2px; }
+    .dp-tabs { display:flex; border-bottom:1px solid var(--border-subtle); flex-shrink:0; padding:0 14px; background:var(--bg-surface); }
+    .dp-tab { font-size:12px; font-weight:400; color:var(--text-4); padding:8px 12px; border:none; background:none; cursor:pointer; font-family:inherit; border-bottom:2px solid transparent; transition:color 0.1s; margin-bottom:-1px; }
+    .dp-tab:hover { color:var(--text-3); }
+    .dp-tab.active { color:var(--text); border-bottom-color:var(--accent-vivid); }
+    .dp-body { flex:1; overflow-y:auto; }
+    .dp-tab-content { display:none; }
+    .dp-tab-content.active { display:block; }
+    .ds { padding:13px 15px; border-bottom:1px solid var(--border-subtle); }
+    .ds:last-child { border-bottom:none; }
+    .ds-label { font-size:9.5px; font-weight:600; color:var(--text-4); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:9px; }
+    .state-banner { display:flex; align-items:center; gap:9px; background:rgba(113,112,255,0.05); border:1px solid rgba(113,112,255,0.14); border-radius:var(--r-md); padding:10px 13px; }
+    .state-banner.awaiting { background:rgba(245,166,35,0.06); border-color:rgba(245,166,35,0.18); }
+    .state-banner.failed   { background:rgba(229,72,77,0.06); border-color:rgba(229,72,77,0.18); }
+    .sb-text { font-size:12px; color:var(--text-3); line-height:1.5; flex:1; }
+    .phase-track { display:flex; align-items:center; }
+    .phase-node { display:flex; flex-direction:column; align-items:center; gap:4px; flex-shrink:0; }
+    .phase-dot { width:9px; height:9px; border-radius:50%; background:var(--border-solid); transition:background 0.2s; }
+    .phase-dot.done   { background:var(--emerald); }
+    .phase-dot.active { background:var(--accent-vivid); box-shadow:0 0 0 3px rgba(113,112,255,0.2); animation:phase-pulse 2s ease-in-out infinite; }
+    .phase-dot.wait   { background:var(--yellow); }
+    @keyframes phase-pulse { 0%,100%{box-shadow:0 0 0 2px rgba(113,112,255,0.15)} 50%{box-shadow:0 0 0 5px rgba(113,112,255,0.05)} }
+    .phase-label { font-size:8px; color:var(--text-4); text-transform:uppercase; letter-spacing:0.2px; white-space:nowrap; }
+    .phase-line { flex:1; height:1px; background:var(--border-subtle); min-width:14px; margin-bottom:13px; }
+    .phase-line.done { background:rgba(16,185,129,0.35); }
+    .dp-actions { display:flex; flex-wrap:wrap; gap:6px; }
+    .da { font-size:11.5px; font-weight:500; padding:5px 11px; border-radius:var(--r); border:1px solid; cursor:pointer; font-family:inherit; display:flex; align-items:center; gap:5px; transition:background 0.1s; }
+    .da-primary { background:var(--accent); color:#fff; border-color:transparent; }
+    .da-primary:hover { background:var(--accent-hover); }
+    .da-ghost   { background:rgba(255,255,255,0.03); color:var(--text-3); border-color:var(--border-solid); }
+    .da-ghost:hover { background:rgba(255,255,255,0.07); color:var(--text-2); }
+    .da-success { background:rgba(16,185,129,0.1); color:var(--emerald); border-color:rgba(16,185,129,0.25); }
+    .da-success:hover { background:rgba(16,185,129,0.18); }
+    .da-danger  { background:rgba(229,72,77,0.08); color:var(--red); border-color:rgba(229,72,77,0.25); }
+    .da-danger:hover { background:rgba(229,72,77,0.16); }
+    .info-grid { display:grid; grid-template-columns:96px 1fr; gap:5px 10px; font-size:12px; }
+    .ig-label { color:var(--text-4); }
+    .ig-value { color:var(--text-2); font-family:'JetBrains Mono',monospace; font-size:11px; }
+    .ig-value a { color:var(--accent-vivid); text-decoration:none; }
+    .pr-stack-list { display:flex; flex-direction:column; gap:5px; }
+    .pr-row { display:flex; align-items:center; gap:7px; font-size:12px; background:rgba(255,255,255,0.02); border:1px solid var(--border-subtle); border-radius:var(--r); padding:6px 10px; }
+    .pr-pos { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text-4); width:14px; flex-shrink:0; }
+    .pr-branch { flex:1; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--text-3); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .pr-num-link { color:var(--accent-vivid); font-size:11px; font-weight:500; text-decoration:none; font-family:'JetBrains Mono',monospace; }
+    .wf-graph { display:flex; align-items:center; overflow-x:auto; padding:2px 0 4px; }
+    .wf-node { flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:3px; }
+    .wf-box { font-size:9.5px; padding:3px 9px; border-radius:var(--r-sm); border:1px solid var(--border-solid); color:var(--text-4); background:rgba(255,255,255,0.02); white-space:nowrap; }
+    .wf-box.wf-done   { background:rgba(16,185,129,0.1); border-color:rgba(16,185,129,0.25); color:var(--emerald); }
+    .wf-box.wf-active { background:rgba(113,112,255,0.1); border-color:rgba(113,112,255,0.3); color:var(--accent-vivid); box-shadow:0 0 0 2px rgba(113,112,255,0.12); }
+    .wf-box.wf-loop   { background:rgba(167,139,250,0.08); border-color:rgba(167,139,250,0.2); color:var(--purple); }
+    .wf-arrow { color:var(--text-4); font-size:11px; padding:0 3px; margin-bottom:12px; flex-shrink:0; }
+    .wf-arrow.done { color:rgba(16,185,129,0.5); }
+    .af-feed { display:flex; flex-direction:column; }
+    .af-item { display:flex; gap:9px; padding:6px 0; border-bottom:1px solid var(--border-subtle); font-size:11.5px; line-height:1.45; }
+    .af-item:last-child { border-bottom:none; }
+    .af-dc { display:flex; flex-direction:column; align-items:center; padding-top:3px; }
+    .af-dot { width:7px; height:7px; border-radius:50%; background:var(--border-solid); flex-shrink:0; }
+    .af-dot.ag  { background:var(--accent-vivid); }
+    .af-dot.me  { background:var(--yellow); }
+    .af-dot.ok  { background:var(--emerald); }
+    .af-dot.err { background:var(--red); }
+    .af-dot.live{ background:var(--accent-vivid); box-shadow:0 0 5px rgba(113,112,255,0.4); animation:sched-pulse 1.5s ease-in-out infinite; }
+    .af-line { flex:1; width:1px; background:var(--border-subtle); margin-top:3px; }
+    .af-content { flex:1; min-width:0; padding-bottom:2px; }
+    .af-head { display:flex; align-items:center; gap:6px; margin-bottom:2px; }
+    .af-actor { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.3px; }
+    .af-actor.ag  { color:var(--accent-vivid); }
+    .af-actor.me  { color:var(--yellow); }
+    .af-actor.sys { color:var(--text-4); }
+    .af-time { font-size:10px; color:var(--text-4); font-family:'JetBrains Mono',monospace; margin-left:auto; }
+    .af-text { color:var(--text-3); }
+    .af-text.ok  { color:var(--emerald); }
+    .af-text.err { color:var(--red); }
+    .af-text.hi  { color:#c4b5fd; }
+    .af-snippet { margin-top:4px; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text-4); background:rgba(255,255,255,0.025); border:1px solid var(--border-subtle); border-radius:var(--r-sm); padding:5px 8px; white-space:pre-wrap; max-height:70px; overflow:hidden; }
+    .fix-comment { background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:var(--r-md); padding:11px 13px; margin-bottom:8px; }
+    .fc-head { display:flex; align-items:flex-start; gap:9px; }
+    .fc-head input[type=checkbox] { margin-top:3px; flex-shrink:0; accent-color:var(--accent-vivid); }
+    .fc-body { flex:1; min-width:0; }
+    .fc-meta { display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin-bottom:6px; }
+    .fix-tag { font-size:9.5px; font-weight:600; padding:1px 6px; border-radius:3px; }
+    .fix-tag.changes { background:rgba(229,72,77,0.12); color:var(--red); border:1px solid rgba(229,72,77,0.3); }
+    .fix-tag.ci      { background:rgba(229,72,77,0.12); color:var(--red); border:1px solid rgba(229,72,77,0.3); }
+    .fix-tag.nit     { background:rgba(113,112,255,0.1); color:var(--accent-vivid); border:1px solid rgba(113,112,255,0.25); }
+    .fix-author { font-size:11px; font-weight:600; color:var(--text-2); }
+    .fix-path   { font-size:10px; font-family:'JetBrains Mono',monospace; color:var(--text-4); }
+    .fix-body   { font-size:12px; color:var(--text-3); line-height:1.55; white-space:pre-wrap; word-break:break-word; }
+    .auto-fix-row { display:flex; align-items:center; justify-content:space-between; gap:14px; }
+    .auto-fix-row > div h4 { font-size:12.5px; font-weight:500; color:var(--text); margin-bottom:2px; }
+    .auto-fix-row > div p  { font-size:11.5px; color:var(--text-4); line-height:1.4; margin:0; }
+    .switch { position:relative; display:inline-block; width:38px; height:22px; flex-shrink:0; }
+    .switch input { opacity:0; width:0; height:0; }
+    .sw { position:absolute; cursor:pointer; inset:0; background:var(--bg-raised); border:1px solid var(--border); border-radius:9999px; transition:0.18s ease; }
+    .sw::before { content:""; position:absolute; width:16px; height:16px; left:2px; top:2px; background:var(--text-3); border-radius:50%; transition:0.18s ease; }
+    .switch input:checked + .sw { background:rgba(39,166,68,0.18); border-color:rgba(39,166,68,0.45); }
+    .switch input:checked + .sw::before { transform:translateX(16px); background:var(--green); }
+    .learning-card { background:rgba(255,255,255,0.02); border:1px solid var(--border-subtle); border-radius:var(--r); padding:9px 11px; margin-bottom:6px; }
+    .lc-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+    .lc-target { font-size:11px; font-weight:500; color:var(--text-2); }
+    .lc-meta   { font-size:10px; color:var(--text-4); }
+    .lc-text   { font-size:11.5px; color:var(--text-3); line-height:1.5; }
+    .terminal-dock { border-top:1px solid var(--border-subtle); flex-shrink:0; }
+    .terminal-bar { display:flex; align-items:center; gap:8px; padding:8px 13px; cursor:pointer; width:100%; background:rgba(255,255,255,0.015); border:none; color:var(--text-3); font-family:inherit; font-size:11.5px; transition:background 0.1s; }
+    .terminal-bar:hover { background:rgba(255,255,255,0.03); }
+    .term-path { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text-4); flex:1; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .danger-zone { border-top:1px solid rgba(229,72,77,0.15); background:rgba(229,72,77,0.03); }
+    .danger-zone h4 { font-size:12px; font-weight:600; color:var(--red); margin-bottom:5px; }
+    .danger-zone p  { font-size:11px; color:var(--text-4); margin-bottom:9px; line-height:1.5; }
+
+    /* ══ ARCHIVE VIEW ════════════════════════════════════════════════════ */
+    .page-wrap { padding:28px 32px; max-width:980px; margin:0 auto; }
+    .page-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:24px; }
+    .page-title { font-size:20px; font-weight:500; color:var(--text); letter-spacing:-0.3px; margin-bottom:4px; }
+    .page-sub   { font-size:12px; color:var(--text-4); }
+    .page-actions { display:flex; gap:8px; }
+    .stats-strip { display:flex; gap:12px; margin-bottom:20px; }
+    .stat-card { background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--r-md); padding:14px 18px; flex:1; }
+    .stat-card-num { font-size:26px; font-weight:600; color:var(--text); letter-spacing:-1px; display:block; margin-bottom:2px; }
+    .stat-card-lbl { font-size:11px; color:var(--text-4); }
+    .archive-list { display:flex; flex-direction:column; gap:6px; }
+    .archive-card { background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--r-md); padding:14px 16px; cursor:pointer; transition:background 0.1s,border-color 0.1s; }
+    .archive-card:hover { background:var(--bg-card-hover); border-color:var(--border); }
+    .archive-card-top { display:flex; align-items:flex-start; gap:14px; }
+    .archive-card-main { flex:1; min-width:0; }
+    .archive-card-badges { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+    .linear-id { font-size:11px; font-family:'JetBrains Mono',monospace; color:var(--accent-vivid); font-weight:600; text-decoration:none; }
+    .archive-card-title { font-size:13px; color:var(--text); margin-bottom:6px; letter-spacing:-0.13px; }
+    .archive-card-meta  { display:flex; align-items:center; gap:12px; font-size:11px; color:var(--text-4); }
+    .archive-card-right { text-align:right; flex-shrink:0; }
+    .archive-time  { font-size:12px; color:var(--text-3); margin-bottom:4px; }
+    .archive-links { display:flex; gap:6px; justify-content:flex-end; }
+    .archive-pr-link { font-size:10px; font-family:'JetBrains Mono',monospace; color:var(--accent-vivid); text-decoration:none; background:rgba(113,112,255,0.07); border:1px solid rgba(113,112,255,0.2); border-radius:9999px; padding:1px 7px; }
+
+    /* ══ SETTINGS VIEW ═══════════════════════════════════════════════════ */
+    .settings-wrap { padding:28px 32px; max-width:760px; }
+    .settings-group { margin-bottom:28px; }
+    .settings-group h3 { font-size:12px; font-weight:600; color:var(--text); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border-subtle); }
+    .setting-row { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:10px 0; border-bottom:1px solid var(--border-subtle); }
+    .setting-row:last-child { border-bottom:none; }
+    .setting-label { font-size:12.5px; color:var(--text-2); margin-bottom:2px; }
+    .setting-hint  { font-size:11px; color:var(--text-4); }
+    .setting-hint code { font-family:'JetBrains Mono',monospace; font-size:10px; background:rgba(255,255,255,0.05); border-radius:2px; padding:0 3px; }
+    .setting-input { background:rgba(255,255,255,0.04); border:1px solid var(--border-solid); border-radius:var(--r); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:12px; padding:6px 10px; min-width:200px; }
+    .setting-input:focus { outline:none; border-color:var(--accent-vivid); }
+    .setting-input[type=number] { width:90px; min-width:0; text-align:right; }
+    .setting-input[type=checkbox] { width:16px; height:16px; accent-color:var(--accent-vivid); cursor:pointer; min-width:0; }
+    .setting-textarea { width:320px; resize:vertical; font-size:11px; min-height:52px; }
+    .settings-save-bar { display:flex; align-items:center; gap:10px; margin-top:24px; padding-top:16px; border-top:1px solid var(--border-subtle); }
+    .btn-primary { background:var(--accent); color:#fff; border:none; border-radius:var(--r); padding:7px 16px; font-size:12.5px; font-weight:500; cursor:pointer; font-family:inherit; transition:background 0.1s; }
+    .btn-primary:hover { background:var(--accent-hover); }
+    .btn-ghost { background:rgba(255,255,255,0.03); color:var(--text-3); border:1px solid var(--border-solid); border-radius:var(--r); padding:7px 14px; font-size:12.5px; font-weight:500; cursor:pointer; font-family:inherit; transition:background 0.1s; }
+    .btn-ghost:hover { background:rgba(255,255,255,0.07); color:var(--text-2); }
+    .saved-indicator { font-size:12px; color:var(--emerald); }
+
+    /* ══ AGENT PROMPTS VIEW ══════════════════════════════════════════════ */
+    .prompts-wrap { padding:28px 32px; }
+    .prompts-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    .prompt-card { background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--r-md); overflow:hidden; }
+    .prompt-card-head { display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--border-subtle); background:rgba(255,255,255,0.015); }
+    .prompt-agent-name { font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:0.5px; flex:1; }
+    .prompt-agent-icon { font-size:14px; }
+    .prompt-char-count { font-size:10.5px; color:var(--text-4); font-family:'JetBrains Mono',monospace; }
+    .prompt-actions { display:flex; gap:5px; }
+    .btn-sm { font-size:11px; font-weight:500; padding:3px 9px; border-radius:var(--r-sm); border:1px solid var(--border-solid); background:rgba(255,255,255,0.03); color:var(--text-3); cursor:pointer; font-family:inherit; transition:background 0.1s; }
+    .btn-sm:hover { background:rgba(255,255,255,0.07); color:var(--text-2); }
+    .btn-sm.save { color:var(--accent-vivid); border-color:rgba(113,112,255,0.3); background:rgba(113,112,255,0.07); }
+    .btn-sm.save:hover { background:rgba(113,112,255,0.14); }
+    .prompt-editor { width:100%; height:220px; background:var(--bg); border:none; color:var(--text-3); font-family:'JetBrains Mono',monospace; font-size:11px; line-height:1.6; padding:12px 14px; resize:none; }
+    .prompt-editor:focus { outline:none; }
+    .prompt-learned-tag { font-size:9.5px; padding:1px 7px; border-radius:9999px; background:rgba(167,139,250,0.08); border:1px solid rgba(167,139,250,0.2); color:var(--purple); }
+    .prompt-footer { padding:8px 14px; border-top:1px solid var(--border-subtle); display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.01); }
+    .prompt-last-change { font-size:10.5px; color:var(--text-4); }
+
+    /* ══ LEARNINGS VIEW ══════════════════════════════════════════════════ */
+    .learnings-wrap { padding:28px 32px; max-width:900px; }
+    .learn-tabs { display:flex; gap:0; border-bottom:1px solid var(--border-subtle); margin-bottom:24px; }
+    .learn-tab { font-size:12px; font-weight:400; color:var(--text-4); padding:8px 16px; border:none; background:none; cursor:pointer; font-family:inherit; border-bottom:2px solid transparent; transition:color 0.1s; margin-bottom:-1px; }
+    .learn-tab:hover { color:var(--text-3); }
+    .learn-tab.active { color:var(--text); border-bottom-color:var(--accent-vivid); }
+    .learn-tab-content { display:none; }
+    .learn-tab-content.active { display:block; }
+    .suggestion-card { background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--r-md); padding:14px 16px; margin-bottom:8px; }
+    .suggestion-card.pending  { border-left:3px solid var(--yellow); }
+    .suggestion-card.applied  { border-left:3px solid var(--emerald); opacity:0.7; }
+    .suggestion-card.rejected { border-left:3px solid var(--border-solid); opacity:0.5; }
+    .sug-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:8px; }
+    .sug-target { font-size:11.5px; font-weight:600; color:var(--text-2); }
+    .sug-status { font-size:10px; font-weight:600; padding:2px 8px; border-radius:9999px; }
+    .sug-status.pending  { color:var(--yellow); background:rgba(245,166,35,0.08); border:1px solid rgba(245,166,35,0.25); }
+    .sug-status.applied  { color:var(--emerald); background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); }
+    .sug-status.rejected { color:var(--text-4); background:rgba(255,255,255,0.03); border:1px solid var(--border-solid); }
+    .sug-text { font-size:12.5px; color:var(--text-3); line-height:1.6; margin-bottom:8px; }
+    .sug-rationale { font-size:11.5px; color:var(--text-4); line-height:1.5; margin-bottom:10px; }
+    .sug-source { font-size:10.5px; color:var(--text-4); margin-bottom:10px; }
+    .sug-actions { display:flex; gap:7px; }
+    .sug-btn { font-size:11px; font-weight:500; padding:4px 11px; border-radius:var(--r-sm); border:1px solid; cursor:pointer; font-family:inherit; transition:background 0.1s; }
+    .sug-btn.apply  { color:var(--emerald); border-color:rgba(16,185,129,0.3); background:rgba(16,185,129,0.07); }
+    .sug-btn.apply:hover { background:rgba(16,185,129,0.14); }
+    .sug-btn.reject { color:var(--red); border-color:rgba(229,72,77,0.22); background:rgba(229,72,77,0.04); }
+    .sug-btn.reject:hover { background:rgba(229,72,77,0.10); }
+    .reflect-event { display:flex; gap:10px; padding:10px 0; border-bottom:1px solid var(--border-subtle); }
+    .reflect-event:last-child { border-bottom:none; }
+    .re-dot { width:8px; height:8px; border-radius:50%; background:var(--accent-vivid); flex-shrink:0; margin-top:3px; }
+    .re-body { flex:1; min-width:0; }
+    .re-head { display:flex; align-items:center; gap:8px; margin-bottom:3px; }
+    .re-label { font-size:12px; font-weight:500; color:var(--text-2); }
+    .re-time  { font-size:11px; color:var(--text-4); font-family:'JetBrains Mono',monospace; margin-left:auto; }
+    .re-text  { font-size:11.5px; color:var(--text-3); line-height:1.5; }
+    .change-log-item { background:rgba(16,185,129,0.03); border:1px solid rgba(16,185,129,0.15); border-radius:var(--r-md); padding:12px 14px; margin-bottom:6px; }
+    .cl-head { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+    .cl-target { font-size:11px; font-weight:600; color:var(--text-2); flex:1; }
+    .cl-time   { font-size:10.5px; color:var(--text-4); font-family:'JetBrains Mono',monospace; }
+    .cl-type   { font-size:9.5px; font-weight:600; color:var(--emerald); background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2); border-radius:9999px; padding:1px 6px; }
+    .cl-summary { font-size:12px; color:var(--text-3); line-height:1.5; margin-bottom:4px; }
+    .cl-reason  { font-size:11px; color:var(--text-4); line-height:1.4; }
+
+    /* ══ REVIEW VIEW ════════════════════════════════════════════════════ */
+    .review-layout { display:flex; flex-direction:column; height:100%; }
+    .review-header { display:flex; align-items:center; gap:10px; padding:10px 16px; border-bottom:1px solid var(--border-subtle); background:var(--bg-panel); flex-shrink:0; }
+    .review-back { font-size:12px; font-weight:500; color:var(--text-4); background:none; border:none; cursor:pointer; font-family:inherit; transition:color 0.1s; padding:0; }
+    .review-back:hover { color:var(--text-2); }
+    .review-issue-title { font-size:13px; color:var(--text-2); flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .review-base { font-size:11px; font-family:'JetBrains Mono',monospace; color:var(--text-4); }
+    .review-body { flex:1; display:flex; overflow:hidden; }
+    .review-sidebar { width:220px; flex-shrink:0; border-right:1px solid var(--border-subtle); overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:3px; }
+    .review-sidebar-title { font-size:10px; font-weight:600; color:var(--text-4); text-transform:uppercase; letter-spacing:0.5px; padding:4px 6px 8px; }
+    .review-file-link { display:flex; align-items:center; gap:7px; padding:5px 8px; border-radius:var(--r-sm); cursor:pointer; text-decoration:none; transition:background 0.1s; }
+    .review-file-link:hover { background:rgba(255,255,255,0.04); }
+    .review-file-link.reviewed { opacity:0.55; }
+    .file-status-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+    .file-new  { background:var(--emerald); }
+    .file-mod  { background:var(--yellow); }
+    .file-del  { background:var(--red); }
+    .file-rev  { background:var(--text-4); }
+    .review-file-name { font-size:11.5px; font-family:'JetBrains Mono',monospace; color:var(--text-3); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .review-file-state { font-size:9.5px; color:var(--text-4); white-space:nowrap; }
+    .review-main { flex:1; overflow-y:auto; padding:0; }
+    .review-submit-bar { display:flex; align-items:flex-start; gap:12px; padding:14px 20px; border-bottom:1px solid var(--border-subtle); background:rgba(255,255,255,0.012); flex-shrink:0; }
+    .review-general { flex:1; background:rgba(255,255,255,0.04); border:1px solid var(--border-solid); border-radius:var(--r); color:var(--text-2); font-family:inherit; font-size:12px; padding:8px 11px; resize:none; min-height:64px; }
+    .review-general:focus { outline:none; border-color:var(--accent-vivid); }
+    .review-submit-actions { display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
+    .review-file-block { margin-bottom:0; border-bottom:1px solid var(--border-subtle); }
+    .review-file-header { display:flex; align-items:center; gap:10px; padding:9px 16px; background:rgba(255,255,255,0.015); border-bottom:1px solid var(--border-subtle); position:sticky; top:0; z-index:2; }
+    .review-file-path { font-size:11.5px; font-family:'JetBrains Mono',monospace; color:var(--text-2); flex:1; }
+    .review-file-stats { font-size:10.5px; font-family:'JetBrains Mono',monospace; }
+    .review-file-stats .add { color:var(--emerald); }
+    .review-file-stats .del { color:var(--red); }
+    .reviewed-cb { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-4); cursor:pointer; }
+    .reviewed-cb input { accent-color:var(--accent-vivid); }
+    .tour-summary { background:rgba(113,112,255,0.05); border:1px solid rgba(113,112,255,0.14); border-radius:var(--r-sm); padding:9px 14px; margin:10px 16px; font-size:12px; color:var(--text-3); line-height:1.6; }
+    .tour-summary strong { color:var(--text-2); }
+    .diff-block { font-family:'JetBrains Mono',monospace; font-size:11.5px; line-height:1.6; }
+    .diff-hunk { background:rgba(113,112,255,0.06); color:var(--accent-vivid); padding:3px 16px; font-size:11px; }
+    .diff-add  { background:rgba(16,185,129,0.07); color:var(--text-2); padding:0 16px; }
+    .diff-add::before  { content:'+'; color:var(--emerald); margin-right:6px; }
+    .diff-del  { background:rgba(229,72,77,0.07); color:var(--text-2); padding:0 16px; text-decoration:line-through; opacity:0.75; }
+    .diff-del::before  { content:'-'; color:var(--red); margin-right:6px; }
+    .diff-ctx  { color:var(--text-4); padding:0 16px; }
+    .diff-ctx::before  { content:' '; margin-right:6px; }
+    .diff-line { display:flex; gap:0; align-items:flex-start; }
+    .diff-lnum { font-size:10px; color:var(--text-4); width:36px; text-align:right; padding-right:12px; flex-shrink:0; user-select:none; padding-top:1px; }
+    .inline-comment { margin:6px 16px; background:rgba(113,112,255,0.06); border:1px solid rgba(113,112,255,0.2); border-radius:var(--r-md); padding:10px 12px; }
+    .ic-comment-head { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+    .ic-comment-author { font-size:11px; font-weight:600; color:var(--accent-vivid); }
+    .ic-comment-time   { font-size:10.5px; color:var(--text-4); font-family:'JetBrains Mono',monospace; }
+    .ic-comment-text   { font-size:12px; color:var(--text-3); line-height:1.55; }
+
+    /* ══ COMMAND PALETTE ════════════════════════════════════════════════ */
+    .cmd-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:200; backdrop-filter:blur(3px); align-items:flex-start; justify-content:center; padding-top:100px; }
+    .cmd-backdrop.open { display:flex; }
+    .cmd-palette { width:540px; background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.7); }
+    .cmd-input-row { display:flex; align-items:center; gap:10px; padding:13px 16px; border-bottom:1px solid var(--border-subtle); }
+    .cmd-icon { color:var(--text-4); font-size:14px; }
+    .cmd-input { flex:1; background:none; border:none; color:var(--text); font-size:15px; font-family:inherit; outline:none; }
+    .cmd-input::placeholder { color:var(--text-4); }
+    .cmd-list { max-height:380px; overflow-y:auto; }
+    .cmd-sec { font-size:10px; font-weight:600; color:var(--text-4); text-transform:uppercase; letter-spacing:0.5px; padding:10px 16px 4px; }
+    .cmd-item { display:flex; align-items:center; gap:10px; padding:9px 16px; cursor:pointer; transition:background 0.1s; }
+    .cmd-item:hover, .cmd-item.hl { background:rgba(255,255,255,0.04); }
+    .cmd-item-icon  { font-size:13px; width:20px; text-align:center; color:var(--text-4); }
+    .cmd-item-label { flex:1; font-size:13px; color:var(--text-2); }
+    .cmd-tag { font-size:10px; color:var(--text-4); background:rgba(255,255,255,0.04); border:1px solid var(--border-solid); border-radius:3px; padding:1px 5px; font-family:'JetBrains Mono',monospace; }
+    .cmd-tag.code  { color:var(--accent-vivid); }
+    .cmd-tag.plan  { color:var(--emerald); }
+    .cmd-tag.fix   { color:var(--yellow); }
+    .cmd-tag.split { color:var(--pink); }
+
+    /* ══ MODAL ══════════════════════════════════════════════════════════ */
+    .modal-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:150; backdrop-filter:blur(3px); align-items:center; justify-content:center; }
+    .modal-backdrop.open { display:flex; }
+    .modal-box { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:24px; width:520px; box-shadow:0 24px 60px rgba(0,0,0,0.7); }
+    .modal-title { font-size:15px; font-weight:600; color:var(--text); margin-bottom:8px; }
+    .modal-sub { font-size:12.5px; color:var(--text-4); line-height:1.6; margin-bottom:16px; }
+    .modal-textarea { width:100%; background:rgba(255,255,255,0.04); border:1px solid var(--border-solid); border-radius:var(--r); color:var(--text-2); font-family:inherit; font-size:12.5px; padding:10px 12px; resize:none; min-height:100px; margin-bottom:16px; }
+    .modal-textarea:focus { outline:none; border-color:var(--accent-vivid); }
+    .modal-actions { display:flex; gap:8px; justify-content:flex-end; }
+
+    /* ══ SCROLLBAR ══════════════════════════════════════════════════════ */
+    ::-webkit-scrollbar { width:4px; height:4px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.08); border-radius:2px; }
+    ::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,0.15); }
+
+    /* ══ MISC ══════════════════════════════════════════════════════════ */
+    .empty-state { display:flex; flex-direction:column; align-items:center; padding:24px 14px; color:var(--text-4); font-size:12px; gap:5px; text-align:center; }
+    details > summary { cursor:pointer; list-style:none; }
+    details > summary::-webkit-details-marker { display:none; }
+    .plan-summary { font-size:12px; font-weight:500; color:var(--text-2); display:flex; align-items:center; gap:8px; padding:8px 0; user-select:none; }
+    .plan-hint { font-size:11px; color:var(--text-4); font-weight:400; }
+    .md-viewer { font-size:12.5px; color:var(--text-3); line-height:1.65; }
+    .md-viewer h2,.md-viewer h3 { color:var(--text); font-size:13px; margin:10px 0 4px; }
+    .md-viewer ul { margin-left:16px; }
+    .md-viewer li { margin-bottom:3px; }
+    .md-viewer code { font-family:'JetBrains Mono',monospace; font-size:11px; background:rgba(255,255,255,0.06); border-radius:3px; padding:0 4px; }
+    .md-viewer p { margin-bottom:6px; }
+    .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .section-title  { font-size:16px; font-weight:500; color:var(--text); letter-spacing:-0.2px; }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ══════════════ SIDEBAR ══════════════════════════════════════════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">⚒️</div>
+      <span class="logo-name">Forge</span>
+      <span class="logo-ver">v3.0</span>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-btn active" id="nav-queue" onclick="showView('queue',this)">
+        <span class="nav-icon">⚡</span> Queue
+        <span class="nav-badge">3</span>
+      </button>
+      <button class="nav-btn" id="nav-archive" onclick="showView('archive',this)">
+        <span class="nav-icon">🗃️</span> Archive
+        <span class="nav-count">17</span>
+      </button>
+      <div class="nav-section">Tools</div>
+      <button class="nav-btn" onclick="openCmd()">
+        <span class="nav-icon">⌘</span> Command palette
+        <span class="kbd">⌘K</span>
+      </button>
+      <button class="nav-btn" id="nav-settings" onclick="showView('settings',this)">
+        <span class="nav-icon">⚙️</span> Settings
+      </button>
+      <button class="nav-btn" id="nav-prompts" onclick="showView('prompts',this)">
+        <span class="nav-icon">📖</span> Agent prompts
+      </button>
+      <button class="nav-btn" id="nav-learnings" onclick="showView('learnings',this)">
+        <span class="nav-icon">🧠</span> Learnings
+        <span class="nav-count">12</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sched-row">
+        <div class="sched-dot"></div>
+        <span class="sched-label">Scheduler running</span>
+        <button class="sched-toggle">Stop</button>
+      </div>
+      <div class="concurrency-wrap">
+        <div class="pips">
+          <div class="pip"></div><div class="pip"></div>
+          <div class="pip empty"></div><div class="pip empty"></div>
+        </div>
+        <span class="concurrency-label">2 / 4 agent slots</span>
+      </div>
+      <div class="sidebar-stats">
+        <div class="stat-pill"><span class="stat-num">6</span><span class="stat-lbl">Active</span></div>
+        <div class="stat-pill"><span class="stat-num" style="color:var(--yellow)">3</span><span class="stat-lbl">Needs you</span></div>
+        <div class="stat-pill"><span class="stat-num" style="color:var(--emerald)">11</span><span class="stat-lbl">Done wk</span></div>
+        <div class="stat-pill"><span class="stat-num" style="color:var(--red)">1</span><span class="stat-lbl">Failed</span></div>
+      </div>
+      <div class="vm-row">
+        <div class="vm-dot"></div>
+        <span class="vm-text">SSH my-vm · TEAM-4499 · user/insights</span>
+      </div>
+      <div class="model-row"><span>🤖</span> claude-opus-4-5</div>
+    </div>
+  </aside>
+
+  <!-- ══════════════ VIEWS ═════════════════════════════════════════════════ -->
+  <div class="main">
+
+    <!-- ═══ QUEUE VIEW ═══════════════════════════════════════════════════ -->
+    <div class="view active" id="view-queue">
+      <div class="queue-shell panel-open" id="queue-shell">
+
+        <!-- Decision Inbox -->
+        <div class="decisions-inbox" id="decisions-inbox">
+          <div class="inbox-bar">
+            <div class="inbox-flash"></div>
+            <span class="inbox-title">3 decisions need your attention</span>
+            <span class="inbox-sub"> — Forge is paused on these issues until reviewed</span>
+            <button class="inbox-toggle" onclick="toggleInbox()">Collapse ↑</button>
+          </div>
+          <div class="inbox-cards">
+            <div class="inbox-card code" onclick="openDetail('band-4388')">
+              <div class="inbox-icon-wrap">⬡</div>
+              <div class="inbox-body">
+                <div class="inbox-kind">Code Review</div>
+                <div class="inbox-card-title">Add company-level band override endpoints</div>
+                <div class="inbox-meta">TEAM-4388 · AI approved · 3 files, +127 −14</div>
+                <div class="inbox-actions">
+                  <button class="ibtn ibtn-view">View diff</button>
+                  <button class="ibtn ibtn-ok">✓ Approve</button>
+                  <button class="ibtn ibtn-bad">✗ Reject</button>
+                </div>
+              </div>
+            </div>
+            <div class="inbox-card plan" onclick="openDetail('band-4521')">
+              <div class="inbox-icon-wrap">📋</div>
+              <div class="inbox-body">
+                <div class="inbox-kind">Plan Review</div>
+                <div class="inbox-card-title">Migrate pricing bands to new tier model</div>
+                <div class="inbox-meta">TEAM-4521 · 5-task plan · medium priority</div>
+                <div class="inbox-actions">
+                  <button class="ibtn ibtn-view">View plan</button>
+                  <button class="ibtn ibtn-ok">✓ Approve</button>
+                  <button class="ibtn ibtn-bad">✗ Reject</button>
+                </div>
+              </div>
+            </div>
+            <div class="inbox-card" onclick="openDetail('band-4411')">
+              <div class="inbox-icon-wrap">💬</div>
+              <div class="inbox-body">
+                <div class="inbox-kind">Fix Approval</div>
+                <div class="inbox-card-title">Soft-delete support for pricing rules</div>
+                <div class="inbox-meta">TEAM-4411 · 2 PR comments · 1 CI failure</div>
+                <div class="inbox-actions">
+                  <button class="ibtn ibtn-view">Review</button>
+                  <button class="ibtn ibtn-ok">✓ Fix selected</button>
+                  <button class="ibtn ibtn-bad">✗ Skip all</button>
+                </div>
+              </div>
+            </div>
+            <div class="inbox-card split" onclick="openDetail('band-4610')">
+              <div class="inbox-icon-wrap">✂️</div>
+              <div class="inbox-body">
+                <div class="inbox-kind">Split Approval</div>
+                <div class="inbox-card-title">Add export functionality to bands table</div>
+                <div class="inbox-meta">TEAM-4610 · Split into 2 PRs proposed</div>
+                <div class="inbox-actions">
+                  <button class="ibtn ibtn-view">View split</button>
+                  <button class="ibtn ibtn-ok">✓ Approve</button>
+                  <button class="ibtn ibtn-bad">✗ Reject</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input class="toolbar-search" type="search" placeholder="Search issues, IDs, branches…" />
+          </div>
+          <div class="filter-chips">
+            <button class="chip active">All</button>
+            <button class="chip needs">⚡ Needs me</button>
+            <button class="chip">Running</button>
+            <button class="chip">Failed</button>
+            <button class="chip">Watching PR</button>
+            <button class="chip">Paused</button>
+          </div>
+          <div class="toolbar-right">
+            <select class="t-sort"><option>Priority ↓</option><option>Newest</option><option>Updated</option></select>
+            <button class="t-btn rnext">⚡ Review next (3)</button>
+            <button class="t-btn" onclick="openCmd()">⌘ Command</button>
+            <button class="t-btn add">+ Add issue</button>
+          </div>
+        </div>
+
+        <!-- Pipeline -->
+        <div class="pipeline-wrap">
+          <div class="pipeline">
+
+            <!-- Available -->
+            <div class="p-col">
+              <div class="col-head"><span class="col-label">Available</span><button class="col-head-btn">↻ Sync</button><span class="col-count">4</span></div>
+              <div class="col-cards">
+                <div class="li-item"><div class="li-body"><div class="li-title">Refactor market pricing API response shape</div><div class="li-meta"><span>TEAM-4601</span><span>·</span><span style="color:var(--red)">▰▰▰ urgent</span></div></div><button class="enqueue-btn">Enqueue →</button></div>
+                <div class="li-item"><div class="li-body"><div class="li-title">Add pagination to bands list endpoint</div><div class="li-meta"><span>TEAM-4598</span><span>·</span><span style="color:var(--yellow)">▰▰░ high</span></div></div><button class="enqueue-btn">Enqueue →</button></div>
+                <div class="col-sub">Queued in Forge</div>
+                <div class="ic ic-pending" onclick="openDetail('band-4577')">
+                  <div class="ic-hover"><button class="hact">Ignore</button></div>
+                  <div class="ic-body"><div class="ic-top"><div class="ic-id">TEAM-4577</div><span class="ic-pri" style="color:var(--yellow)">▰▰░</span></div><div class="ic-title">Fix NaN bug in band comparison calculation</div><div class="ic-state"><span class="sp sp-pending">pending</span></div><div class="ic-meta"><span>Added 2h ago</span></div></div>
+                  <div class="ic-progress"><div class="ic-fill prog-pending" style="width:2%"></div></div>
+                </div>
+                <div class="ic ic-pending" onclick="openDetail('band-4562')">
+                  <div class="ic-body"><div class="ic-top"><div class="ic-id">TEAM-4562</div><span class="ic-pri" style="color:var(--text-4)">▰░░</span></div><div class="ic-title">Export bands data to CSV from dashboard</div><div class="ic-state"><span class="sp sp-pending">pending</span></div><div class="ic-meta"><span>Added 4h ago</span></div></div>
+                  <div class="ic-progress"><div class="ic-fill prog-pending" style="width:2%"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Planning -->
+            <div class="p-col">
+              <div class="col-head"><span class="col-label">Planning</span><span class="col-count live">2</span></div>
+              <div class="col-cards">
+                <div class="ic ic-planning" onclick="openDetail('band-4555')">
+                  <div class="ic-hover"><button class="hact">Steer</button><button class="hact">Pause</button></div>
+                  <div class="ic-body"><div class="ic-top"><div class="ic-id">TEAM-4555</div><span class="ic-pri" style="color:var(--text-4)">▰░░</span></div><div class="ic-title">Add role-based visibility for salary bands</div><div class="ic-state"><div class="spinner"></div><span class="sp sp-planning">planning</span><span class="elapsed-badge">3m</span></div><div class="ic-snippet"><strong>Planner</strong> reading <code>frontend/apps/pricing/src/</code> — exploring component structure and permissions model…</div><div class="ic-meta"><span>Started 3m ago</span></div></div>
+                  <div class="ic-progress"><div class="ic-fill prog-planning" style="width:10%"></div></div>
+                </div>
+                <div class="ic ic-awaiting" onclick="openDetail('band-4521')">
+                  <div class="ic-hover"><button class="hact">View plan</button><button class="hact">Approve</button></div>
+                  <div class="ic-body"><div class="ic-top"><div class="ic-id">TEAM-4521</div><span class="ic-pri" style="color:var(--yellow)">▰▰░</span></div><div class="ic-title">Migrate pricing bands to new tier model</div><div class="ic-state"><span class="sp sp-awaiting">awaiting plan review</span><span class="steer-badge">⊕ steered</span></div><div class="ic-snippet">Plan ready — <strong>5 tasks</strong> across 3 layers. AI reviewer approved.</div><div class="ic-meta"><span>Waiting 14m</span></div></div>
+                  <div class="ic-progress"><div class="ic-fill prog-awaiting" style="width:20%"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Building -->
+            <div class="p-col">
+              <div class="col-head"><span class="col-label">Building</span><span class="col-count live">3</span></div>
+              <div class="col-cards">
+                <div class="ic ic-working selected" onclick="openDetail('band-4499')">
+                  <div class="ic-hover"><button class="hact">Listen live</button><button class="hact">Steer</button><button class="hact">Pause</button></div>
+                  <div class="ic-body"><div class="ic-top"><div class="ic-id">TEAM-4499</div><span class="ic-pri" style="color:var(--red)">▰▰▰</span></div><div class="ic-title">Build compensation insights report page</div><div class="ic-state"><div class="spinner"></div><span class="sp sp-working">coding</span><span class="live-badge"><span class="live-dot"></span>Live</span><span class="elapsed-badge long">28m</span></div><div class="ic-snippet"><strong>Coder</strong> writing <code>InsightsReportPage.tsx</code> — implementing chart data fetching and date range picker</div><div class="ic-meta"><span>Started 28m ago</span><span style="color:var(--yellow)">⚠ long</span></div></div>
+                  <div class="ic-progress"><div class="ic-fill prog-working" style="width:42%"></div></div>
+                </div>
+                <div class="ic ic-reviewing" onclick="openDetail('band-4488')">
+                  <div class="ic-body"><div class="ic-top"><div class="ic-id">TEAM-4488</div><span class="ic-pri" style="color:var(--yellow)">▰▰░</span></div><div class="ic-title">Add audit log for band edit operations</div><div class="ic-state"><div class="spinner"></div><span class="sp sp-reviewing">ai code review</span><span class="elapsed-badge">6m</span></div><div class="ic-snippet"><strong>Reviewer</strong> checking security, test coverage, and your-repo conventions…</div><div class="ic-meta"><span>In review 6m</span></div></div>
+                  <div class="ic-progress"><div class="ic-fill prog-reviewing" style="width:55%"></div></div>
+                </div>
+                <div class="ic ic-awaiting" onclick="openDetail('band-4388')">
+                  <div class="ic-hover"><button class="hact">View diff</button><button class="hact">Approve</button></div>
+                  <div class="ic-body"><div class="ic-top"><div class="ic-id">TEAM-4388</div><span class="ic-pri" style="color:var(--yellow)">▰▰░</span></div><div class="ic-title">Add company-level band override endpoints</div><div class="ic-state"><span class="sp sp-code">awaiting code review</span></div><div class="ic-snippet">AI review <strong style="color:var(--emerald)">approved</strong>. 3 files, +127 −14. Tests passing.</div><div class="ic-meta"><span>Waiting 12m</span></div></div>
+                  <div class="ic-progress"><div class="ic-fill prog-awaiting" style="width:60%"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Awaiting You -->
+            <div class="p-col needs-col">
+              <div class="col-head needs-head"><span class="col-label needs">⚡ Awaiting You</span><span class="col-count needs">3</span></div>
+              <div class="col-cards">
+                <div class="ic ic-awaiting" onclick="openDetail('band-4388')">
+                  <div class="ic-body"><div class="ic-top"><div class="ic-id">TEAM-4388</div></div><div class="ic-title">Add company-level band override endpoints</div><div class="ic-state"><span class="sp sp-code">code review</span></div><div class="ic-meta"><span>AI approved · 3 files · +127 −14</span></div></div>
+                  <div class="ic-progress"><div class="ic-fill prog-awaiting" style="width:62%"></div></div>
+                </div>
+                <div class="ic ic-awaiting" onclick="openDetail('band-4521')">
+                  <div class="ic-body"><div class="ic-top"><div class="ic-id">TEAM-4521</div></div><div class="ic-title">Migrate pricing bands to new tier model</div><div class="ic-state"><span class="sp sp-awaiting">plan review</span></div><div class="ic-meta"><span>5-task plan ready</span></div></div>
+                  <div class="ic-progress"><div class="ic-fill prog-awaiting" style="width:20%"></div></div>
+                </div>
+                <div class="ic ic-awaiting" onclick="openDetail('band-4411')">
+                  <div class="ic-body"><div class="ic-top"><div class="ic-id">TEAM-4411</div></div><div class="ic-title">Soft-delete support for pricing rules</div><div class="ic-state"><span class="sp sp-awaiting">fix approval</span></div><div class="ic-meta"><span>2 PR comments · 1 CI failure</span></div></div>
+                  <div class="ic-progress"><div class="ic-fill prog-awaiting" style="width:72%"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- In Review -->
+            <div class="p-col">
+              <div class="col-head"><span class="col-label">In Review</span><span class="col-count">3</span></div>
+              <div class="col-cards">
+                <div class="ic ic-watching">
+                  <div class="ic-hover"><button class="hact">View PR</button><button class="hact">Add feedback</button></div>
+                  <div class="ic-body"><div class="ic-top"><div class="ic-id">TEAM-4401</div></div><div class="ic-title">Paginate job listings in pricing app</div><div class="ic-state"><span class="sp sp-watching">watching PR</span><span class="autofix-badge">auto-fix on</span></div><div class="ic-meta"><span class="pr-link"><span class="pr-dot pr-open"></span>#412</span><span class="ci-pass">✓ CI</span><span class="pr-approved">Approved</span></div></div>
+                  <div class="ic-progress"><div class="ic-fill prog-watching" style="width:84%"></div></div>
+                </div>
+                <div class="ic ic-merge">
+                  <div class="ic-body"><div class="ic-top"><div class="ic-id">TEAM-4415</div></div><div class="ic-title">Add team hierarchy to band permissions</div><div class="ic-state"><span class="sp sp-merge">in merge queue</span></div><div class="ic-meta"><span class="pr-link"><span class="pr-dot pr-open"></span>#408</span><span class="ci-pass">✓ CI</span><span class="pr-approved">Approved</span></div></div>
+                  <div class="ic-progress"><div class="ic-fill prog-merge" style="width:95%"></div></div>
+                </div>
+                <div class="ic ic-awaiting" onclick="openDetail('band-4411')">
+                  <div class="ic-body"><div class="ic-top"><div class="ic-id">TEAM-4411</div></div><div class="ic-title">Soft-delete support for pricing rules</div><div class="ic-state"><span class="sp sp-awaiting">awaiting fix approval</span></div><div class="ic-meta"><span class="pr-link"><span class="pr-dot pr-open"></span>#405</span><span class="ci-fail">✗ CI</span></div></div>
+                  <div class="ic-progress"><div class="ic-fill prog-awaiting" style="width:73%"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Paused / Failed -->
+            <div class="p-col">
+              <div class="col-head"><span class="col-label">Paused / Failed</span><span class="col-count bad">2</span></div>
+              <div class="col-cards">
+                <div class="ic ic-failed" onclick="openDetail('band-4355')">
+                  <div class="ic-hover"><button class="hact">↺ Retry</button><button class="hact">Log</button></div>
+                  <div class="ic-body"><div class="ic-top"><div class="ic-id">TEAM-4355</div></div><div class="ic-title">Fix broken migration for bands_v2 table</div><div class="ic-state"><span class="sp sp-failed">failed</span></div><div class="ic-snippet"><strong style="color:var(--red)">Coder crashed</strong> — exit 1. TypeScript error in <code>db/migrations/0042.ts</code></div><div class="ic-meta"><span>Failed 45m ago</span></div></div>
+                  <div class="ic-progress"><div class="ic-fill prog-failed" style="width:38%"></div></div>
+                </div>
+                <div class="ic ic-paused">
+                  <div class="ic-hover"><button class="hact">▶ Resume</button></div>
+                  <div class="ic-body"><div class="ic-top"><div class="ic-id">TEAM-4320</div></div><div class="ic-title">Redesign band history timeline component</div><div class="ic-state"><span class="sp sp-paused">paused</span></div><div class="ic-snippet">Paused by user. Was in <strong>coding</strong> state.</div><div class="ic-meta"><span>Paused 2h ago</span></div></div>
+                  <div class="ic-progress"><div class="ic-fill prog-paused" style="width:30%"></div></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div><!-- /queue-shell -->
+
+      <!-- Detail Panel -->
+      <div class="detail-panel open" id="detail-panel">
+        <div class="dp-header">
+          <button class="dp-close" onclick="closeDetail()">✕</button>
+          <div class="dp-header-body">
+            <div class="dp-id">TEAM-4499 · urgent · coding</div>
+            <div class="dp-title">Build compensation insights report page</div>
+          </div>
+        </div>
+        <div class="dp-tabs">
+          <button class="dp-tab active" onclick="switchTab(this,'overview')">Overview</button>
+          <button class="dp-tab" onclick="switchTab(this,'plan')">Plan</button>
+          <button class="dp-tab" onclick="switchTab(this,'activity')">Activity</button>
+          <button class="dp-tab" onclick="switchTab(this,'learning')">Learning</button>
+        </div>
+        <div class="dp-body">
+          <!-- Overview -->
+          <div class="dp-tab-content active" id="tab-overview">
+            <div class="ds">
+              <div class="state-banner" style="margin-bottom:12px">
+                <div class="spinner" style="width:9px;height:9px;border-width:2px"></div>
+                <div class="sb-text"><strong style="color:var(--text)">Coder agent running</strong> — 28 min<br>Writing InsightsReportPage.tsx and related hooks</div>
+                <span class="live-badge"><span class="live-dot"></span>Live</span>
+              </div>
+              <div class="phase-track">
+                <div class="phase-node"><div class="phase-dot done"></div><div class="phase-label">Setup</div></div>
+                <div class="phase-line done"></div>
+                <div class="phase-node"><div class="phase-dot done"></div><div class="phase-label">Plan</div></div>
+                <div class="phase-line done"></div>
+                <div class="phase-node"><div class="phase-dot active"></div><div class="phase-label">Code</div></div>
+                <div class="phase-line"></div>
+                <div class="phase-node"><div class="phase-dot"></div><div class="phase-label">Review</div></div>
+                <div class="phase-line"></div>
+                <div class="phase-node"><div class="phase-dot"></div><div class="phase-label">PR</div></div>
+                <div class="phase-line"></div>
+                <div class="phase-node"><div class="phase-dot"></div><div class="phase-label">Watch</div></div>
+                <div class="phase-line"></div>
+                <div class="phase-node"><div class="phase-dot"></div><div class="phase-label">Done</div></div>
+              </div>
+            </div>
+            <div class="ds"><div class="ds-label">Actions</div><div class="dp-actions"><button class="da da-primary">👁 Listen live</button><button class="da da-ghost">💬 Steer</button><button class="da da-ghost">⏸ Pause</button><button class="da da-ghost">📊 View diff</button><button class="da da-ghost">🚀 Launch runtime</button></div></div>
+            <div class="ds"><div class="ds-label">Workflow map</div><div class="wf-graph"><div class="wf-node"><div class="wf-box wf-done">Setup</div></div><div class="wf-arrow done">→</div><div class="wf-node"><div class="wf-box wf-done">Plan</div></div><div class="wf-arrow done">→</div><div class="wf-node"><div class="wf-box wf-active">Code</div></div><div class="wf-arrow">→</div><div class="wf-node"><div class="wf-box">Create PR</div></div><div class="wf-arrow">→</div><div class="wf-node"><div class="wf-box">Watch PR</div></div><div class="wf-arrow">→</div><div class="wf-node"><div class="wf-box">Merged</div></div></div><div style="margin-top:7px"><div class="wf-box wf-loop" style="display:inline-block;font-size:9px">Plan review ×1</div></div></div>
+            <div class="ds"><div class="ds-label">Info</div><div class="info-grid"><div class="ig-label">Source</div><div class="ig-value"><a href="#">TEAM-4499 ↗</a></div><div class="ig-label">Priority</div><div class="ig-value" style="color:var(--red)">▰▰▰ urgent</div><div class="ig-label">Branch</div><div class="ig-value">user/TEAM-4499-insights</div><div class="ig-label">Worktree</div><div class="ig-value">~/Projects/worktrees/TEAM-4499</div><div class="ig-label">Added</div><div class="ig-value">2h 14m ago</div><div class="ig-label">Model</div><div class="ig-value">claude-opus-4-5</div></div></div>
+            <div class="ds"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px"><div class="ds-label" style="margin:0">PR Stack</div><button class="col-head-btn">↻ Sync from GitHub</button></div><div class="empty-state" style="padding:12px;font-size:11.5px">No PRs yet — will be created after code review</div></div>
+            <div class="ds"><div class="auto-fix-row"><div><h4>Auto-fix</h4><p>Automatically send new PR comments and CI failures to the fixer agent.</p></div><label class="switch"><input type="checkbox"><span class="sw"></span></label></div></div>
+          </div>
+          <!-- Plan -->
+          <div class="dp-tab-content" id="tab-plan">
+            <div class="ds"><details open><summary class="plan-summary">Plan (approved) <span class="plan-hint">approved 2h ago by you</span></summary><div class="md-viewer" style="margin-top:10px"><h3>Goal</h3><p>Build a new <code>CompensationInsightsReport</code> page in the pricing app showing salary band distribution, percentile positioning, and trend lines.</p><h3>Tasks</h3><ul><li>Create <code>InsightsReportPage.tsx</code> with route</li><li>Add <code>useInsightsData</code> hook fetching from <code>/api/insights/compensation</code></li><li>Build chart components: BandDistributionChart, PercentileBar, TrendLine</li><li>Wire date range picker to refetch</li><li>Add loading, empty, and error states</li><li>Write unit tests for data-transform utils</li></ul><h3>PRs</h3><ul><li>PR 1: backend insights endpoint + types</li><li>PR 2: frontend page + charts (stacked on PR 1)</li></ul></div></details></div>
+            <div class="ds"><details><summary class="plan-summary">Handoff <span class="plan-hint">shared agent memory</span></summary><div class="md-viewer" style="margin-top:10px;color:var(--text-4)"><p>The backend endpoint <code>GET /api/insights/compensation</code> was reviewed — use the <code>InsightDataV2</code> type from <code>shared/types/insights.ts</code>, not the legacy <code>InsightData</code> type.</p></div></details></div>
+          </div>
+          <!-- Activity -->
+          <div class="dp-tab-content" id="tab-activity">
+            <div class="ds">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div class="ds-label" style="margin:0">Activity</div><span class="live-badge"><span class="live-dot"></span>Live</span></div>
+              <div class="af-feed">
+                <div class="af-item"><div class="af-dc"><div class="af-dot live"></div><div class="af-line"></div></div><div class="af-content"><div class="af-head"><span class="af-actor ag">Coder</span><span class="af-time">now</span></div><div class="af-text hi">Writing InsightsReportPage.tsx</div><div class="af-snippet">export async function fetchInsightsData(
+  companyId: string,
+  dateRange: DateRange
+): Promise&lt;InsightDataV2&gt; {
+  return apiFetch(`/api/insights/compensation/${companyId}`, {</div></div></div>
+                <div class="af-item"><div class="af-dc"><div class="af-dot ag"></div><div class="af-line"></div></div><div class="af-content"><div class="af-head"><span class="af-actor ag">Coder</span><span class="af-time">4m ago</span></div><div class="af-text">Read <code style="font-family:monospace;font-size:10px">frontend/apps/pricing/src/routes/</code> — 14 files</div></div></div>
+                <div class="af-item"><div class="af-dc"><div class="af-dot me"></div><div class="af-line"></div></div><div class="af-content"><div class="af-head"><span class="af-actor me">You</span><span class="af-time">2h ago</span></div><div class="af-text">Approved plan</div></div></div>
+                <div class="af-item"><div class="af-dc"><div class="af-dot ok"></div><div class="af-line"></div></div><div class="af-content"><div class="af-head"><span class="af-actor ag">Plan reviewer</span><span class="af-time">2h 10m ago</span></div><div class="af-text ok">Plan approved — "Well-scoped, InsightDataV2 type noted in handoff"</div></div></div>
+                <div class="af-item"><div class="af-dc"><div class="af-dot ag"></div></div><div class="af-content"><div class="af-head"><span class="af-actor ag">Planner</span><span class="af-time">2h 14m ago</span></div><div class="af-text">Plan created — 6 tasks, 2 PRs estimated</div></div></div>
+              </div>
+            </div>
+          </div>
+          <!-- Learning -->
+          <div class="dp-tab-content" id="tab-learning">
+            <div class="ds">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px"><div class="ds-label" style="margin:0">Continuous Learning</div><button class="da da-ghost" style="font-size:11px;padding:3px 9px">Reflect now</button></div>
+              <div class="learning-card"><div class="lc-head"><span class="lc-target">coder.md — InsightDataV2 type usage</span><span class="lc-meta">confident · pending</span></div><div class="lc-text">When writing insights-related code in the pricing app, always import <code style="font-family:monospace;font-size:10.5px">InsightDataV2</code> from <code>shared/types/insights.ts</code>, not the legacy <code>InsightData</code> type — v2 has the required <code>percentile</code> field.</div></div>
+              <div class="learning-card"><div class="lc-head"><span class="lc-target">coder.md — useDateRangeFilter hook</span><span class="lc-meta">confident · applied</span></div><div class="lc-text">New report pages should use the <code style="font-family:monospace;font-size:10.5px">useDateRangeFilter</code> hook from <code>pricing/src/hooks/</code> — it handles URL sync and default 90-day window.</div></div>
+            </div>
+            <div class="ds"><details><summary class="plan-summary">Change log <span class="plan-hint">what changed and why</span></summary><div style="margin-top:8px;font-size:11.5px;color:var(--text-4);line-height:1.6">No changes applied yet — reflections appear here after the issue completes.</div></details></div>
+          </div>
+        </div>
+        <div class="terminal-dock"><button class="terminal-bar"><span>▣ Terminal</span><span class="term-path">~/Projects/worktrees/TEAM-4499</span><span style="font-size:10px;color:var(--text-4);margin-left:auto">idle</span><span style="font-size:10px;color:var(--text-4);margin-left:8px">⌃</span></button></div>
+        <div class="ds danger-zone" style="padding:12px 15px"><h4>Danger zone</h4><p>Destructive or terminal actions. Forge will confirm before continuing.</p><div class="dp-actions"><button class="da da-ghost">⏸ Pause</button><button class="da da-ghost">🚫 Ignore</button><button class="da da-danger">↺ Full reset</button></div></div>
+      </div>
+    </div><!-- /view-queue -->
+
+
+    <!-- ═══ ARCHIVE VIEW ═════════════════════════════════════════════════ -->
+    <div class="view" id="view-archive">
+      <div class="view-scroll">
+        <div class="page-wrap">
+          <div class="page-header">
+            <div>
+              <div class="page-title">🗃️ Archive</div>
+              <div class="page-sub">17 completed issues — all PRs merged</div>
+            </div>
+            <div class="page-actions">
+              <input type="search" placeholder="Search archive…" class="toolbar-search" style="width:200px">
+            </div>
+          </div>
+
+          <div class="stats-strip">
+            <div class="stat-card"><span class="stat-card-num">17</span><span class="stat-card-lbl">Total completed</span></div>
+            <div class="stat-card"><span class="stat-card-num">5</span><span class="stat-card-lbl">Completed this week</span></div>
+            <div class="stat-card"><span class="stat-card-num">4.2h</span><span class="stat-card-lbl">Avg time to merge</span></div>
+            <div class="stat-card"><span class="stat-card-num">2.1</span><span class="stat-card-lbl">Avg PRs per issue</span></div>
+          </div>
+
+          <div class="archive-list">
+
+            <div class="archive-card">
+              <div class="archive-card-top">
+                <div class="archive-card-main">
+                  <div class="archive-card-badges">
+                    <a class="linear-id" href="#">TEAM-4466</a>
+                    <span class="sp sp-done" style="font-size:10px">done</span>
+                  </div>
+                  <div class="archive-card-title">Add filter chips to market pricing table</div>
+                  <div class="archive-card-meta">
+                    <span>🤖 planner → coder → reviewer → git-agent</span>
+                    <span>·</span>
+                    <span>2 PRs merged</span>
+                    <span>·</span>
+                    <span>6 agent runs</span>
+                  </div>
+                </div>
+                <div class="archive-card-right">
+                  <div class="archive-time">Merged 2h ago</div>
+                  <div class="archive-links">
+                    <a class="archive-pr-link" href="#">#389</a>
+                    <a class="archive-pr-link" href="#">#390</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="archive-card">
+              <div class="archive-card-top">
+                <div class="archive-card-main">
+                  <div class="archive-card-badges">
+                    <a class="linear-id" href="#">TEAM-4455</a>
+                    <span class="sp sp-done" style="font-size:10px">done</span>
+                  </div>
+                  <div class="archive-card-title">Implement company-level band override validation</div>
+                  <div class="archive-card-meta"><span>🤖 planner → coder × 2 → git-agent</span><span>·</span><span>1 PR merged</span><span>·</span><span>5 agent runs</span></div>
+                </div>
+                <div class="archive-card-right">
+                  <div class="archive-time">Merged 5h ago</div>
+                  <div class="archive-links"><a class="archive-pr-link" href="#">#386</a></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="archive-card">
+              <div class="archive-card-top">
+                <div class="archive-card-main">
+                  <div class="archive-card-badges">
+                    <a class="linear-id" href="#">TEAM-4441</a>
+                    <span class="sp sp-done" style="font-size:10px">done</span>
+                  </div>
+                  <div class="archive-card-title">Add soft-delete to pricing tiers</div>
+                  <div class="archive-card-meta"><span>🤖 planner → coder → reviewer → fixer → git-agent</span><span>·</span><span>2 PRs merged</span><span>·</span><span>7 agent runs</span></div>
+                </div>
+                <div class="archive-card-right">
+                  <div class="archive-time">Merged yesterday</div>
+                  <div class="archive-links"><a class="archive-pr-link" href="#">#381</a><a class="archive-pr-link" href="#">#382</a></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="archive-card">
+              <div class="archive-card-top">
+                <div class="archive-card-main">
+                  <div class="archive-card-badges">
+                    <a class="linear-id" href="#">TEAM-4430</a>
+                    <span class="sp sp-done" style="font-size:10px">done</span>
+                  </div>
+                  <div class="archive-card-title">Migrate legacy band columns to use nullable types</div>
+                  <div class="archive-card-meta"><span>🤖 planner → coder → git-agent</span><span>·</span><span>1 PR merged</span><span>·</span><span>4 agent runs</span></div>
+                </div>
+                <div class="archive-card-right">
+                  <div class="archive-time">Merged 2d ago</div>
+                  <div class="archive-links"><a class="archive-pr-link" href="#">#376</a></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="archive-card">
+              <div class="archive-card-top">
+                <div class="archive-card-main">
+                  <div class="archive-card-badges">
+                    <a class="linear-id" href="#">TEAM-4418</a>
+                    <span class="sp sp-done" style="font-size:10px">done</span>
+                  </div>
+                  <div class="archive-card-title">Fix race condition in band update saga</div>
+                  <div class="archive-card-meta"><span>🤖 planner → coder → reviewer → git-agent</span><span>·</span><span>1 PR merged</span><span>·</span><span>5 agent runs</span></div>
+                </div>
+                <div class="archive-card-right">
+                  <div class="archive-time">Merged 3d ago</div>
+                  <div class="archive-links"><a class="archive-pr-link" href="#">#371</a></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div><!-- /view-archive -->
+
+
+    <!-- ═══ SETTINGS VIEW ════════════════════════════════════════════════ -->
+    <div class="view" id="view-settings">
+      <div class="view-scroll">
+        <div class="settings-wrap">
+          <div class="page-header" style="margin-bottom:20px">
+            <div>
+              <div class="page-title">⚙️ Settings</div>
+              <div class="page-sub">Configure Forge scheduler, models, integrations, and repository</div>
+            </div>
+            <div class="page-actions"><button class="btn-ghost">↺ Reset to defaults</button></div>
+          </div>
+
+          <div class="settings-group">
+            <h3>Scheduler</h3>
+            <div class="setting-row"><div><div class="setting-label">Concurrency limit</div><div class="setting-hint"><code>concurrency_limit</code> · Max simultaneous agent runs</div></div><input type="number" class="setting-input" value="4"></div>
+            <div class="setting-row"><div><div class="setting-label">Scheduler interval (seconds)</div><div class="setting-hint"><code>scheduler_interval_seconds</code> · How often Forge checks for work</div></div><input type="number" class="setting-input" value="60"></div>
+            <div class="setting-row"><div><div class="setting-label">AI review max rounds</div><div class="setting-hint"><code>ai_review_max_rounds</code> · Rounds before escalating to human review</div></div><input type="number" class="setting-input" value="5"></div>
+            <div class="setting-row"><div><div class="setting-label">Auto-retry max</div><div class="setting-hint"><code>auto_retry_max</code> · Max automatic retries for git-agent and fixer</div></div><input type="number" class="setting-input" value="3"></div>
+            <div class="setting-row"><div><div class="setting-label">Reuse Pi sessions</div><div class="setting-hint"><code>forge_reuse_pi_sessions</code> · Reuse sessions for the same issue + agent type</div></div><input type="checkbox" class="setting-input"></div>
+          </div>
+
+          <div class="settings-group">
+            <h3>Models</h3>
+            <div class="setting-row"><div><div class="setting-label">Default model</div><div class="setting-hint"><code>model</code> · Fallback for agents without an override</div></div><input type="text" class="setting-input" value="anthropic-vertex/sonnet-4-6"></div>
+            <div class="setting-row"><div><div class="setting-label">Planner model</div><div class="setting-hint"><code>model_planner</code> · Leave blank to use the default model</div></div><input type="text" class="setting-input" placeholder="(default)" value=""></div>
+            <div class="setting-row"><div><div class="setting-label">Coder model</div><div class="setting-hint"><code>model_coder</code> · Leave blank to use the default model</div></div><input type="text" class="setting-input" value="claude-opus-4-5"></div>
+            <div class="setting-row"><div><div class="setting-label">Reviewer model</div><div class="setting-hint"><code>model_reviewer</code> · Leave blank to use the default model</div></div><input type="text" class="setting-input" placeholder="(default)" value=""></div>
+            <div class="setting-row"><div><div class="setting-label">Git agent model</div><div class="setting-hint"><code>model_git_agent</code> · Leave blank to use the default model</div></div><input type="text" class="setting-input" placeholder="(default)" value=""></div>
+            <div class="setting-row"><div><div class="setting-label">Fixer model</div><div class="setting-hint"><code>model_fixer</code> · Leave blank to use the default model</div></div><input type="text" class="setting-input" placeholder="(default)" value=""></div>
+            <div class="setting-row"><div><div class="setting-label">Split planner model</div><div class="setting-hint"><code>model_split_planner</code> · Leave blank to use the default model</div></div><input type="text" class="setting-input" placeholder="(default)" value=""></div>
+          </div>
+
+          <div class="settings-group">
+            <h3>Integrations</h3>
+            <div class="setting-row"><div><div class="setting-label">Linear enabled</div><div class="setting-hint"><code>linear_enabled</code> · Use Linear CLI jobs through the desktop app</div></div><input type="checkbox" class="setting-input" checked></div>
+            <div class="setting-row"><div><div class="setting-label">Linear team</div><div class="setting-hint"><code>linear_team</code> · Team key used when listing assigned issues</div></div><input type="text" class="setting-input" value="TEAM"></div>
+            <div class="setting-row"><div><div class="setting-label">GitHub repo</div><div class="setting-hint"><code>github_repo</code> · owner/repo used for PR links and gh commands</div></div><input type="text" class="setting-input" value="owner/repo"></div>
+            <div class="setting-row"><div><div class="setting-label">Linear poll interval (seconds)</div><div class="setting-hint"><code>linear_poll_interval_seconds</code> · How often Linear is polled, when enabled</div></div><input type="number" class="setting-input" value="300"></div>
+          </div>
+
+          <div class="settings-group">
+            <h3>Repository</h3>
+            <div class="setting-row"><div><div class="setting-label">Worktree provider</div><div class="setting-hint"><code>worktree_provider</code> · <code>wt</code> for worktrunk or <code>git</code> for plain git worktrees</div></div><input type="text" class="setting-input" value="wt"></div>
+            <div class="setting-row"><div><div class="setting-label">wt root</div><div class="setting-hint"><code>wt_root</code> · Worktrunk root directory</div></div><input type="text" class="setting-input" value="~/Projects/worktrees" style="width:280px;min-width:0"></div>
+            <div class="setting-row"><div><div class="setting-label">Branch prefix</div><div class="setting-hint"><code>branch_prefix</code> · Prefix used when creating branches</div></div><input type="text" class="setting-input" value="lwh"></div>
+            <div class="setting-row"><div><div class="setting-label">Default branch</div><div class="setting-hint"><code>default_branch</code> · Base branch for new work</div></div><input type="text" class="setting-input" value="main"></div>
+          </div>
+
+          <div class="settings-group">
+            <h3>Runtime (VM)</h3>
+            <div class="setting-row"><div><div class="setting-label">VM SSH target</div><div class="setting-hint"><code>vm_ssh_target</code> · Host used for your-repo runtime commands</div></div><input type="text" class="setting-input" value="my-vm"></div>
+            <div class="setting-row"><div><div class="setting-label">Frontend command (staging backend)</div><div class="setting-hint"><code>vm_frontend_staging_backend_command</code></div></div><textarea class="setting-input setting-textarea">cd ~/Projects/worktrees/main && pnpm --filter pricing dev</textarea></div>
+            <div class="setting-row"><div><div class="setting-label">Backend command (staging)</div><div class="setting-hint"><code>vm_backend_staging_command</code></div></div><textarea class="setting-input setting-textarea">cd ~/Projects/worktrees/main && pnpm --filter functions dev</textarea></div>
+          </div>
+
+          <div class="settings-group">
+            <h3>Backend</h3>
+            <div class="setting-row"><div><div class="setting-label">Dashboard port</div><div class="setting-hint"><code>dashboard_port</code> · Local backend port</div></div><input type="number" class="setting-input" value="3142"></div>
+            <div class="setting-row"><div><div class="setting-label">Selected backend</div><div class="setting-hint">Desktop backend origin — all API calls are routed through this host</div></div><div style="display:flex;align-items:center;gap:8px"><code style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--emerald)">http://localhost:3142</code><button class="btn-ghost" style="padding:4px 10px;font-size:11px">Switch</button></div></div>
+          </div>
+
+          <div class="settings-save-bar">
+            <button class="btn-primary">Save Settings</button>
+            <span class="saved-indicator" style="display:none">✓ Saved</span>
+          </div>
+        </div>
+      </div>
+    </div><!-- /view-settings -->
+
+
+    <!-- ═══ AGENT PROMPTS VIEW ═══════════════════════════════════════════ -->
+    <div class="view" id="view-prompts">
+      <div class="view-scroll">
+        <div class="prompts-wrap">
+          <div class="page-header" style="margin-bottom:20px">
+            <div>
+              <div class="page-title">📖 Agent Prompts</div>
+              <div class="page-sub">System prompts for each LLM agent. Changes take effect on the next agent run.</div>
+            </div>
+            <div class="page-actions">
+              <button class="btn-ghost">View change history</button>
+            </div>
+          </div>
+
+          <div class="prompts-grid">
+
+            <div class="prompt-card">
+              <div class="prompt-card-head">
+                <span class="prompt-agent-icon">📋</span>
+                <span class="prompt-agent-name">Planner</span>
+                <span class="prompt-char-count">4,821 chars</span>
+                <div class="prompt-actions">
+                  <button class="btn-sm">Reset to default</button>
+                  <button class="btn-sm save">Save</button>
+                </div>
+              </div>
+              <textarea class="prompt-editor">You are Forge Planner, an expert software planning agent.
+
+Your job is to read a Linear issue and produce a detailed, actionable plan stored in plan.md.
+
+## Output format
+
+Write a plan.md file with:
+- A brief summary of the work
+- A PR Stack section (1–3 PRs, ordered bottom to top)
+- A TODO section with specific, checkable tasks
+- A Decisions Made section for key choices
+
+## Guidelines
+
+- Prefer minimal, focused PRs
+- Read the codebase before planning — don't assume
+- Consider migration safety for schema changes
+- Check for existing patterns before inventing new ones
+- Use the app and layer metadata in the project file header</textarea>
+              <div class="prompt-footer">
+                <span class="prompt-last-change">Last changed 3d ago · self-improve run</span>
+                <span class="prompt-learned-tag">2 learned rules</span>
+              </div>
+            </div>
+
+            <div class="prompt-card">
+              <div class="prompt-card-head">
+                <span class="prompt-agent-icon">🔍</span>
+                <span class="prompt-agent-name">Plan Reviewer</span>
+                <span class="prompt-char-count">2,104 chars</span>
+                <div class="prompt-actions">
+                  <button class="btn-sm">Reset to default</button>
+                  <button class="btn-sm save">Save</button>
+                </div>
+              </div>
+              <textarea class="prompt-editor">You are Forge Plan Reviewer.
+
+Your job is to review a plan.md file and decide whether it is ready to implement or needs changes.
+
+## Output
+
+Write a JSON verdict file: plan-review-verdict.json
+
+{
+  "verdict": "approved" | "needs_changes",
+  "summary": "one-sentence summary",
+  "feedback": ["specific item 1", "specific item 2"]
+}
+
+## What to check
+
+- Is the scope clear and achievable?
+- Are migrations reversible?
+- Are there missing edge cases?
+- Is the PR split reasonable?
+- Does the plan reference existing patterns?</textarea>
+              <div class="prompt-footer">
+                <span class="prompt-last-change">Last changed 5d ago · manual edit</span>
+              </div>
+            </div>
+
+            <div class="prompt-card">
+              <div class="prompt-card-head">
+                <span class="prompt-agent-icon">⚡</span>
+                <span class="prompt-agent-name">Coder</span>
+                <span class="prompt-char-count">12,477 chars</span>
+                <div class="prompt-actions">
+                  <button class="btn-sm">Reset to default</button>
+                  <button class="btn-sm save">Save</button>
+                </div>
+              </div>
+              <textarea class="prompt-editor">You are Forge Coder, an expert full-stack TypeScript engineer working in the your-repo monorepo.
+
+## Your job
+
+Implement the plan in plan.md. Work through the TODO items top to bottom, checking each off as you go.
+
+## Tarmac conventions
+
+- Frontend: React + TypeScript in frontend/apps/pricing/
+- Backend: NestJS modules in functions/src/
+- Use FSD layers: entities, features, widgets, pages
+- Never use `any` — prefer explicit types
+- Use existing repository patterns, don't query the DB directly in controllers
+- Add audit log entries for any write operations
+- All new endpoints need integration tests
+
+## Learned conventions
+
+- Always use InsightDataV2 from shared/types/insights.ts for insights endpoints
+- Use useDateRangeFilter hook for date range state in report pages
+- Soft-delete filters must include deleted_at IS NULL in all findAll queries
+- Prefer named exports over default exports in pricing app components</textarea>
+              <div class="prompt-footer">
+                <span class="prompt-last-change">Last changed 1d ago · self-improve run</span>
+                <span class="prompt-learned-tag">7 learned rules</span>
+              </div>
+            </div>
+
+            <div class="prompt-card">
+              <div class="prompt-card-head">
+                <span class="prompt-agent-icon">🤖</span>
+                <span class="prompt-agent-name">Reviewer</span>
+                <span class="prompt-char-count">3,892 chars</span>
+                <div class="prompt-actions">
+                  <button class="btn-sm">Reset to default</button>
+                  <button class="btn-sm save">Save</button>
+                </div>
+              </div>
+              <textarea class="prompt-editor">You are Forge Reviewer.
+
+Your job is to review the code changes in the git diff and decide if they are ready for a human code review.
+
+## Output
+
+Write review-verdict.json:
+
+{
+  "verdict": "approved" | "needs_changes",
+  "summary": "one-sentence summary",
+  "feedback": ["issue 1", "issue 2"]
+}
+
+## What to check
+
+- Security: injection, auth bypass, data leaks
+- Type safety: no any, proper null handling
+- Tests: coverage for new logic, edge cases
+- Conventions: matches your-repo patterns
+- Migrations: reversible, safe
+- Performance: no N+1, appropriate indexes</textarea>
+              <div class="prompt-footer">
+                <span class="prompt-last-change">Last changed 4d ago · manual edit</span>
+                <span class="prompt-learned-tag">3 learned rules</span>
+              </div>
+            </div>
+
+            <div class="prompt-card">
+              <div class="prompt-card-head">
+                <span class="prompt-agent-icon">🔀</span>
+                <span class="prompt-agent-name">Git Agent</span>
+                <span class="prompt-char-count">5,211 chars</span>
+                <div class="prompt-actions">
+                  <button class="btn-sm">Reset to default</button>
+                  <button class="btn-sm save">Save</button>
+                </div>
+              </div>
+              <textarea class="prompt-editor">You are Forge Git Agent.
+
+Your job is to create pull requests from the code changes in the worktree.
+
+## Steps
+
+1. Check git status and diff
+2. Commit any uncommitted changes
+3. Push the branch
+4. Create a PR using `gh pr create`
+5. Update plan.md with PR URLs
+
+## PR conventions
+
+- Title: concise, starts with verb (Add, Fix, Refactor, etc.)
+- Body: include Linear issue link, summary of changes, and testing notes
+- Base branch: as specified in plan.md
+- For stacked PRs: set base to the previous PR's branch</textarea>
+              <div class="prompt-footer">
+                <span class="prompt-last-change">Last changed 6d ago · self-improve run</span>
+                <span class="prompt-learned-tag">1 learned rule</span>
+              </div>
+            </div>
+
+            <div class="prompt-card">
+              <div class="prompt-card-head">
+                <span class="prompt-agent-icon">🔧</span>
+                <span class="prompt-agent-name">Fixer</span>
+                <span class="prompt-char-count">4,033 chars</span>
+                <div class="prompt-actions">
+                  <button class="btn-sm">Reset to default</button>
+                  <button class="btn-sm save">Save</button>
+                </div>
+              </div>
+              <textarea class="prompt-editor">You are Forge Fixer.
+
+Your job is to address PR review comments and CI failures.
+
+## Context
+
+You will receive a list of comments/failures to address. Each has:
+- type: CHANGES_REQUESTED | CI_FAILURE | COMMENTED
+- body: the comment text
+- path + line: location in the file (if applicable)
+
+## Guidelines
+
+- Address each approved comment in turn
+- For CI failures: read the error log and fix the root cause
+- Don't make unnecessary changes beyond the scope of the comments
+- Run tests after fixing if possible
+- Commit with a message referencing the fix</textarea>
+              <div class="prompt-footer">
+                <span class="prompt-last-change">Last changed 2d ago · self-improve run</span>
+                <span class="prompt-learned-tag">2 learned rules</span>
+              </div>
+            </div>
+
+            <div class="prompt-card">
+              <div class="prompt-card-head">
+                <span class="prompt-agent-icon">✂️</span>
+                <span class="prompt-agent-name">Split Planner</span>
+                <span class="prompt-char-count">2,887 chars</span>
+                <div class="prompt-actions">
+                  <button class="btn-sm">Reset to default</button>
+                  <button class="btn-sm save">Save</button>
+                </div>
+              </div>
+              <textarea class="prompt-editor">You are Forge Split Planner.
+
+Your job is to propose how to split a large PR into a smaller, reviewable stack.
+
+## Output
+
+Write split-plan.json describing the proposed stack:
+- Each PR in the stack: title, branch name, files included, base branch
+- Rationale for the split
+
+## Guidelines
+
+- Split along logical boundaries (data layer, API layer, UI layer)
+- Each PR should be independently mergeable
+- Prefer 2–3 PRs maximum
+- The bottom PR should be the most stable/foundational</textarea>
+              <div class="prompt-footer">
+                <span class="prompt-last-change">Last changed 7d ago · manual edit</span>
+              </div>
+            </div>
+
+            <div class="prompt-card">
+              <div class="prompt-card-head">
+                <span class="prompt-agent-icon">✂️</span>
+                <span class="prompt-agent-name">Splitter</span>
+                <span class="prompt-char-count">3,441 chars</span>
+                <div class="prompt-actions">
+                  <button class="btn-sm">Reset to default</button>
+                  <button class="btn-sm save">Save</button>
+                </div>
+              </div>
+              <textarea class="prompt-editor">You are Forge Splitter.
+
+Your job is to execute an approved split plan by reorganising git commits and branches.
+
+## Steps
+
+1. Read the approved split-plan.json
+2. Create each branch in the stack
+3. Cherry-pick or rebase commits onto the appropriate branches
+4. Push all branches
+5. Verify each branch builds and tests pass
+6. Update plan.md with the new PR stack
+
+## Safety
+
+- Never force-push to main or default branch
+- Always verify the cherry-pick/rebase succeeded before pushing
+- If a step fails, leave everything clean and report the error</textarea>
+              <div class="prompt-footer">
+                <span class="prompt-last-change">Last changed 7d ago · manual edit</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div><!-- /view-prompts -->
+
+
+    <!-- ═══ LEARNINGS VIEW ═══════════════════════════════════════════════ -->
+    <div class="view" id="view-learnings">
+      <div class="view-scroll">
+        <div class="learnings-wrap">
+          <div class="section-header" style="margin-bottom:8px">
+            <div>
+              <div class="page-title">🧠 Continuous Learning</div>
+              <div class="page-sub" style="margin-top:4px">Forge reflects on completed issues and proposes improvements to agent prompts</div>
+            </div>
+            <div class="page-actions">
+              <button class="btn-ghost">↺ Run global reflection</button>
+              <button class="btn-primary">Apply all pending</button>
+            </div>
+          </div>
+
+          <div class="learn-tabs">
+            <button class="learn-tab active" onclick="switchLearnTab(this,'suggestions')">Suggestions <span style="margin-left:4px;background:var(--yellow);color:#000;font-size:9px;font-weight:700;border-radius:9999px;padding:0 5px">4</span></button>
+            <button class="learn-tab" onclick="switchLearnTab(this,'changelog')">Change log</button>
+            <button class="learn-tab" onclick="switchLearnTab(this,'history')">Reflection history</button>
+          </div>
+
+          <!-- Suggestions -->
+          <div class="learn-tab-content active" id="learn-suggestions">
+
+            <div style="font-size:12px;color:var(--text-4);margin-bottom:16px;line-height:1.6">
+              Forge analysed 17 completed issues and 43 PR review comments. These suggestions were extracted from patterns in review feedback.
+            </div>
+
+            <div class="suggestion-card pending">
+              <div class="sug-head">
+                <div>
+                  <div class="sug-target">coder.md</div>
+                  <div style="font-size:10.5px;color:var(--text-4);margin-top:2px">Suggested rule for coder agent</div>
+                </div>
+                <span class="sug-status pending">pending</span>
+              </div>
+              <div class="sug-text">When adding soft-delete support to a repository, always add a <code style="font-family:monospace;font-size:11px">deleted_at IS NULL</code> filter to ALL findAll/findMany queries, not just the primary query — check for secondary queries used in bulk operations and pagination.</div>
+              <div class="sug-rationale">Rationale: This pattern was missed in TEAM-4411, TEAM-4388, and TEAM-4360, causing 3 separate PR comment threads requesting the same fix.</div>
+              <div class="sug-source">Source: TEAM-4411 PR review · james.d comment · 3 similar occurrences</div>
+              <div class="sug-actions">
+                <button class="sug-btn apply">✓ Apply to coder.md</button>
+                <button class="sug-btn reject">✗ Reject</button>
+              </div>
+            </div>
+
+            <div class="suggestion-card pending">
+              <div class="sug-head">
+                <div>
+                  <div class="sug-target">coder.md</div>
+                  <div style="font-size:10.5px;color:var(--text-4);margin-top:2px">Suggested rule for coder agent</div>
+                </div>
+                <span class="sug-status pending">pending</span>
+              </div>
+              <div class="sug-text">New database columns that store timestamps should always be typed as <code style="font-family:monospace;font-size:11px">string | null</code> in TypeScript entity types, not just <code>string</code> — even when the column has a default value in SQL.</div>
+              <div class="sug-rationale">Rationale: The CI failure on TEAM-4411 was a TS2322 error on <code style="font-family:monospace;font-size:11px">deletedAt: string</code> — matching 4 other CI failures in the past month.</div>
+              <div class="sug-source">Source: TEAM-4411 CI failure · TypeScript build error · 4 similar occurrences</div>
+              <div class="sug-actions">
+                <button class="sug-btn apply">✓ Apply to coder.md</button>
+                <button class="sug-btn reject">✗ Reject</button>
+              </div>
+            </div>
+
+            <div class="suggestion-card pending">
+              <div class="sug-head">
+                <div>
+                  <div class="sug-target">reviewer.md</div>
+                  <div style="font-size:10.5px;color:var(--text-4);margin-top:2px">Suggested rule for reviewer agent</div>
+                </div>
+                <span class="sug-status pending">pending</span>
+              </div>
+              <div class="sug-text">When reviewing repositories that add soft-delete support, explicitly check that all query methods include the <code style="font-family:monospace;font-size:11px">deleted_at IS NULL</code> filter — this is a common omission and is easy to miss in standard review.</div>
+              <div class="sug-rationale">Rationale: The AI reviewer missed this on 3 issues (TEAM-4411, TEAM-4360, TEAM-4288) and a human reviewer had to catch it.</div>
+              <div class="sug-source">Source: TEAM-4411, TEAM-4360, TEAM-4288 · recurring human review comment</div>
+              <div class="sug-actions">
+                <button class="sug-btn apply">✓ Apply to reviewer.md</button>
+                <button class="sug-btn reject">✗ Reject</button>
+              </div>
+            </div>
+
+            <div class="suggestion-card pending">
+              <div class="sug-head">
+                <div>
+                  <div class="sug-target">planner.md</div>
+                  <div style="font-size:10.5px;color:var(--text-4);margin-top:2px">Suggested rule for planner agent</div>
+                </div>
+                <span class="sug-status pending">pending</span>
+              </div>
+              <div class="sug-text">When planning database migrations that change column types or add constraints, always add a rollback task to the TODO list — this was the most common plan review rejection reason (5 of 17 issues).</div>
+              <div class="sug-rationale">Rationale: Plan reviewer escalated or rejected plans on 5 issues specifically citing missing rollback plans.</div>
+              <div class="sug-source">Source: TEAM-4521, TEAM-4480, TEAM-4441, TEAM-4430, TEAM-4310 plan review rejections</div>
+              <div class="sug-actions">
+                <button class="sug-btn apply">✓ Apply to planner.md</button>
+                <button class="sug-btn reject">✗ Reject</button>
+              </div>
+            </div>
+
+            <div style="font-size:11.5px;color:var(--text-4);margin:16px 0 8px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;font-size:10px">Applied</div>
+
+            <div class="suggestion-card applied">
+              <div class="sug-head"><div><div class="sug-target">coder.md — InsightDataV2 type</div></div><span class="sug-status applied">applied</span></div>
+              <div class="sug-text">When writing insights-related code in the pricing app, always use <code style="font-family:monospace;font-size:11px">InsightDataV2</code> from <code>shared/types/insights.ts</code>, not the legacy <code>InsightData</code> type.</div>
+              <div class="sug-source" style="margin-top:6px">Source: TEAM-4499 · Applied 1d ago</div>
+            </div>
+
+            <div class="suggestion-card applied">
+              <div class="sug-head"><div><div class="sug-target">coder.md — useDateRangeFilter hook</div></div><span class="sug-status applied">applied</span></div>
+              <div class="sug-text">New report pages should use the <code style="font-family:monospace;font-size:11px">useDateRangeFilter</code> hook from <code>pricing/src/hooks/</code> — it handles URL sync and default 90-day window automatically.</div>
+              <div class="sug-source" style="margin-top:6px">Source: TEAM-4466 · Applied 2d ago</div>
+            </div>
+
+          </div>
+
+          <!-- Change log -->
+          <div class="learn-tab-content" id="learn-changelog">
+            <div style="margin-bottom:16px;font-size:12px;color:var(--text-4)">Changes that have been applied to agent prompts from learning suggestions.</div>
+
+            <div class="change-log-item">
+              <div class="cl-head"><span class="cl-target">coder.md</span><span class="cl-type">append</span><span class="cl-time">1d ago</span></div>
+              <div class="cl-summary">Added rule: always use InsightDataV2 from shared/types/insights.ts for insights endpoints</div>
+              <div class="cl-reason">Why: PR reviewer had to catch this on TEAM-4499 — the type was not obvious from the existing codebase</div>
+            </div>
+
+            <div class="change-log-item">
+              <div class="cl-head"><span class="cl-target">coder.md</span><span class="cl-type">append</span><span class="cl-time">2d ago</span></div>
+              <div class="cl-summary">Added rule: use useDateRangeFilter hook for date range state in pricing report pages</div>
+              <div class="cl-reason">Why: Coder wrote custom date state on TEAM-4466 — reviewer requested migration to shared hook</div>
+            </div>
+
+            <div class="change-log-item">
+              <div class="cl-head"><span class="cl-target">reviewer.md</span><span class="cl-type">append</span><span class="cl-time">4d ago</span></div>
+              <div class="cl-summary">Added rule: check for N+1 queries in repository findAll methods, especially with eager-loaded relations</div>
+              <div class="cl-reason">Why: Three consecutive PRs had N+1 issues caught only by human reviewer — TEAM-4441, TEAM-4430, TEAM-4418</div>
+            </div>
+
+            <div class="change-log-item">
+              <div class="cl-head"><span class="cl-target">coder.md</span><span class="cl-type">append</span><span class="cl-time">5d ago</span></div>
+              <div class="cl-summary">Added rule: prefer named exports over default exports in pricing app page components</div>
+              <div class="cl-reason">Why: Consistent with existing codebase pattern — reviewer caught 4 default export usages</div>
+            </div>
+          </div>
+
+          <!-- History -->
+          <div class="learn-tab-content" id="learn-history">
+            <div style="margin-bottom:16px;font-size:12px;color:var(--text-4)">Each reflection analyses completed issues and PR review comments to extract learnable patterns.</div>
+
+            <div class="reflect-event">
+              <div class="re-dot"></div>
+              <div class="re-body">
+                <div class="re-head"><span class="re-label">Global reflection</span><span class="re-time">2h ago</span></div>
+                <div class="re-text">Analysed 5 recently completed issues (TEAM-4466, TEAM-4455, TEAM-4441, TEAM-4430, TEAM-4418). Found 4 new patterns from 12 PR review comments. Generated 4 pending suggestions.</div>
+              </div>
+            </div>
+
+            <div class="reflect-event">
+              <div class="re-dot" style="background:var(--emerald)"></div>
+              <div class="re-body">
+                <div class="re-head"><span class="re-label">TEAM-4499 — post-completion reflection</span><span class="re-time">1d ago</span></div>
+                <div class="re-text">Identified InsightDataV2 type pattern from handoff note. Applied 1 suggestion to coder.md immediately (high confidence).</div>
+              </div>
+            </div>
+
+            <div class="reflect-event">
+              <div class="re-dot" style="background:var(--emerald)"></div>
+              <div class="re-body">
+                <div class="re-head"><span class="re-label">TEAM-4466 — post-completion reflection</span><span class="re-time">2d ago</span></div>
+                <div class="re-text">Identified useDateRangeFilter hook pattern from reviewer comment. Applied 1 suggestion to coder.md.</div>
+              </div>
+            </div>
+
+            <div class="reflect-event">
+              <div class="re-dot"></div>
+              <div class="re-body">
+                <div class="re-head"><span class="re-label">Global reflection</span><span class="re-time">3d ago</span></div>
+                <div class="re-text">Analysed 4 issues (TEAM-4455, TEAM-4441, TEAM-4430, TEAM-4418). Found N+1 query pattern recurring across reviewer comments. Generated 1 suggestion — applied to reviewer.md.</div>
+              </div>
+            </div>
+
+            <div class="reflect-event">
+              <div class="re-dot"></div>
+              <div class="re-body">
+                <div class="re-head"><span class="re-label">TEAM-4441 — manual reflection</span><span class="re-time">4d ago</span></div>
+                <div class="re-text">Triggered manually. Found named export preference pattern. 1 suggestion applied to coder.md.</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div><!-- /view-learnings -->
+
+
+    <!-- ═══ REVIEW VIEW ══════════════════════════════════════════════════ -->
+    <div class="view" id="view-review">
+      <div class="review-layout">
+        <!-- Header -->
+        <div class="review-header">
+          <button class="review-back" onclick="showView('queue', document.getElementById('nav-queue'))">← TEAM-4388 — Add company-level band override endpoints</button>
+          <span class="review-base">vs <code style="font-family:'JetBrains Mono',monospace;font-size:10px">main</code></span>
+          <div style="display:flex;gap:8px;margin-left:auto">
+            <button class="da da-ghost" style="font-size:11.5px;padding:5px 11px">✗ Request Changes</button>
+            <button class="da da-success" style="font-size:11.5px;padding:5px 11px">✓ Approve</button>
+          </div>
+        </div>
+
+        <div class="review-body">
+          <!-- File sidebar -->
+          <div class="review-sidebar">
+            <div class="review-sidebar-title">3 files changed</div>
+            <a class="review-file-link" href="#">
+              <span class="file-status-dot file-new"></span>
+              <span class="review-file-name">band-override.repository.ts</span>
+              <span class="review-file-state" style="color:var(--emerald);font-size:9.5px">new</span>
+            </a>
+            <a class="review-file-link reviewed" href="#">
+              <span class="file-status-dot file-rev"></span>
+              <span class="review-file-name">band-override.controller.ts</span>
+              <span class="review-file-state">reviewed</span>
+            </a>
+            <a class="review-file-link" href="#">
+              <span class="file-status-dot file-mod"></span>
+              <span class="review-file-name">0052_band_overrides.ts</span>
+              <span class="review-file-state" style="color:var(--yellow);font-size:9.5px">modified</span>
+            </a>
+            <div style="margin-top:16px;padding:10px;background:rgba(113,112,255,0.05);border:1px solid rgba(113,112,255,0.12);border-radius:var(--r);font-size:11.5px;color:var(--text-3);line-height:1.5">
+              <div style="font-size:10px;font-weight:600;color:var(--accent-vivid);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.4px">🤖 Tour complete</div>
+              This PR adds a company-level override system for salary bands. The repository follows the existing NestJS/TypeORM pattern. The migration is reversible. No auth issues detected.
+            </div>
+            <div style="margin-top:10px">
+              <div style="font-size:10px;color:var(--text-4);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.4px;font-weight:600">General feedback</div>
+              <textarea class="review-general" placeholder="Overall feedback (optional)…" rows="4" style="font-size:11.5px"></textarea>
+            </div>
+          </div>
+
+          <!-- Main diff area -->
+          <div class="review-main">
+
+            <!-- File 1: band-override.repository.ts -->
+            <div class="review-file-block">
+              <div class="review-file-header">
+                <span class="review-file-path">functions/src/repositories/band-override.repository.ts</span>
+                <span class="review-file-stats"><span class="add">+87</span> <span class="del">-0</span></span>
+                <label class="reviewed-cb"><input type="checkbox" checked> Mark reviewed</label>
+              </div>
+              <div class="tour-summary">
+                🤖 <strong>Tour:</strong> New repository following the existing TypeORM pattern. Wraps <code style="font-family:monospace;font-size:10px">BandOverrideEntity</code> and exposes <code>findByCompany</code>, <code>upsert</code>, and <code>remove</code>. Soft-delete handled via <code>deleted_at</code> filter on all queries.
+              </div>
+              <div class="diff-block">
+                <div class="diff-hunk">@@ -0,0 +1,87 @@</div>
+                <div class="diff-add"><span class="diff-lnum">1</span>import { Injectable } from '@nestjs/common';</div>
+                <div class="diff-add"><span class="diff-lnum">2</span>import { InjectRepository } from '@nestjs/typeorm';</div>
+                <div class="diff-add"><span class="diff-lnum">3</span>import { Repository } from 'typeorm';</div>
+                <div class="diff-add"><span class="diff-lnum">4</span>import { BandOverrideEntity } from '../entities/band-override.entity';</div>
+                <div class="diff-add"><span class="diff-lnum">5</span></div>
+                <div class="diff-add"><span class="diff-lnum">6</span>@Injectable()</div>
+                <div class="diff-add"><span class="diff-lnum">7</span>export class BandOverrideRepository {</div>
+                <div class="diff-add"><span class="diff-lnum">8</span>  constructor(</div>
+                <div class="diff-add"><span class="diff-lnum">9</span>    @InjectRepository(BandOverrideEntity)</div>
+                <div class="diff-add"><span class="diff-lnum">10</span>    private readonly repo: Repository&lt;BandOverrideEntity&gt;,</div>
+                <div class="diff-add"><span class="diff-lnum">11</span>  ) {}</div>
+                <div class="diff-add"><span class="diff-lnum">12</span></div>
+                <div class="diff-add"><span class="diff-lnum">13</span>  async findByCompany(companyId: string): Promise&lt;BandOverrideEntity[]&gt; {</div>
+                <div class="diff-add"><span class="diff-lnum">14</span>    return this.repo.find({</div>
+                <div class="diff-add"><span class="diff-lnum">15</span>      where: { companyId, deletedAt: null },</div>
+                <div class="diff-add"><span class="diff-lnum">16</span>    });</div>
+                <div class="diff-add"><span class="diff-lnum">17</span>  }</div>
+              </div>
+            </div>
+
+            <!-- File 2: migration -->
+            <div class="review-file-block">
+              <div class="review-file-header">
+                <span class="review-file-path">functions/src/db/migrations/0052_band_overrides.ts</span>
+                <span class="review-file-stats"><span class="add">+34</span> <span class="del">-2</span></span>
+                <label class="reviewed-cb"><input type="checkbox"> Mark reviewed</label>
+              </div>
+              <div class="tour-summary">🤖 <strong>Tour:</strong> Creates the <code style="font-family:monospace;font-size:10px">band_overrides</code> table with company_id FK, band_id FK, and override_value. The down() method drops the table — migration is reversible.</div>
+              <div class="diff-block">
+                <div class="diff-hunk">@@ -1,5 +1,37 @@</div>
+                <div class="diff-ctx"><span class="diff-lnum">1</span>import { MigrationInterface, QueryRunner } from 'typeorm';</div>
+                <div class="diff-add"><span class="diff-lnum">2</span></div>
+                <div class="diff-add"><span class="diff-lnum">3</span>export class BandOverrides1720000000000 implements MigrationInterface {</div>
+                <div class="diff-add"><span class="diff-lnum">4</span>  async up(queryRunner: QueryRunner): Promise&lt;void&gt; {</div>
+                <div class="diff-add"><span class="diff-lnum">5</span>    await queryRunner.query(`</div>
+                <div class="diff-add"><span class="diff-lnum">6</span>      CREATE TABLE band_overrides (</div>
+                <div class="diff-add"><span class="diff-lnum">7</span>        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),</div>
+                <div class="diff-add"><span class="diff-lnum">8</span>        company_id UUID NOT NULL REFERENCES companies(id),</div>
+                <div class="diff-add"><span class="diff-lnum">9</span>        band_id    UUID NOT NULL REFERENCES salary_bands(id),</div>
+                <div class="diff-add"><span class="diff-lnum">10</span>        override_value JSONB NOT NULL,</div>
+                <div class="diff-add"><span class="diff-lnum">11</span>        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),</div>
+                <div class="diff-add"><span class="diff-lnum">12</span>        deleted_at TIMESTAMPTZ,</div>
+                <div class="diff-add"><span class="diff-lnum">13</span>        UNIQUE(company_id, band_id)</div>
+                <div class="diff-add"><span class="diff-lnum">14</span>      );</div>
+                <div class="diff-add"><span class="diff-lnum">15</span>      CREATE INDEX idx_band_overrides_company ON band_overrides(company_id);</div>
+                <div class="diff-add"><span class="diff-lnum">16</span>    `);</div>
+                <div class="diff-add"><span class="diff-lnum">17</span>  }</div>
+                <div class="diff-add"><span class="diff-lnum">18</span></div>
+                <div class="diff-add"><span class="diff-lnum">19</span>  async down(queryRunner: QueryRunner): Promise&lt;void&gt; {</div>
+                <div class="diff-add"><span class="diff-lnum">20</span>    await queryRunner.query(`DROP TABLE IF EXISTS band_overrides`);</div>
+                <div class="diff-add"><span class="diff-lnum">21</span>  }</div>
+                <div class="diff-add"><span class="diff-lnum">22</span>}</div>
+              </div>
+              <!-- Inline comment -->
+              <div class="inline-comment">
+                <div class="ic-comment-head">
+                  <span class="ic-comment-author">You</span>
+                  <span style="font-size:10px;color:var(--text-4)">line 15</span>
+                  <span class="ic-comment-time">draft</span>
+                </div>
+                <div class="ic-comment-text">Good — the index on company_id will be important for performance. Might also want an index on band_id for the reverse lookup.</div>
+              </div>
+            </div>
+
+          </div><!-- /review-main -->
+        </div><!-- /review-body -->
+      </div><!-- /review-layout -->
+    </div><!-- /view-review -->
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ══════════════ COMMAND PALETTE ══════════════════════════════════════════ -->
+<div class="cmd-backdrop" id="cmd-backdrop" onclick="closeCmd()">
+  <div class="cmd-palette" onclick="event.stopPropagation()">
+    <div class="cmd-input-row">
+      <span class="cmd-icon">⌘</span>
+      <input class="cmd-input" id="cmd-input" placeholder="Type a command or search issues…" />
+    </div>
+    <div class="cmd-list">
+      <div class="cmd-sec">Decisions waiting</div>
+      <div class="cmd-item hl" onclick="showView('queue',document.getElementById('nav-queue')); openDetail('band-4388'); closeCmd()">
+        <span class="cmd-item-icon">⬡</span>
+        <span class="cmd-item-label">TEAM-4388 — Review code: band override endpoints</span>
+        <span class="cmd-tag code">Code review</span>
+      </div>
+      <div class="cmd-item" onclick="showView('queue',document.getElementById('nav-queue')); openDetail('band-4521'); closeCmd()">
+        <span class="cmd-item-icon">📋</span>
+        <span class="cmd-item-label">TEAM-4521 — Approve plan: migrate pricing bands</span>
+        <span class="cmd-tag plan">Plan review</span>
+      </div>
+      <div class="cmd-item" onclick="showView('queue',document.getElementById('nav-queue')); openDetail('band-4411'); closeCmd()">
+        <span class="cmd-item-icon">💬</span>
+        <span class="cmd-item-label">TEAM-4411 — Fix approval: soft-delete PR comments</span>
+        <span class="cmd-tag fix">Fix approval</span>
+      </div>
+      <div class="cmd-sec">Pages</div>
+      <div class="cmd-item" onclick="showView('queue',document.getElementById('nav-queue')); closeCmd()">
+        <span class="cmd-item-icon">⚡</span><span class="cmd-item-label">Queue</span>
+      </div>
+      <div class="cmd-item" onclick="showView('archive',document.getElementById('nav-archive')); closeCmd()">
+        <span class="cmd-item-icon">🗃️</span><span class="cmd-item-label">Archive</span>
+      </div>
+      <div class="cmd-item" onclick="showView('learnings',document.getElementById('nav-learnings')); closeCmd()">
+        <span class="cmd-item-icon">🧠</span><span class="cmd-item-label">Learnings</span>
+      </div>
+      <div class="cmd-item" onclick="showView('settings',document.getElementById('nav-settings')); closeCmd()">
+        <span class="cmd-item-icon">⚙️</span><span class="cmd-item-label">Settings</span>
+      </div>
+      <div class="cmd-item" onclick="showView('review',null); closeCmd()">
+        <span class="cmd-item-icon">📄</span><span class="cmd-item-label">Open diff review — TEAM-4388</span>
+      </div>
+      <div class="cmd-sec">Actions</div>
+      <div class="cmd-item"><span class="cmd-item-icon">+</span><span class="cmd-item-label">Add issue from Linear</span><span class="cmd-tag">N</span></div>
+      <div class="cmd-item"><span class="cmd-item-icon">↻</span><span class="cmd-item-label">Sync Linear backlog</span></div>
+      <div class="cmd-item"><span class="cmd-item-icon">⏸</span><span class="cmd-item-label">Pause all agents</span></div>
+      <div class="cmd-item"><span class="cmd-item-icon">🧠</span><span class="cmd-item-label">Run global reflection</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ══ View switching ══════════════════════════════════════════════
+  function showView(name, navBtn) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    const v = document.getElementById('view-' + name);
+    if (v) v.classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    if (navBtn) navBtn.classList.add('active');
+    // Close detail panel when leaving queue
+    if (name !== 'queue') closeDetail();
+  }
+
+  // ══ Detail panel (queue view only) ═════════════════════════════
+  const PANEL_DATA = {
+    'band-4388': {
+      id: 'TEAM-4388 · high · awaiting code review',
+      title: 'Add company-level band override endpoints',
+      tabs: ['Overview','Activity'],
+      overview: `
+        <div class="ds"><div class="state-banner awaiting" style="margin-bottom:12px"><span style="font-size:18px">⬡</span><div class="sb-text"><strong style="color:var(--text)">Code review ready</strong><br>AI reviewer approved with 1 suggestion. 3 files changed, +127 −14 lines. All tests passing.</div></div><div class="phase-track"><div class="phase-node"><div class="phase-dot done"></div><div class="phase-label">Setup</div></div><div class="phase-line done"></div><div class="phase-node"><div class="phase-dot done"></div><div class="phase-label">Plan</div></div><div class="phase-line done"></div><div class="phase-node"><div class="phase-dot done"></div><div class="phase-label">Code</div></div><div class="phase-line done"></div><div class="phase-node"><div class="phase-dot wait"></div><div class="phase-label">Review</div></div><div class="phase-line"></div><div class="phase-node"><div class="phase-dot"></div><div class="phase-label">PR</div></div><div class="phase-line"></div><div class="phase-node"><div class="phase-dot"></div><div class="phase-label">Watch</div></div><div class="phase-line"></div><div class="phase-node"><div class="phase-dot"></div><div class="phase-label">Done</div></div></div></div>
+        <div class="ds"><div class="ds-label">Your decision</div><div class="dp-actions"><button class="da da-success">✓ Approve</button><button class="da da-danger">✗ Request changes</button><button class="da da-primary" onclick="showView('review',null)">📄 Open diff view</button></div></div>
+        <div class="ds"><div class="ds-label">Info</div><div class="info-grid"><div class="ig-label">Source</div><div class="ig-value"><a href="#">TEAM-4388 ↗</a></div><div class="ig-label">Priority</div><div class="ig-value" style="color:var(--yellow)">▰▰░ high</div><div class="ig-label">Branch</div><div class="ig-value">user/TEAM-4388-band-overrides</div><div class="ig-label">Files</div><div class="ig-value">3 · +127 −14</div><div class="ig-label">AI verdict</div><div class="ig-value" style="color:var(--emerald)">Approved</div></div></div>
+        <div class="ds"><div class="ds-label">PR Stack</div><div class="pr-stack-list"><div class="pr-row"><span class="pr-pos">1</span><span class="pr-branch">user/TEAM-4388-band-overrides</span><span class="pr-dot pr-open"></span><a class="pr-num-link" href="#">PR #419</a><span class="ci-pass">✓ CI</span></div></div></div>`,
+      activity: `<div class="ds"><div class="ds-label">Activity</div><div class="af-feed"><div class="af-item"><div class="af-dc"><div class="af-dot ok"></div><div class="af-line"></div></div><div class="af-content"><div class="af-head"><span class="af-actor ag">AI Reviewer</span><span class="af-time">12m ago</span></div><div class="af-text ok">Approved — "Good use of repository pattern. Suggest index on company_id."</div></div></div><div class="af-item"><div class="af-dc"><div class="af-dot ag"></div><div class="af-line"></div></div><div class="af-content"><div class="af-head"><span class="af-actor ag">Coder</span><span class="af-time">18m ago</span></div><div class="af-text">Completed — 3 endpoints, repository, migration, and tests</div></div></div><div class="af-item"><div class="af-dc"><div class="af-dot me"></div></div><div class="af-content"><div class="af-head"><span class="af-actor me">You</span><span class="af-time">3h ago</span></div><div class="af-text">Approved plan</div></div></div></div></div>`
+    },
+    'band-4411': {
+      id: 'TEAM-4411 · medium · awaiting fix approval',
+      title: 'Soft-delete support for pricing rules',
+      tabs: ['Overview','Activity'],
+      overview: `
+        <div class="ds"><div class="state-banner awaiting" style="margin-bottom:12px"><span style="font-size:18px">💬</span><div class="sb-text"><strong style="color:var(--text)">PR comments ready for review</strong><br>2 review comments and 1 CI failure. Select which to send to the fixer agent.</div></div><div class="phase-track"><div class="phase-node"><div class="phase-dot done"></div><div class="phase-label">Setup</div></div><div class="phase-line done"></div><div class="phase-node"><div class="phase-dot done"></div><div class="phase-label">Plan</div></div><div class="phase-line done"></div><div class="phase-node"><div class="phase-dot done"></div><div class="phase-label">Code</div></div><div class="phase-line done"></div><div class="phase-node"><div class="phase-dot done"></div><div class="phase-label">Review</div></div><div class="phase-line done"></div><div class="phase-node"><div class="phase-dot done"></div><div class="phase-label">PR</div></div><div class="phase-line done"></div><div class="phase-node"><div class="phase-dot wait"></div><div class="phase-label">Watch</div></div><div class="phase-line"></div><div class="phase-node"><div class="phase-dot"></div><div class="phase-label">Done</div></div></div></div>
+        <div class="ds"><div class="ds-label">💬 Review comments — select to address</div><p style="font-size:11.5px;color:var(--text-4);margin-bottom:12px;line-height:1.5">Select the comments you want the agent to fix. Unselected will be dismissed.</p>
+          <div class="fix-comment"><div class="fc-head"><input type="checkbox" checked><div class="fc-body"><div class="fc-meta"><span class="fix-tag changes">CHANGES REQUESTED</span><span class="fix-author">james.d</span><span class="fix-path">pricing-rule.repository.ts:47</span></div><div class="fix-body">The soft-delete filter is missing from the findAll query. Add WHERE deleted_at IS NULL or it will return deleted records.</div></div></div></div>
+          <div class="fix-comment"><div class="fc-head"><input type="checkbox" checked><div class="fc-body"><div class="fc-meta"><span class="fix-tag ci">CI FAILURE</span><span style="font-size:10px;color:var(--text-4)">TypeScript build</span></div><div class="fix-body">TS2322: Type 'string | null' is not assignable to type 'string' — deletedAt in PricingRuleEntity needs to be string | null.</div></div></div></div>
+          <div class="fix-comment"><div class="fc-head"><input type="checkbox"><div class="fc-body"><div class="fc-meta"><span class="fix-tag nit">COMMENTED</span><span class="fix-author">sarah.k</span></div><div class="fix-body">Nit: worth a test for the restore endpoint edge case where the rule was never soft-deleted.</div></div></div></div>
+          <div style="display:flex;gap:8px;margin-top:14px"><button class="da da-success">✓ Fix selected (2)</button><button class="da da-danger">✗ Skip all</button></div>
+        </div>
+        <div class="ds"><div class="ds-label">PR Stack</div><div class="pr-stack-list"><div class="pr-row"><span class="pr-pos">1</span><span class="pr-branch">user/TEAM-4411-soft-delete</span><span class="pr-dot pr-open"></span><a class="pr-num-link" href="#">PR #405</a><span class="ci-fail">✗ CI</span></div></div></div>
+        <div class="ds"><div class="auto-fix-row"><div><h4>Auto-fix</h4><p>Automatically fix new PR comments and CI failures without waiting for approval.</p></div><label class="switch"><input type="checkbox" checked><span class="sw"></span></label></div></div>`
+    },
+    'band-4521': {
+      id: 'TEAM-4521 · high · awaiting plan review',
+      title: 'Migrate pricing bands to new tier model',
+      tabs: ['Overview','Activity'],
+      overview: `<div class="ds"><div class="state-banner awaiting" style="margin-bottom:12px"><span style="font-size:18px">📋</span><div class="sb-text"><strong style="color:var(--text)">Plan ready for review</strong><br>Planner generated a 5-task plan. AI plan reviewer approved with notes on migration rollback safety.</div></div><div class="phase-track"><div class="phase-node"><div class="phase-dot done"></div><div class="phase-label">Setup</div></div><div class="phase-line done"></div><div class="phase-node"><div class="phase-dot wait"></div><div class="phase-label">Plan</div></div><div class="phase-line"></div><div class="phase-node"><div class="phase-dot"></div><div class="phase-label">Code</div></div><div class="phase-line"></div><div class="phase-node"><div class="phase-dot"></div><div class="phase-label">Review</div></div><div class="phase-line"></div><div class="phase-node"><div class="phase-dot"></div><div class="phase-label">PR</div></div><div class="phase-line"></div><div class="phase-node"><div class="phase-dot"></div><div class="phase-label">Watch</div></div><div class="phase-line"></div><div class="phase-node"><div class="phase-dot"></div><div class="phase-label">Done</div></div></div></div><div class="ds"><div class="ds-label">Your decision</div><div class="dp-actions"><button class="da da-success">✓ Approve plan</button><button class="da da-danger">✗ Request changes</button><button class="da da-ghost">📋 View plan</button></div></div>`,
+    }
+  };
+
+  let activeIssue = null;
+
+  function openDetail(key) {
+    document.querySelectorAll('.ic').forEach(c => c.classList.remove('selected'));
+    const card = document.querySelector(`.ic[onclick*="${key}"]`);
+    if (card) card.classList.add('selected');
+
+    const data = PANEL_DATA[key];
+    const dp = document.getElementById('detail-panel');
+    const shell = document.getElementById('queue-shell');
+
+    if (!data) {
+      // already rendered for band-4499
+      dp.classList.add('open');
+      shell.classList.add('panel-open');
+      return;
+    }
+
+    const tabs = (data.tabs ?? ['Overview']).map((t, i) =>
+      `<button class="dp-tab ${i===0?'active':''}" onclick="switchTab(this,'${t.toLowerCase().replace(/ /g,'')}')">${t}</button>`
+    ).join('');
+
+    dp.innerHTML = `
+      <div class="dp-header">
+        <button class="dp-close" onclick="closeDetail()">✕</button>
+        <div class="dp-header-body">
+          <div class="dp-id">${data.id}</div>
+          <div class="dp-title">${data.title}</div>
+        </div>
+      </div>
+      <div class="dp-tabs">${tabs}</div>
+      <div class="dp-body">
+        <div class="dp-tab-content active" id="tab-overview">${data.overview || ''}</div>
+        ${data.activity ? `<div class="dp-tab-content" id="tab-activity">${data.activity}</div>` : ''}
+      </div>
+      <div class="ds danger-zone" style="padding:12px 15px"><h4>Danger zone</h4><p>Destructive or terminal actions. Forge will confirm before continuing.</p><div class="dp-actions"><button class="da da-ghost">🚫 Ignore</button><button class="da da-danger">↺ Full reset</button><button class="da da-ghost">🗑 Remove</button></div></div>
+    `;
+    dp.classList.add('open');
+    shell.classList.add('panel-open');
+    activeIssue = key;
+  }
+
+  function closeDetail() {
+    document.getElementById('detail-panel').classList.remove('open');
+    document.getElementById('queue-shell').classList.remove('panel-open');
+    document.querySelectorAll('.ic').forEach(c => c.classList.remove('selected'));
+    activeIssue = null;
+  }
+
+  // ══ Tab switching ════════════════════════════════════════════════
+  function switchTab(btn, name) {
+    const panel = btn.closest('.detail-panel') || btn.closest('.dp-body')?.parentElement;
+    if (!panel) return;
+    panel.querySelectorAll('.dp-tab').forEach(t => t.classList.remove('active'));
+    panel.querySelectorAll('.dp-tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    const t = panel.querySelector(`#tab-${name}`);
+    if (t) t.classList.add('active');
+  }
+
+  // ══ Learnings tabs ═══════════════════════════════════════════════
+  function switchLearnTab(btn, name) {
+    document.querySelectorAll('.learn-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.learn-tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    const t = document.getElementById('learn-' + name);
+    if (t) t.classList.add('active');
+  }
+
+  // ══ Inbox collapse ═══════════════════════════════════════════════
+  function toggleInbox() {
+    const inbox = document.getElementById('decisions-inbox');
+    const btn = inbox.querySelector('.inbox-toggle');
+    inbox.classList.toggle('collapsed');
+    btn.textContent = inbox.classList.contains('collapsed') ? 'Expand ↓' : 'Collapse ↑';
+  }
+
+  // ══ Command palette ══════════════════════════════════════════════
+  function openCmd() {
+    document.getElementById('cmd-backdrop').classList.add('open');
+    setTimeout(() => document.getElementById('cmd-input').focus(), 50);
+  }
+  function closeCmd() {
+    document.getElementById('cmd-backdrop').classList.remove('open');
+  }
+
+  // ══ Keyboard shortcuts ═══════════════════════════════════════════
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openCmd(); }
+    if (e.key === 'Escape') { closeCmd(); closeDetail(); }
+    if (e.target.matches('input,textarea,select')) return;
+    if (e.key === 'a' || e.key === 'A') { showView('queue', document.getElementById('nav-queue')); openDetail('band-4388'); }
+    if (e.key === '1') showView('queue', document.getElementById('nav-queue'));
+    if (e.key === '2') showView('archive', document.getElementById('nav-archive'));
+    if (e.key === '3') showView('settings', document.getElementById('nav-settings'));
+    if (e.key === '4') showView('prompts', document.getElementById('nav-prompts'));
+    if (e.key === '5') showView('learnings', document.getElementById('nav-learnings'));
+    if (e.key === '6') showView('review', null);
+  });
+
+  // ══ Init ════════════════════════════════════════════════════════
+  window.addEventListener('DOMContentLoaded', () => {
+    // Queue view with default detail open
+    document.getElementById('detail-panel').classList.add('open');
+    document.getElementById('queue-shell').classList.add('panel-open');
+    document.querySelector('.ic.selected')?.scrollIntoView({ block: 'nearest' });
+    // Hint in console
+    console.log('Forge Mockup — keyboard shortcuts: 1-6 switch views, A = next decision, ⌘K = command palette');
+  });
+</script>
+</body>
+</html>

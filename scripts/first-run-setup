@@ -1,0 +1,144 @@
+#!/usr/bin/env node
+"use strict";
+
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
+const readline = require("readline");
+const { execFileSync } = require("child_process");
+
+const FORGE_DIR = process.env.FORGE_DIR || path.resolve(__dirname, "..");
+const DB_PATH = path.join(FORGE_DIR, "forge.db");
+const WORKSPACE_RUN_CONFIG_PATH = path.join(FORGE_DIR, "workspace-run.config.json");
+const Database = require(path.join(FORGE_DIR, "node_modules", "better-sqlite3"));
+
+const DEFAULTS = {
+  worktreeProvider: "git",
+  repoRoot: "",
+  worktreeRoot: path.join(os.homedir(), "Projects"),
+  wtRoot: "",
+  branchPrefix: process.env.USER || "user",
+  defaultBranch: "main",
+  linearEnabled: "false",
+  linearTeam: "",
+  githubRepo: "",
+  concurrencyLimit: "2",
+  model: "anthropic-vertex/sonnet-4-6",
+};
+
+function hasFlag(flag) {
+  return process.argv.includes(flag);
+}
+
+function shell(cmd, args, opts = {}) {
+  try {
+    execFileSync(cmd, args, { stdio: "ignore", timeout: 10000, ...opts });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function createPrompt() {
+  if (hasFlag("--defaults") || !process.stdin.isTTY) return null;
+  return readline.createInterface({ input: process.stdin, output: process.stdout });
+}
+
+function ask(rl, question, defaultValue) {
+  if (!rl) return Promise.resolve(defaultValue);
+  const suffix = defaultValue ? ` [${defaultValue}]` : "";
+  return new Promise(resolve => {
+    rl.question(`${question}${suffix}: `, answer => resolve(answer.trim() || defaultValue));
+  });
+}
+
+function setSetting(db, key, value) {
+  db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)").run(key, String(value ?? ""));
+}
+
+function validate(provider, values) {
+  const checks = [];
+  checks.push(["git", shell("git", ["--version"])]);
+  if (values.linearEnabled === "true") checks.push(["linear CLI", shell("linear", ["--version"])]);
+  checks.push(["gh CLI", shell("gh", ["--version"])]);
+
+  if (provider === "wt") {
+    checks.push(["wt CLI", shell("wt", ["--version"])]);
+    checks.push(["wt_root git repo", shell("git", ["-C", values.wtRoot, "rev-parse", "--git-dir"])]);
+  } else {
+    checks.push(["repo_root git repo", shell("git", ["-C", values.repoRoot, "rev-parse", "--git-dir"])]);
+    checks.push(["git worktree list", shell("git", ["-C", values.repoRoot, "worktree", "list", "--porcelain"])]);
+  }
+
+  if (values.githubRepo) checks.push(["GitHub repo access", shell("gh", ["repo", "view", values.githubRepo])]);
+  else checks.push(["GitHub repo configured", false]);
+  return checks;
+}
+
+async function main() {
+  fs.mkdirSync(FORGE_DIR, { recursive: true });
+  const rl = createPrompt();
+
+  console.log("Forge first-time setup");
+  console.log("Defaults are local-first. Worktrunk is optional.\n");
+
+  const providerAnswer = await ask(rl, "Worktree provider (git/wt)", DEFAULTS.worktreeProvider);
+  const worktreeProvider = providerAnswer === "wt" ? "wt" : "git";
+
+  const values = {
+    worktreeProvider,
+    repoRoot: worktreeProvider === "git" ? await ask(rl, "Main git repo path", DEFAULTS.repoRoot) : DEFAULTS.repoRoot,
+    worktreeRoot: worktreeProvider === "git" ? await ask(rl, "Directory for new git worktrees", DEFAULTS.worktreeRoot) : DEFAULTS.worktreeRoot,
+    wtRoot: worktreeProvider === "wt" ? await ask(rl, "Worktrunk root", DEFAULTS.wtRoot) : DEFAULTS.wtRoot,
+    branchPrefix: await ask(rl, "Branch prefix", DEFAULTS.branchPrefix),
+    defaultBranch: await ask(rl, "Default branch", DEFAULTS.defaultBranch),
+    linearEnabled: await ask(rl, "Enable Linear CLI integration? (true/false)", DEFAULTS.linearEnabled),
+    linearTeam: await ask(rl, "Linear team key", DEFAULTS.linearTeam),
+    githubRepo: await ask(rl, "GitHub repo (owner/name)", DEFAULTS.githubRepo),
+    concurrencyLimit: await ask(rl, "Agent concurrency limit", DEFAULTS.concurrencyLimit),
+    model: await ask(rl, "Default model", DEFAULTS.model),
+  };
+
+  rl?.close();
+
+  fs.writeFileSync(WORKSPACE_RUN_CONFIG_PATH, JSON.stringify({ mode: "local" }, null, 2) + "\n");
+
+  const db = new Database(DB_PATH);
+  db.pragma("journal_mode = WAL");
+  db.pragma("busy_timeout = 5000");
+  db.prepare("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)").run();
+
+  for (const [key, value] of [
+    ["setup_completed", "true"],
+    ["worktree_provider", values.worktreeProvider],
+    ["repo_root", values.repoRoot],
+    ["worktree_root", values.worktreeRoot],
+    ["wt_root", values.wtRoot],
+    ["branch_prefix", values.branchPrefix],
+    ["default_branch", values.defaultBranch],
+    ["linear_enabled", values.linearEnabled === "true" ? "true" : "false"],
+    ["linear_team", values.linearTeam],
+    ["github_repo", values.githubRepo],
+    ["concurrency_limit", values.concurrencyLimit],
+    ["model", values.model],
+  ]) setSetting(db, key, value);
+
+  db.close();
+
+  console.log("\nValidation");
+  const checks = validate(worktreeProvider, values);
+  for (const [name, ok] of checks) console.log(`${ok ? "✓" : "⚠"} ${name}`);
+
+  console.log("\nWrote:");
+  console.log(`- ${WORKSPACE_RUN_CONFIG_PATH}`);
+  console.log(`- ${DB_PATH}`);
+  console.log("\nNext:");
+  console.log("- /forge dashboard");
+  console.log("- /forge start");
+  console.log("- /forge add TEAM-1234");
+}
+
+main().catch(error => {
+  console.error(error.stack || error.message);
+  process.exit(1);
+});

@@ -1,0 +1,21 @@
+{
+  "name": "forge-desktop",
+  "version": "0.1.0",
+  "exports": "./desktop/main.ts",
+  "tasks": {
+    "desktop": "deno desktop --icon desktop/icon.png --allow-env --allow-net --allow-run --allow-read --allow-write desktop/main.ts",
+    "desktop:dev": "deno desktop --hmr --icon desktop/icon.png --allow-env --allow-net --allow-run --allow-read --allow-write desktop/main.ts"
+  },
+  "desktop": {
+    "app": {
+      "name": "Forge",
+      "identifier": "works.earendil.pi.forge"
+    },
+    "backend": "webview",
+    "output": {
+      "macos": "./dist/Forge.app",
+      "windows": "./dist/Forge",
+      "linux": "./dist/forge"
+    }
+  }
+}

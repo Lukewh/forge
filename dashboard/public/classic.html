@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forge</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚒️</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" async></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <h1>⚒️ Forge</h1>
+      <div class="header-meta">
+        <button id="btn-review-next" class="btn-review-next hidden">Review next</button>
+        <span id="scheduler-badge" class="badge badge-off">scheduler off</span>
+        <span id="agent-count" class="badge badge-neutral">0 agents</span>
+        <span id="vm-runtime-badge" class="vm-runtime-badge vm-off" title="Runtime status">Local idle</span>
+        <button id="btn-vm-stop" class="btn-vm-stop hidden" title="Stop Forge runtime jobs">Stop runtime</button>
+        <span id="last-updated" class="last-updated" title="Last data refresh"></span>
+        <button id="btn-notifications" class="btn-notif" title="Enable desktop notifications" aria-label="Enable desktop notifications">🔔</button>
+        <a id="btn-desktop-backend" class="btn-icon" href="/desktop/backend" title="Choose backend" aria-label="Choose backend">🌐</a>
+        <button id="btn-archive" class="btn-icon" title="Archive" aria-label="Open archive">🗃️</button>
+        <button id="btn-dashboard-settings" class="btn-icon" title="Settings" aria-label="Open settings">⚙️</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Queue view (default) -->
+    <div id="view-queue" class="view active">
+      <section class="queue-command-center" aria-label="Forge overview">
+        <div id="queue-summary" class="queue-summary"></div>
+        <div class="queue-filters" role="search">
+          <input id="queue-search" class="queue-search" type="search" placeholder="Search issues, IDs, branches…" aria-label="Search issues" />
+          <div class="filter-chips" aria-label="Quick filters">
+            <button class="filter-chip active" data-filter="all" type="button">All</button>
+            <button class="filter-chip" data-filter="needs" type="button">Needs me</button>
+            <button class="filter-chip" data-filter="running" type="button">Running</button>
+            <button class="filter-chip" data-filter="failed" type="button">Failed</button>
+            <button class="filter-chip" data-filter="watching" type="button">Watching PR</button>
+            <button class="filter-chip" data-filter="paused" type="button">Paused</button>
+          </div>
+          <select id="queue-sort" class="queue-sort" aria-label="Sort issues">
+            <option value="priority">Priority</option>
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="updated">Recently updated</option>
+          </select>
+        </div>
+      </section>
+      <nav class="mobile-tabs" role="tablist">
+        <button class="mobile-tab active" data-col="0" role="tab">Available</button>
+        <button class="mobile-tab" data-col="1" role="tab">Active</button>
+        <button class="mobile-tab" data-col="2" role="tab">Awaiting You <span id="mobile-decision-badge" class="count-badge hidden">0</span></button>
+      </nav>
+      <div class="columns">
+
+        <!-- Available -->
+        <section class="column">
+          <div class="col-header">
+            <h2>Available</h2>
+            <div style="display:flex;gap:6px">
+              <button id="btn-refresh-linear" class="btn-sm">↻ Linear</button>
+              <button id="btn-add-issue" class="btn-sm">+ Manual</button>
+            </div>
+          </div>
+          <div id="linear-issues" class="card-list"></div>
+          <div class="col-divider" style="border-top:1px solid var(--border-subtle);margin-top:4px;padding-top:10px">In Forge — queued</div>
+          <div id="pending-issues" class="card-list"></div>
+        </section>
+
+        <!-- Active -->
+        <section class="column">
+          <div class="col-header">
+            <h2>Active</h2>
+            <div id="leverage" class="leverage-indicator"></div>
+          </div>
+          <div id="active-issues" class="card-list"></div>
+        </section>
+
+        <!-- Awaiting You -->
+        <section class="column column-decisions">
+          <div class="col-header">
+            <h2>Awaiting You <span id="decision-badge" class="count-badge hidden">0</span></h2>
+          </div>
+          <div id="decision-queue" class="card-list"></div>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- Issue detail view -->
+    <div id="view-issue" class="view">
+      <button id="btn-back" class="btn-back">← Back</button>
+      <div id="issue-detail"></div>
+    </div>
+
+    <!-- Archive view -->
+    <div id="view-archive" class="view">
+      <div id="archive-panel"></div>
+    </div>
+
+    <!-- Review view -->
+    <div id="view-review" class="view">
+      <div id="review-panel"></div>
+    </div>
+
+    <!-- Settings view -->
+    <div id="view-settings" class="view">
+      <button id="btn-back-settings" class="btn-back">← Back</button>
+      <div id="settings-panel"></div>
+    </div>
+  </main>
+
+  <!-- Modals -->
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div id="modal" class="modal">
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

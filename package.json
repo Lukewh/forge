@@ -1,0 +1,51 @@
+{
+  "name": "forge",
+  "version": "0.1.0",
+  "description": "AI-driven issue lifecycle system for pi",
+  "type": "commonjs",
+  "bin": {
+    "forge": "./bin/forge.js",
+    "forge-dashboard": "./bin/forge-dashboard.js"
+  },
+  "dependencies": {
+    "@earendil-works/pi-coding-agent": "^0.80.3",
+    "better-sqlite3": "^11.8.1",
+    "diff2html": "^3.4.48",
+    "express": "^4.18.2",
+    "jiti": "^2.4.2",
+    "node-pty": "^1.1.0",
+    "preact": "^10.29.7",
+    "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.5",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/express": "^4.17.21",
+    "typescript": "^6.0.2",
+    "vite": "^6.4.3"
+  },
+  "scripts": {
+    "desktop": "deno task desktop",
+    "desktop:dev": "deno task desktop:dev",
+    "dashboard:dev": "vite --config dashboard/frontend/vite.config.mjs",
+    "dashboard:build": "vite build --config dashboard/frontend/vite.config.mjs",
+    "dashboard:check": "tsc --noEmit -p dashboard/frontend/tsconfig.json",
+    "test": "node --test test/db.test.mjs test/scheduler.test.mjs test/frontend.test.mjs test/dashboard-reactive-foundation.test.mjs test/dashboard-shell.test.mjs test/dashboard-pipeline.test.mjs test/dashboard-detail-panel.test.mjs test/dashboard-review-view.test.mjs test/dashboard-archive-view.test.mjs test/dashboard-settings-view.test.mjs test/dashboard-prompts-view.test.mjs test/dashboard-learnings-view.test.mjs test/dashboard-polish.test.mjs test/dashboard-mockup-parity.test.mjs test/dashboard-hardening.test.mjs test/dashboard-action-wiring.test.mjs test/summary.test.mjs test/pi-sdk-runner.test.mjs",
+    "test:db": "node --test test/db.test.mjs",
+    "test:sched": "node --test test/scheduler.test.mjs",
+    "test:fe": "node --test test/frontend.test.mjs test/dashboard-reactive-foundation.test.mjs test/dashboard-shell.test.mjs test/dashboard-pipeline.test.mjs test/dashboard-detail-panel.test.mjs test/dashboard-review-view.test.mjs test/dashboard-archive-view.test.mjs test/dashboard-settings-view.test.mjs test/dashboard-prompts-view.test.mjs test/dashboard-learnings-view.test.mjs test/dashboard-polish.test.mjs test/dashboard-mockup-parity.test.mjs test/dashboard-hardening.test.mjs test/dashboard-action-wiring.test.mjs",
+    "test:sum": "node --test test/summary.test.mjs",
+    "test:pi-sdk": "node --test test/pi-sdk-runner.test.mjs",
+    "test:api": "node --test test/dashboard.test.mjs",
+    "forge": "node ./bin/forge.js",
+    "dashboard": "node ./bin/forge-dashboard.js",
+    "server": "node ./dashboard/server.js",
+    "scheduler": "node ./start-scheduler.mjs",
+    "test:all": "node --test test/db.test.mjs test/scheduler.test.mjs test/frontend.test.mjs test/dashboard-reactive-foundation.test.mjs test/dashboard-shell.test.mjs test/dashboard-pipeline.test.mjs test/dashboard-detail-panel.test.mjs test/dashboard-review-view.test.mjs test/dashboard-archive-view.test.mjs test/dashboard-settings-view.test.mjs test/dashboard-prompts-view.test.mjs test/dashboard-learnings-view.test.mjs test/dashboard-polish.test.mjs test/dashboard-mockup-parity.test.mjs test/dashboard-hardening.test.mjs test/dashboard-action-wiring.test.mjs test/summary.test.mjs test/pi-sdk-runner.test.mjs test/dashboard.test.mjs"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

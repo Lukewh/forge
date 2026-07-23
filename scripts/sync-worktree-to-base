@@ -1,0 +1,81 @@
+#!/usr/bin/env node
+"use strict";
+
+const { execFileSync } = require("child_process");
+const fs = require("fs");
+const path = require("path");
+
+function usage() {
+  console.error("Usage: scripts/sync-worktree-to-base <worktree-path> [base-branch]");
+  process.exit(2);
+}
+
+const worktreePath = process.argv[2];
+const baseBranch = process.argv[3] || "main";
+if (!worktreePath) usage();
+
+const cwd = path.resolve(worktreePath);
+if (!fs.existsSync(cwd)) {
+  console.log(`[forge:sync-base] Worktree does not exist, skipping: ${cwd}`);
+  process.exit(0);
+}
+
+function git(args, options = {}) {
+  return execFileSync("git", args, {
+    cwd,
+    encoding: "utf-8",
+    timeout: options.timeout ?? 60000,
+    stdio: options.stdio ?? ["ignore", "pipe", "pipe"],
+  });
+}
+
+function isClean() {
+  return git(["status", "--porcelain"]).trim() === "";
+}
+
+try {
+  git(["rev-parse", "--is-inside-work-tree"]);
+} catch (error) {
+  console.log(`[forge:sync-base] Not a git worktree, skipping: ${cwd}`);
+  process.exit(0);
+}
+
+if (!isClean()) {
+  console.error("[forge:sync-base] Worktree has uncommitted changes; refusing to sync base.");
+  process.exit(2);
+}
+
+const remoteRef = `refs/remotes/origin/${baseBranch}`;
+try {
+  console.log(`[forge:sync-base] Fetching origin/${baseBranch}…`);
+  git(["fetch", "--prune", "origin", `+refs/heads/${baseBranch}:${remoteRef}`], { timeout: 120000, stdio: "inherit" });
+} catch (error) {
+  console.error(`[forge:sync-base] git fetch failed: ${error.message}`);
+  process.exit(2);
+}
+
+try {
+  git(["rev-parse", "--verify", remoteRef]);
+} catch {
+  console.error(`[forge:sync-base] Remote ref not found: ${remoteRef}`);
+  process.exit(2);
+}
+
+try {
+  execFileSync("git", ["merge-base", "--is-ancestor", remoteRef, "HEAD"], { cwd, stdio: "ignore" });
+  console.log(`[forge:sync-base] Already contains origin/${baseBranch}.`);
+  process.exit(0);
+} catch {
+  // origin/base is not an ancestor; merge below.
+}
+
+try {
+  console.log(`[forge:sync-base] Merging origin/${baseBranch} into current branch…`);
+  git(["merge", "--no-edit", "--no-stat", `origin/${baseBranch}`], { timeout: 120000, stdio: "inherit" });
+  console.log(`[forge:sync-base] Synced with origin/${baseBranch}.`);
+  process.exit(0);
+} catch (error) {
+  try { git(["merge", "--abort"], { timeout: 30000, stdio: "ignore" }); } catch {}
+  console.error(`[forge:sync-base] Merge failed; aborted. ${error.message}`);
+  process.exit(2);
+}
