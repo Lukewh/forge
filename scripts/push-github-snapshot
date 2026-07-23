@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REMOTE="${FORGE_SNAPSHOT_REMOTE:-github}"
+BRANCH="${FORGE_SNAPSHOT_BRANCH:-main}"
+
+cd "$ROOT"
+
+if ! git remote get-url "$REMOTE" >/dev/null 2>&1; then
+  echo "Missing git remote: $REMOTE" >&2
+  exit 1
+fi
+
+tracked_files_path="/tmp/forge-snapshot-tracked-files.$$"
+git ls-files | grep -v '^scripts/push-github-snapshot$' >"$tracked_files_path"
+
+blocked_paths='(^|/)(forge\.db|forge\.db-shm|forge\.db-wal|projects/|\.env|workspace-run\.config\.json|node_modules/|\.DS_Store|dist/)'
+if grep -E "$blocked_paths" "$tracked_files_path" >/tmp/forge-snapshot-blocked-paths.$$; then
+  echo "Refusing to snapshot tracked private/runtime/build paths:" >&2
+  cat /tmp/forge-snapshot-blocked-paths.$$ >&2
+  rm -f /tmp/forge-snapshot-blocked-paths.$$ "$tracked_files_path"
+  exit 1
+fi
+rm -f /tmp/forge-snapshot-blocked-paths.$$
+
+secret_regex='\b[A-Z]{2,10}-[0-9]{2,}\b|pave|tarmac|lukewesley|BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY|PRIVATE KEY|api[_-]?key|secret|password|passwd|LINEAR_API_KEY|GITHUB_TOKEN|ANTHROPIC|OPENAI|AWS_ACCESS_KEY|AWS_SECRET|ghp_[A-Za-z0-9_]+|github_pat_[A-Za-z0-9_]+|xox[baprs]-'
+if git grep -n -I -E "$secret_regex" -- $(cat "$tracked_files_path") >/tmp/forge-snapshot-secret-hits.$$; then
+  echo "Refusing to snapshot possible private data:" >&2
+  cat /tmp/forge-snapshot-secret-hits.$$ >&2
+  rm -f /tmp/forge-snapshot-secret-hits.$$ "$tracked_files_path"
+  exit 1
+fi
+rm -f /tmp/forge-snapshot-secret-hits.$$ "$tracked_files_path"
+
+if git fetch "$REMOTE" "$BRANCH" >/dev/null 2>&1; then
+  parent_ref="FETCH_HEAD"
+else
+  parent_ref=""
+fi
+
+tree="$(git rev-parse HEAD^{tree})"
+source_commit="$(git rev-parse HEAD)"
+message="Daily Forge snapshot $(date -I)
+
+Source commit: $source_commit"
+
+if [[ -n "$parent_ref" ]]; then
+  snapshot_commit="$(printf '%s\n' "$message" | git commit-tree "$tree" -p "$parent_ref")"
+else
+  snapshot_commit="$(printf '%s\n' "$message" | git commit-tree "$tree")"
+fi
+
+git push "$REMOTE" "$snapshot_commit:refs/heads/$BRANCH"
+echo "Pushed $REMOTE/$BRANCH snapshot $snapshot_commit from $source_commit"
