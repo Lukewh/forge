@@ -1,385 +1,623 @@
-# Forge — Developer Guide for LLMs
+# Forge — Developer Guide for LLM Agents
 
-Forge is a pi extension that manages the full lifecycle of Linear issues through automated AI agents. It lives at `~/.pi/agent/extensions/forge/` and is loaded by pi via `index.ts`.
+Forge is a standalone AI issue-lifecycle system for Linear-backed engineering work. It uses the pi SDK to run agents that plan work, implement code in isolated worktrees, review it, create/push PRs, watch GitHub, loop on feedback, and mark issues done.
 
----
+Forge can run as:
 
-## Architecture Overview
+- a **standalone backend**: scheduler, agents, SQLite DB, REST/SSE dashboard
+- a **desktop app**: native macOS window plus local CLI bridge for Linear tooling
+- an optional **pi extension shim**: `/forge` commands inside pi
 
-```
-Linear issue
-    │
-    ▼
-forge.db (SQLite)  ←─── all state lives here
-    │
-    ▼
-scheduler.ts  ──── ticks every N seconds ───► spawns agent processes
-    │
-    ├── setup.js         (deterministic, no LLM)
-    ├── agent-runner.js  (LLM agents: planner, coder, reviewer, etc.)
-    └── watcher.js       (deterministic, no LLM)
-```
-
-The **dashboard** (`dashboard/server.js` + `dashboard/public/`) is an Express app that reads/writes `forge.db` and exposes a REST API + SSE for the browser UI.
-
-The **pi extension** (`index.ts`) registers `/forge` slash commands and runs the scheduler in-process. A standalone scheduler can also be launched via `start-scheduler.mjs`.
+This file is for agents modifying Forge itself. For user-facing setup and screenshots, keep [`README.md`](README.md) in sync.
 
 ---
 
-## Key Files
+## Non-negotiable rules
+
+- Do **not** commit runtime/private data:
+  - `forge.db*`
+  - `projects/`
+  - `.env*`
+  - `workspace-run.config.json`
+  - `node_modules/`
+  - `dist/`
+  - logs or PID files
+- Do **not** use `git commit --amend`, interactive rebase, squash, or any history rewrite.
+- If pushing to GitHub snapshots, use `./scripts/push-github-snapshot`; do not normal-push local history to the `github` remote.
+- When changing dashboard frontend source, run `npm run dashboard:build` and include built `dashboard/public/v3/*` assets.
+- Keep state-machine changes synchronized across DB, scheduler, agent runner, dashboard API, and dashboard UI.
+- Prefer small, targeted edits. Avoid unrelated cleanup.
+
+---
+
+## Repository locations and remotes
+
+Common local source path:
+
+```text
+~/.pi/agent/extensions/forge
+```
+
+Common VM deployed copy:
+
+```text
+~/forge
+```
+
+Remotes:
+
+- `origin` — canonical private git remote.
+- `github` — public snapshot remote. Use `scripts/push-github-snapshot` so snapshots are sanitized and history-free.
+
+---
+
+## Architecture overview
+
+```text
+Linear/manual issue
+  │
+  ▼
+forge.db (SQLite, WAL)  ←── dashboard + scheduler + agents all read/write here
+  │
+  ├── dashboard/server.js       Express REST API + SSE + desktop job API
+  ├── dashboard/frontend/src/   Preact dashboard source
+  ├── desktop/main.ts           Deno Desktop wrapper + macOS Linear CLI bridge
+  │
+  ▼
+scheduler.ts
+  │
+  ├── setup.js         deterministic worktree/project setup
+  ├── agent-runner.js  pi SDK LLM agents
+  └── watcher.js       deterministic GitHub PR watcher
+```
+
+### Runtime ownership
+
+- The backend owns `forge.db`.
+- The scheduler spawns detached Node processes for setup/agents/watchers.
+- The dashboard exposes APIs and live SSE events.
+- The desktop bridge can run local macOS Linear CLI jobs while a VM backend remains DB owner.
+
+---
+
+## Key files
 
 | File | Purpose |
-|------|---------|
-| `db.ts` | Single source of truth: all SQLite schema, types, and query methods |
-| `index.ts` | pi extension entry — registers `/forge` commands, starts scheduler |
-| `scheduler.ts` | `ForgeScheduler` class — ticks, picks schedulable issues, spawns agents |
-| `setup.js` | Creates git worktree + project file, transitions PENDING → PLANNING |
-| `agent-runner.js` | Runs LLM agents (planner, coder, reviewer, git-agent, fixer); handles state transitions |
-| `watcher.js` | Polls GitHub PR status; detects merges + review comments |
-| `generate-summary.js` | Writes `projects/{id}/summary.md` on completion |
-| `self-improve.js` | Extracts patterns from PR review comments and appends to `agents/coder.md` |
-| `dashboard/server.js` | Express REST API for the web dashboard |
-| `dashboard/public/app.js` | Browser SPA (vanilla JS) |
-| `dashboard/public/style.css` | Dashboard styles |
-| `agents/*.md` | System prompts for each LLM agent type |
-| `projects/{id}/plan.md` | Per-issue project file (the agent's working document) |
-| `projects/{id}/run-{N}-{type}.log` | JSONL log for each agent run |
-| `projects/{id}/summary.md` | Executive summary written at DONE |
+|---|---|
+| `db.ts` | SQLite schema, migrations, row types, settings, issue/decision/run helpers |
+| `scheduler.ts` | `ForgeScheduler`, schedulable-state selection, state → agent spawning |
+| `setup.js` | Deterministic worktree and `plan.md` setup |
+| `agent-runner.js` | LLM agent execution via pi SDK, context assembly, transitions, decisions, retries |
+| `watcher.js` | PR state/review/check/merge polling through GitHub CLI |
+| `dashboard/server.js` | Express REST API, SSE, desktop jobs, diffs, VM/workspace endpoints |
+| `dashboard/frontend/src/main.ts` | Preact dashboard app source |
+| `dashboard/frontend/src/style.css` | Preact dashboard styles source |
+| `dashboard/public/v3/*` | Built dashboard assets; commit after frontend builds |
+| `desktop/main.ts` | Deno Desktop app and local Linear CLI bridge |
+| `bin/forge.js` | Standalone CLI entrypoint |
+| `bin/forge-dashboard.js` | Dashboard server executable |
+| `index.ts` | Optional pi extension shim for `/forge` commands |
+| `pi-sdk-runner.mjs` | pi SDK session runner used by LLM agents |
+| `agents/*.md` | Agent prompts editable from dashboard |
+| `projects/{id}/plan.md` | Per-issue working document; runtime, do not commit |
+| `generate-summary.js` | Writes completion summaries |
+| `reflect.js` / `self-improve.js` | Review-learning/reflection support |
+| `scripts/first-run-setup` | First-run setup wizard |
+| `scripts/push-github-snapshot` | Sanitized GitHub snapshot push script |
+| `scripts/workspace-run` | Workspace command runner |
 
 ---
 
-## Issue Lifecycle & States
+## State machine
 
-States are stored in `issues.state`. Valid values (defined in `db.ts` `IssueState`):
+Issue states are defined in `db.ts` `IssueState`.
 
-```
+Primary flow:
+
+```text
 PENDING
-  └─► SETTING_UP      (setup.js creates worktree + plan file)
-        └─► PLANNING          (planner agent writes the plan)
-              └─► AI_PLAN_REVIEWING   (plan-reviewer agent checks it)
-                    ├─► AWAITING_PLAN_APPROVAL  (user must approve/reject)
-                    └─► WORKING        (coder agent implements)
-                          └─► AI_REVIEWING       (reviewer agent checks code)
-                                ├─► AWAITING_CODE_REVIEW  (user must approve/reject)
-                                └─► CREATING_PR    (git-agent creates PRs via git/gh)
-                                      └─► WATCHING_PR    (watcher polls GitHub)
-                                            ├─► AWAITING_FIX_APPROVAL  (user reviews comments)
-                                            │     └─► FIXING  (fixer agent addresses comments)
-                                            │           └─► PUSHING  (git-agent pushes)
-                                            │                 └─► WATCHING_PR (loop)
-                                            └─► DONE
-PAUSED    — user-suspended; resumes to previous_state
-IGNORED   — user-dismissed; not scheduled; Linear not synced
-FAILED    — agent crashed or errored; retryable
-STEERING  — (flag-like) instructions queued; not a blocking state
+  └─ scheduler promotes to SETTING_UP
+       └─ setup → PLANNING
+            └─ planner → AI_PLAN_REVIEWING
+                 ├─ plan-reviewer needs changes → PLANNING
+                 └─ plan-reviewer approved → AWAITING_PLAN_APPROVAL
+                      └─ human approves → WORKING
+                           └─ coder → AI_REVIEWING
+                                ├─ reviewer needs changes → WORKING
+                                └─ reviewer approved → AWAITING_CODE_REVIEW
+                                     └─ human approves → CREATING_PR
+                                          └─ git-agent → WATCHING_PR
+                                               ├─ watcher sees merge queue → IN_MERGE_QUEUE
+                                               ├─ watcher sees review comments → AWAITING_FIX_APPROVAL
+                                               │    └─ human approves → FIXING
+                                               │         └─ fixer → PUSHING
+                                               │              └─ git-agent → WATCHING_PR
+                                               └─ watcher sees merged stack → DONE
 ```
 
-The `previous_state` column is set on every transition so PAUSED/FAILED/IGNORED can resume.
+Split/rebase flow:
 
-### State Machine Constants
+```text
+SPLIT_PLANNING → AWAITING_SPLIT_APPROVAL → SPLITTING → WATCHING_PR
+REBASING → WATCHING_PR
+```
 
-- **`scheduler.ts` `STATE_AGENT_MAP`** — maps state → which script/agent to spawn
-- **`agent-runner.js` `NEXT_STATE_MAP`** — maps current state → next state after agent completes
-- **`agent-runner.js` `determineDecisionType()`** — maps next state → decision type (if user input needed)
+Suspended/terminal/special:
 
----
+- `PAUSED` — user suspended; resumes to `previous_state`.
+- `IGNORED` — removed from queue without Linear sync.
+- `FAILED` — agent/runtime failure; inspect and retry.
+- `STEERING` — legacy/special flag-like state; normal steering lives in `steering_context`.
+- `DONE` — terminal; pending decisions are cleared.
 
-## Database Schema
+### Canonical state-machine locations
 
-All tables are in `forge.db` (SQLite WAL mode). Schema is defined and migrated in `db.ts` `migrate()`.
+Keep these in sync:
 
-### `issues`
-The core table. One row per tracked issue.
-
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | INTEGER PK | Forge internal ID |
-| `source` | TEXT | `'linear'` or `'manual'` |
-| `linear_id` | TEXT | e.g. `TEAM-1234`; unique |
-| `title` | TEXT | |
-| `priority` | INTEGER | 0=none, 1=urgent, 2=high, 3=medium, 4=low |
-| `state` | TEXT | Current `IssueState` |
-| `previous_state` | TEXT | Set on every transition; used by resume/retry |
-| `locked_at` | TEXT | ISO timestamp; set when an agent is running |
-| `agent_pid` | INTEGER | PID of the currently running agent process |
-| `steering_context` | TEXT | Free-form instructions; agent reads and clears this |
-| `project_file_path` | TEXT | Absolute path to `plan.md` |
-| `wt_path` | TEXT | Absolute path to the git worktree |
-| `ai_review_rounds` | INTEGER | Counter for AI review loop depth |
-| `linear_state` | TEXT | Last Linear state we synced to (de-dup guard) |
-| `created_at` / `updated_at` | TEXT | ISO datetimes |
-
-### `pr_stack`
-One row per PR in the issue's git branch stack.
-
-| Column | Notes |
-|--------|-------|
-| `issue_id` | FK → issues |
-| `pr_number` | GitHub PR number; NULL until created |
-| `branch` | Git branch name |
-| `position` | 1-based order (1 = bottom/oldest) |
-| `status` | `open`, `merged`, `closed`, `draft` |
-| `base_pr_id` | FK → pr_stack (parent in stack) |
-
-### `decision_queue`
-Pending human decisions (plan approvals, code reviews, fix approvals).
-
-| Column | Notes |
-|--------|-------|
-| `issue_id` | FK → issues |
-| `type` | `PLAN_REVIEW`, `CODE_REVIEW`, `FIX_APPROVAL`, `AI_CODE_REVIEW`, `AI_PLAN_REVIEW` |
-| `artifact_ref` | Path to the plan file, or JSON blob of review comments |
-| `feedback_json` | User's feedback after resolving |
-| `verdict` | `approved`, `rejected`, or NULL (pending) |
-| `resolved_at` | Set when verdict recorded |
-
-When an issue moves to **DONE**, all pending decisions for it are cleared (verdict = `rejected`, feedback = `"Cleared — issue moved to DONE"`).
-
-### `agent_runs`
-One row per agent invocation.
-
-| Column | Notes |
-|--------|-------|
-| `issue_id` | FK → issues |
-| `agent_type` | `setup`, `planner`, `plan-reviewer`, `coder`, `reviewer`, `git-agent`, `fixer`, `watcher` |
-| `started_at` / `exited_at` | Timestamps |
-| `exit_code` | NULL while running |
-| `log_path` | Absolute path to the JSONL run log |
-
-### `activity_log`
-Append-only audit trail. Types include: `agent_started`, `agent_completed`, `agent_failed`, `decision_approved`, `decision_rejected`, `steered`, `paused`, `resumed`, `ignored`, `unignored`, `retried`, `completed`, `reset`, `advanced`.
-
-### `settings`
-Key/value config. Defaults in `db.ts` `DEFAULT_SETTINGS`. Editable via dashboard.
-
-Important keys: `concurrency_limit`, `scheduler_interval_seconds`, `model`, `linear_team`, `wt_root`, `branch_prefix`, `default_branch`, `github_repo`, `ai_review_max_rounds`.
-
-### `scheduler_state`
-Single row (id=1). Tracks whether the scheduler is running and its PID.
+| Concern | File/location |
+|---|---|
+| State type union | `db.ts` `IssueState` |
+| Agent type union | `db.ts` `AgentType` |
+| Schedulable issue SQL | `db.ts` `listSchedulableIssues()` |
+| State → spawned agent | `scheduler.ts` `STATE_AGENT_MAP` |
+| Start-state promotion | `scheduler.ts` `START_STATE_MAP` |
+| Successful agent transitions | `agent-runner.js` `NEXT_STATE_MAP` plus special AI review handling |
+| Decision type for next state | `agent-runner.js` `determineDecisionType()` |
+| Linear state sync | `agent-runner.js` `LINEAR_STATE_MAP`, `dashboard/server.js` `FORGE_LINEAR_STATE_MAP` |
+| Dashboard labels/actions/phases | `dashboard/frontend/src/main.ts` |
+| Dashboard state styles | `dashboard/frontend/src/style.css` |
 
 ---
 
-## Agent System
+## Agents
 
-### How Agents Are Spawned
+| Agent | Script | Handles |
+|---|---|---|
+| `setup` | `setup.js` | `SETTING_UP → PLANNING` |
+| `planner` | `agent-runner.js` | `PLANNING → AI_PLAN_REVIEWING` |
+| `plan-reviewer` | `agent-runner.js` | `AI_PLAN_REVIEWING → AWAITING_PLAN_APPROVAL` or back to `PLANNING` |
+| `coder` | `agent-runner.js` | `WORKING → AI_REVIEWING` |
+| `reviewer` | `agent-runner.js` | `AI_REVIEWING → AWAITING_CODE_REVIEW` or back to `WORKING` |
+| `git-agent` | `agent-runner.js` | `CREATING_PR → WATCHING_PR`, `PUSHING → WATCHING_PR` |
+| `fixer` | `agent-runner.js` | `FIXING → PUSHING` |
+| `watcher` | `watcher.js` | `WATCHING_PR` / `IN_MERGE_QUEUE` → `DONE` or `AWAITING_FIX_APPROVAL` |
+| `split-planner` | `agent-runner.js` | `SPLIT_PLANNING → AWAITING_SPLIT_APPROVAL` |
+| `splitter` | `agent-runner.js` | `SPLITTING → WATCHING_PR` |
+| `rebaser` | `agent-runner.js` | `REBASING → WATCHING_PR` |
 
-1. `scheduler.ts` `tick()` calls `listSchedulableIssues()` — returns unlocked issues in actionable states
-2. For each issue, `spawnAgent()` looks up `STATE_AGENT_MAP[state]` → agent type
-3. Issue is locked (`locked_at`, `agent_pid`) before spawning
-4. A detached Node.js child process is spawned (`agent-runner.js`, `setup.js`, or `watcher.js`)
-5. Agent runs, writes to its log file, updates DB, and unlocks the issue on exit
+### Agent prompts
 
-Concurrency is controlled by `concurrency_limit` (default 2). Stale locks older than 10 minutes are reaped as FAILED.
+- Prompts live in `agents/{type}.md`.
+- Dashboard exposes prompt editing through `/api/agents/:type/prompt`.
+- The prompt list must match valid agent types where applicable.
 
-### Agent Types & Responsibilities
+### Agent context
 
-| Agent | Script | State it handles |
-|-------|--------|-----------------|
-| `setup` | `setup.js` | SETTING_UP → PLANNING |
-| `planner` | `agent-runner.js` | PLANNING → AI_PLAN_REVIEWING |
-| `plan-reviewer` | `agent-runner.js` | AI_PLAN_REVIEWING → AWAITING_PLAN_APPROVAL or PLANNING |
-| `coder` | `agent-runner.js` | WORKING → AI_REVIEWING |
-| `reviewer` | `agent-runner.js` | AI_REVIEWING → AWAITING_CODE_REVIEW or WORKING |
-| `git-agent` | `agent-runner.js` | CREATING_PR → WATCHING_PR; PUSHING → WATCHING_PR |
-| `fixer` | `agent-runner.js` | FIXING → PUSHING |
-| `watcher` | `watcher.js` | WATCHING_PR → DONE or AWAITING_FIX_APPROVAL |
+`agent-runner.js` builds a context bundle containing:
 
-### System Prompts
+- issue row and Linear/manual context
+- cached desktop Linear issue data when server-side Linear is disabled
+- `plan.md`
+- worktree path
+- steering instructions
+- decision feedback
+- PR/review/fix context as applicable
 
-Each LLM agent's system prompt is in `agents/{type}.md`. These can be edited live via the dashboard (Settings → Agent Prompts). The `self-improve.js` script automatically appends patterns learned from PR review comments to `agents/coder.md` after each completed issue.
+### Verdict files
 
-### Context Bundle
+AI reviewers write verdict JSON under `projects/{id}/verdicts/` and/or current verdict paths that `agent-runner.js` reads. Expected verdict shape is broadly:
 
-`agent-runner.js` `buildContextBundle()` assembles the user message sent to the LLM:
-- Linear issue title, description, comments
-- Project file contents (`plan.md`)
-- Worktree path
-- Steering context (if set)
-- Pending decision feedback (if retrying after rejection)
+```json
+{ "verdict": "approved", "summary": "...", "feedback": [] }
+```
 
-### Verdict Files
+or:
 
-Some agents write verdict JSON files to `projects/{id}/` that `agent-runner.js` reads after the LLM exits:
-- `plan-review-verdict.json` — `{ verdict: "approved"|"needs_changes", summary, feedback[] }`
-- `review-verdict.json` — same shape
+```json
+{ "verdict": "needs_changes", "summary": "...", "feedback": ["..."] }
+```
 
 ---
 
-## Project File (`plan.md`)
+## Database model
 
-Each issue has a project file at `projects/{id}/plan.md` (path stored in `issues.project_file_path`). It's the agent's primary working document.
+`db.ts` is the source of truth. The dashboard also contains inline migrations for shared tables; keep them aligned.
+
+Core tables:
+
+| Table | Purpose |
+|---|---|
+| `issues` | One row per tracked Linear/manual issue |
+| `pr_stack` | PR stack entries for an issue |
+| `decision_queue` | Pending and historical human/AI decisions |
+| `agent_runs` | One row per spawned setup/agent/watcher run |
+| `activity_log` | Audit log for issue lifecycle events |
+| `assets` | Locally fetched issue assets |
+| `settings` | Runtime configuration |
+| `scheduler_state` | Scheduler running flag/PID |
+| `desktop_jobs` | Jobs claimed/completed by desktop bridge |
+| `desktop_cache` | Cached desktop bridge results |
+| `learnings` | Review/reflection learnings |
+
+Important `issues` columns:
+
+- `state`, `previous_state`
+- `locked_at`, `agent_pid`
+- `steering_context`
+- `pi_sessions_json`
+- `project_file_path`, `wt_path`
+- `ai_review_rounds`, `total_ai_review_rounds`
+- `retry_count`
+- `pr_approved_at`
+- `auto_fix_enabled`
+- `focus_rank`
+- `linear_state`
+
+Important settings include:
+
+- `setup_completed`
+- `concurrency_limit`
+- `scheduler_interval_seconds`
+- `dashboard_port`
+- `linear_enabled`, `linear_team`, `linear_poll_interval_seconds`
+- `github_repo`
+- `worktree_provider`, `repo_root`, `worktree_root`, `wt_root`
+- `branch_prefix`, `default_branch`
+- `model` and per-agent model overrides
+- `forge_reuse_pi_sessions`
+- `ai_review_max_rounds`, `auto_retry_max`
+- VM/workspace settings: `vm_ssh_target`, path prefixes, command settings
+
+---
+
+## Dashboard/API
+
+`dashboard/server.js` is the backend. It serves the dashboard, REST API, SSE, desktop bridge endpoints, diffs, logs, workspace commands, and prompt/settings APIs.
+
+Important endpoint groups:
+
+| Endpoint group | Purpose |
+|---|---|
+| `/api/health` | Backend health |
+| `/api/events` | SSE dashboard updates |
+| `/api/overview` | Issues, decisions, running agents, scheduler state |
+| `/api/issues` | List/create issues |
+| `/api/issues/:id` | Issue detail and issue actions |
+| `/api/issues/:id/diff` | Git diff/review data |
+| `/api/issues/:id/listen` | Live agent log stream |
+| `/api/issues/:id/ask` | Ask/sidecar issue assistant |
+| `/api/issues/:id/sync-prs` | Sync PR stack from GitHub |
+| `/api/issues/:id/prs` | Add/update PR stack entries |
+| `/api/issues/:id/vm-launch` | Launch configured workspace commands |
+| `/api/issues/:id/reflect` | Run reflection/learning flow |
+| `/api/issues/:id/generate-tour` | Generate dashboard tour artifact |
+| `/api/decisions` | Pending decisions |
+| `/api/decisions/:id/resolve` | Approve/reject decisions |
+| `/api/archive` | Completed issues |
+| `/api/settings` | Read/update settings |
+| `/api/agents/:type/prompt` | Read/update agent prompts |
+| `/api/learnings` | Read/update learnings |
+| `/api/linear/issues` | Linear issue listing through server or desktop bridge |
+| `/api/linear/enqueue` | Add Linear issues to Forge |
+| `/api/desktop/*` | Desktop bridge status/jobs/heartbeat |
+| `/api/vm/*` | VM/workspace process status |
+| `/api/runs/:id/log` | Agent run log content |
+
+### Issue PATCH actions
+
+`PATCH /api/issues/:id` supports lifecycle actions such as:
+
+- `pause`, `unpause`
+- `ignore`, `unignore`
+- `steer`, `clear-steer`
+- `advance`, `jump`
+- `retry`, `reset`
+- `enable-auto-fix`, `disable-auto-fix`
+- split/rebase related actions
+
+When adding an action, update dashboard UI wiring and tests.
+
+---
+
+## Dashboard frontend rules
+
+Source of truth:
+
+- `dashboard/frontend/src/main.ts`
+- `dashboard/frontend/src/style.css`
+
+Build output:
+
+- `dashboard/public/v3/forge-dashboard.js`
+- `dashboard/public/v3/forge-dashboard.css`
+
+Rules:
+
+- Always run `npm run dashboard:check` after TypeScript/UI changes.
+- Always run `npm run dashboard:build` after source/style changes.
+- Commit built `dashboard/public/v3/*` assets with source changes.
+- Do not rely on legacy `dashboard/public/app.js` unless specifically modifying classic v2 UI.
+- Avoid global rerenders that reset UI state.
+- Preserve panel/modal/tab/query-param state across SSE ticks and detail refreshes.
+- Use overlays/toasts for status messages; avoid layout-shifting banners.
+- Filter unresolved decisions for active decision UI.
+
+---
+
+## Desktop bridge
+
+The desktop app (`desktop/main.ts`) is a Deno Desktop wrapper. It can point at a local or VM backend.
+
+Key behavior:
+
+- starts/reuses dashboard when local
+- stores backend selection in `~/.config/forge/forge-desktop.json`
+- polls `/api/desktop/jobs`
+- runs Linear CLI commands locally on macOS
+- posts results to `/api/desktop/jobs/:id/complete`
+- maintains desktop heartbeat/status
+
+Desktop job types currently include:
+
+- `linear.fetchIssue`
+- `linear.syncState`
+- `linear.listAssigned`
+
+For VM deployments, keep backend `linear_enabled=false` and run the desktop bridge on macOS.
+
+---
+
+## Linear and GitHub integration
+
+### Linear
+
+Forge supports two Linear modes:
+
+1. server-side `linear` CLI when `linear_enabled=true`
+2. desktop bridge jobs when `linear_enabled=false`
+
+Use [`schpet/linear-cli`](https://github.com/schpet/linear-cli). Do not assume a Linear API token is present.
+
+Linear sync map:
+
+| Forge states | Linear state |
+|---|---|
+| `SETTING_UP`, `PLANNING`, `AWAITING_PLAN_APPROVAL`, `WORKING`, `AI_REVIEWING` | `In Progress` |
+| `AWAITING_CODE_REVIEW`, `CREATING_PR`, `WATCHING_PR`, `IN_MERGE_QUEUE`, `SPLIT_*`, `AWAITING_FIX_APPROVAL`, `FIXING`, `PUSHING`, `REBASING` | `In Review` |
+| `DONE` | `Done` |
+| `PAUSED`, `IGNORED`, `FAILED` | no sync |
+
+`issues.linear_state` is the de-dup guard.
+
+### GitHub
+
+Forge uses `gh` from the backend environment for PR state. If running in a VM, install/authenticate `gh` in the VM.
+
+Typical commands used by Forge include:
+
+- `gh pr view`
+- `gh pr list`
+- `gh api`
+- `gh api graphql`
+
+---
+
+## Worktrees and workspace commands
+
+Forge supports:
+
+- raw `git worktree` (`worktree_provider=git`)
+- Worktrunk (`worktree_provider=wt`)
+
+Important settings:
+
+- `repo_root`
+- `worktree_root`
+- `wt_root`
+- `branch_prefix`
+- `default_branch`
+
+Workspace command support lives in:
+
+- `scripts/workspace-run`
+- `docs/workspace-run.md`
+- dashboard VM/workspace endpoints
+- VM command settings in `settings`
+
+Be tolerant of VM/macOS path differences and legacy worktree prefixes.
+
+---
+
+## Project files
+
+Each issue gets `projects/{id}/` at runtime. Do not commit these files.
+
+Typical files:
+
+| File | Purpose |
+|---|---|
+| `plan.md` | Human-readable plan/TODO/log; primary agent artifact |
+| `run-{N}-{type}.log` | JSONL/stdout agent logs |
+| `summary.md` | Completion summary |
+| `verdicts/*.json` | AI review verdict archive |
+| tour/review artifacts | Generated dashboard support files |
+
+`plan.md` frontmatter commonly includes:
 
 ```markdown
 ---
 linear-id: TEAM-1234
 pr-url:
 base-branch: main
-app: pricing
-layer: frontend
+app:
+layer:
 started: 2026-01-01T00:00:00.000Z
 merged:
-branch-name: user/TEAM-1234-some-feature
+branch-name: user/team-1234-title
 project:
 milestone:
 ---
-Brief summary of the work.
-
-# PR Stack
-- PR 1: ...
-- PR 2: ...
-
-# TODO
-- [ ] Task 1
-- [x] Task 2 (done)
-
-# Decisions Made
-- Used approach X because Y
-
-# Log
-## Planning complete
-*2026-01-01T...*
-Notes from planner.
 ```
 
 ---
 
-## Linear Integration
+## Common modification playbooks
 
-Forge syncs issue state to Linear as it progresses:
+### Add a new issue state
 
-| Forge states | Linear state |
-|---|---|
-| SETTING_UP, PLANNING, AWAITING_PLAN_APPROVAL, WORKING, AI_REVIEWING | `In Progress` |
-| AWAITING_CODE_REVIEW, CREATING_PR, WATCHING_PR, AWAITING_FIX_APPROVAL, FIXING, PUSHING | `In Review` |
-| DONE | `Done` |
-| PAUSED, IGNORED, FAILED | *(no sync)* |
+1. Add to `IssueState` in `db.ts`.
+2. Add/migrate DB constraints if needed.
+3. Decide if schedulable; update `db.ts` `listSchedulableIssues()` and `scheduler.ts` `STATE_AGENT_MAP`.
+4. Add transitions in `agent-runner.js` or relevant deterministic script.
+5. Add decision mapping if it creates a human gate.
+6. Add Linear sync mapping if applicable.
+7. Add dashboard labels, phase mapping, actions, and styles.
+8. Add/update tests.
 
-Syncing is de-duplicated via `issues.linear_state` — it only calls the `linear` CLI if the target state differs from the last-synced value.
+### Add a new agent type
 
-**IGNORED** specifically does not sync to Linear, making it safe to use when you want to remove an issue from Forge's queue without affecting its Linear state.
+1. Add to `AgentType` in `db.ts`.
+2. Create `agents/{type}.md`.
+3. Map state → agent in `scheduler.ts`.
+4. Handle in `agent-runner.js` or create a deterministic script.
+5. Add model override setting if needed.
+6. Expose prompt editing if user-visible.
+7. Add tests.
 
----
+### Add a dashboard action
 
-## Dashboard API
+1. Add backend case in `dashboard/server.js` `PATCH /api/issues/:id`.
+2. Add DB helper if logic is reused.
+3. Add frontend action wiring in `dashboard/frontend/src/main.ts`.
+4. Add/adjust CSS if needed.
+5. Add tests in dashboard action/frontend suites.
+6. Mirror in `index.ts` if slash command support is needed.
 
-The Express dashboard (`dashboard/server.js`) runs on port 3142 (configurable). Key endpoints:
+### Add/change a setting
 
-| Method | Path | Purpose |
-|--------|------|---------|
-| GET | `/api/overview` | Issues, decisions, running agents, scheduler state |
-| GET | `/api/issues` | All issues |
-| GET | `/api/issues/:id` | Issue detail + PRs, decisions, runs, plan, activity |
-| PATCH | `/api/issues/:id` | Actions: `pause`, `unpause`, `ignore`, `unignore`, `steer`, `clear-steer`, `advance`, `retry`, `reset` |
-| DELETE | `/api/issues/:id` | Remove issue + worktree |
-| GET | `/api/issues/:id/diff` | Git diff vs base branch |
-| GET | `/api/issues/:id/listen` | SSE stream of live agent output |
-| POST | `/api/issues/:id/sync-prs` | Sync PR stack from GitHub |
-| GET | `/api/decisions` | Pending decisions |
-| POST | `/api/decisions/:id/resolve` | Approve or reject a decision |
-| GET | `/api/archive` | DONE issues |
-| GET | `/api/linear/issues` | Fetch assignee's open Linear issues |
-| POST | `/api/linear/enqueue` | Add a Linear issue to Forge |
-| GET/PUT | `/api/agents/:type/prompt` | Read/write agent system prompts |
-| GET/PATCH | `/api/settings` | Read/update settings |
+1. Add default in `db.ts` `DEFAULT_SETTINGS`.
+2. Add migration/default seeding if needed.
+3. Add dashboard inline migration/default if server depends on it before `ForgeDB` initialization.
+4. Add UI control in dashboard settings.
+5. Add setup wizard prompt if first-run relevant.
+6. Document in README.
 
-SSE is available at `/api/events` for live dashboard updates (broadcasts `tick`, `issue_added`, `issue_removed`, `decision_resolved`).
+### Add/change DB schema
 
----
-
-## `/forge` Slash Commands
-
-Registered in `index.ts`. All run synchronously against `forge.db`.
-
-```
-/forge                       — status overview
-/forge start                 — start the scheduler
-/forge stop                  — stop the scheduler
-/forge list                  — list all issues
-/forge add <LINEAR-ID>       — enqueue a Linear issue (fetches title from Linear)
-/forge add "title"           — add a manual issue
-/forge queue                 — show pending decisions
-/forge approve <decision-id> — approve a decision
-/forge reject <id> [msg]     — reject a decision
-/forge pause <issue-id>      — pause (resumes to previous state)
-/forge resume <issue-id>     — resume a paused issue
-/forge ignore <issue-id>     — ignore (no Linear sync; won't be scheduled)
-/forge unignore <issue-id>   — resume an ignored issue
-/forge steer <id> <text>     — inject steering instructions for next agent run
-/forge dashboard             — start dashboard server
-/forge reset                 — wipe entire database (destructive)
-```
+1. Update `db.ts` migrations.
+2. Use safe `ALTER TABLE ADD COLUMN` helper patterns when possible.
+3. For CHECK constraint changes, use rename/recreate/copy pattern.
+4. Keep dashboard inline migrations in sync.
+5. Add DB tests.
 
 ---
 
-## Common Patterns When Modifying Forge
+## Commands
 
-### Adding a new issue state
-
-1. Add it to `IssueState` union in `db.ts`
-2. Decide if it's schedulable — if so, add to `STATE_AGENT_MAP` in `scheduler.ts`
-3. Exclude it from `listActiveIssues` / `listSchedulableIssues` SQL if it's terminal/suspended
-4. Exclude it from `reapStaleIssues` if agents shouldn't be reaped in it
-5. Add it to `FORGE_LINEAR_STATE_MAP` in `dashboard/server.js` and `LINEAR_STATE_MAP` in `agent-runner.js` if it should sync to Linear
-6. Add it to `STATE_LABELS` and add a `state-{STATE}` CSS class in the dashboard frontend
-
-### Adding a new dashboard action (PATCH /api/issues/:id)
-
-Add a `case` to the `switch (action)` block in `dashboard/server.js`. Mirror it in:
-- `db.ts` (method on `ForgeDB` if it needs a reusable query)
-- `index.ts` (if it should be available as a `/forge` command)
-
-### Adding a new agent type
-
-1. Create the system prompt in `agents/{type}.md`
-2. Add the agent type to `AgentType` in `db.ts`
-3. Map the relevant state → agent type in `scheduler.ts` `STATE_AGENT_MAP`
-4. Handle it in `agent-runner.js` `main()` (or write a standalone deterministic script like `setup.js`)
-
-### Changing state transition logic
-
-The canonical state machine is split across two files:
-- `scheduler.ts` `STATE_AGENT_MAP` — what runs for each state
-- `agent-runner.js` `NEXT_STATE_MAP` — where each agent transitions on success
-
-Keep them in sync.
-
-### Running tests
+From the Forge root:
 
 ```bash
-cd ~/.pi/agent/extensions/forge
-node --test test/db.test.mjs                    # DB layer
-node --test test/scheduler.test.mjs             # Scheduler
-node --test test/frontend.test.mjs              # Frontend parsing
-node --test test/summary.test.mjs               # Summary generation
-node --test test/dashboard.test.mjs             # Dashboard API
-# or all at once:
+# Syntax checks
+node --check dashboard/server.js
+node --check setup.js
+node --check agent-runner.js
+node --check watcher.js
+node --check generate-summary.js
+
+# Dashboard frontend
+npm run dashboard:check
+npm run dashboard:build
+
+# Tests
 npm test
+npm run test:db
+npm run test:sched
+npm run test:fe
+npm run test:api
+npm run test:pi-sdk
 ```
 
-### Database migrations
-
-Add incremental migrations to `db.ts` `runMigrations()`. Use the `addColumn` helper for safe `ALTER TABLE ADD COLUMN` calls that no-op if the column already exists. For constraint changes (e.g. expanding a CHECK), use the rename-recreate-copy pattern already demonstrated for `decision_queue`.
-
-The `dashboard/server.js` also runs its own inline migration block — keep both in sync when adding columns to shared tables.
+Run targeted tests when possible; report exact failures if known flaky tests fail.
 
 ---
 
-## External Tools Forge Relies On
+## Deployment / VM workflow
 
-| Tool | Used for |
-|------|---------|
-| `linear` CLI | Fetching issue details, updating issue state |
-| `wt` (worktrunk) | Creating/removing git worktrees |
+After changes are merged/pushed to `origin`, update the VM copy and restart dashboard:
 
-> **Note — `core.bare` fix:** `worktrees` is a bare clone. If `core.bare = true` is set in its config, git refuses commands like `git status` in any linked worktree (it resolves the worktree's `commondir` back to the bare root and sees the flag). `setup.js` runs `git config core.bare false` in `WT_ROOT` as step 3 of every new-issue setup, which fixes all sibling worktrees without affecting how the repo functions.
-| `gh` (GitHub CLI) | Fetching PR status, review comments, CI checks |
-| `git` | Diffs, commits, rebases, pushes, fetching branches |
-| `@earendil-works/pi-coding-agent` SDK | Running LLM agent sessions via `pi-sdk-runner.mjs` |
+```bash
+ssh orb 'cd ~/forge && git pull --ff-only'
+ssh orb 'pkill -f "node ./bin/forge-dashboard.js --port 3142" || true'
+ssh orb 'cd ~/forge && nohup node ./bin/forge-dashboard.js --port 3142 > /tmp/forge-dashboard.log 2>&1 &'
+ssh orb 'cd ~/forge && git rev-parse --short HEAD; ps -ef | grep "bin/forge-dashboard" | grep -v grep; tail -8 /tmp/forge-dashboard.log'
+```
+
+If `pkill` makes the SSH command exit early, run restart as separate commands.
 
 ---
 
-## Concurrency & Locking
+## Snapshot publishing
 
-Issues are locked via `issues.locked_at` + `issues.agent_pid` before any agent is spawned. The lock is acquired with a conditional UPDATE (`WHERE locked_at IS NULL`) to prevent double-spawning. Locks older than 10 minutes are reaped as FAILED by the scheduler's `reapStaleIssues()`.
+Public GitHub snapshots are intentionally not normal git pushes of local history.
 
-SQLite WAL mode with `busy_timeout = 5000` handles concurrent readers/writers between the scheduler, agent processes, and dashboard server.
+Use:
+
+```bash
+./scripts/push-github-snapshot
+```
+
+The script:
+
+- scans tracked files for blocked runtime/build paths
+- scans tracked files for obvious private data and credentials
+- creates a fresh snapshot commit from the current tree
+- pushes that commit to `github/main`
+
+Daily cron may run this automatically. Keep the script conservative.
+
+---
+
+## Debugging helpers
+
+```bash
+# API
+curl -sS http://localhost:3142/api/health
+curl -sS http://localhost:3142/api/overview | python3 -m json.tool
+curl -sS http://localhost:3142/api/issues/<id> | python3 -m json.tool
+curl -sS http://localhost:3142/api/issues/<id>/diff
+curl -sS http://localhost:3142/api/decisions | python3 -m json.tool
+
+# Logs
+ssh orb 'tail -100 /tmp/forge-dashboard.log'
+
+# GitHub auth in backend env
+gh auth status
+gh repo view OWNER/REPO
+
+# Linear desktop bridge status
+curl -sS http://localhost:3142/api/desktop/status | python3 -m json.tool
+```
+
+---
+
+## External tools
+
+| Tool | Required where | Purpose |
+|---|---|---|
+| `node` / `npm` | backend + local dev | services, scripts, tests |
+| `git` | backend | branches, worktrees, diffs, commits, pushes |
+| `gh` | backend; recommended locally | PR status, checks, comments, GitHub API |
+| `linear` | macOS desktop bridge or backend if enabled | Linear issue fetch/state sync/listing |
+| `deno` | macOS desktop app | Deno Desktop wrapper |
+| `wt` | optional backend | Worktrunk worktree provider |
+| pi SDK/auth | backend agent user | LLM agent sessions |
+
+---
+
+## Docs to keep aligned
+
+- [`README.md`](README.md) — user-facing overview/install/capabilities/screenshots
+- [`docs/workspace-run.md`](docs/workspace-run.md) — workspace command behavior
+- [`docs/DASHBOARD_FRONTEND.md`](docs/DASHBOARD_FRONTEND.md) — frontend architecture notes
+- [`docs/UX_AUDIT.md`](docs/UX_AUDIT.md) — dashboard UX notes
+- [`docs/AUDIT-2026-07-03.md`](docs/AUDIT-2026-07-03.md) — correctness audit
