@@ -12,6 +12,24 @@ Dashboard: <http://localhost:3142>
 
 ---
 
+## Screenshots
+
+The screenshots below use a sanitized demo database. Issue IDs, titles, repository names, and paths are fictional.
+
+### Pipeline dashboard
+
+![Forge dashboard pipeline with fake demo issues](docs/screenshots/forge-dashboard.png)
+
+### Human review workspace
+
+![Forge issue review view with fictional issue text](docs/screenshots/forge-review.png)
+
+### Runtime settings
+
+![Forge settings page with demo-only paths and repository values](docs/screenshots/forge-settings.png)
+
+---
+
 ## What Forge does
 
 ```text
