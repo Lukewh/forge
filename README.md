@@ -70,6 +70,113 @@ Special states: `PAUSED`, `FAILED`, `IGNORED`, `IN_MERGE_QUEUE`, `DONE`.
 
 ---
 
+## Capabilities
+
+### Issue intake and tracking
+
+- Enqueue Linear issues by ID.
+- Create manual issues without Linear.
+- Pull issue title, description, comments, assignee context, and priority from Linear.
+- List assigned Linear issues from the dashboard when the desktop bridge is connected.
+- Track every issue in SQLite with current state, previous state, priority, locks, worktree path, project file path, retry count, and review counters.
+- Pause, resume, ignore, unignore, reset, retry, advance, and delete tracked issues.
+- Add steering instructions that the next agent run must read before continuing.
+
+### Planning
+
+- Create a per-issue `projects/{id}/plan.md` working document.
+- Ask a planner agent to turn issue context into a concrete implementation plan.
+- Run an AI plan-reviewer before human approval.
+- Loop back to planning when the plan reviewer requests changes.
+- Queue a human plan approval decision before code work begins.
+
+### Code implementation
+
+- Create isolated git worktrees for each issue.
+- Support raw `git worktree` and optional Worktrunk (`wt`) worktree creation.
+- Run a coder agent against the issue plan, Linear context, steering, and review feedback.
+- Preserve per-issue logs and agent output.
+- Support configurable agent concurrency.
+- Support per-agent model overrides.
+- Support optional reuse of pi conversations for the same issue and agent type.
+
+### Review and approval gates
+
+- Run an AI code-reviewer before human code review.
+- Loop back to the coder when AI review finds issues.
+- Track per-cycle and cumulative AI review round counts.
+- Escalate to humans after a configurable maximum number of AI review loops.
+- Queue human decisions for plan review, code review, fix approval, and split approval.
+- Approve or reject decisions from the dashboard or `/forge` commands.
+- Preserve decision feedback for the next agent run.
+
+### Pull requests and GitHub automation
+
+- Ask a git-agent to create branches, commits, pushes, and PRs.
+- Track a PR stack per issue.
+- Sync PR numbers and PR state from GitHub.
+- Poll PR review decision, mergeability, checks, review comments, and merge state with `gh`.
+- Detect merged PRs and mark issues done.
+- Detect review comments and route them into the fix workflow.
+- Support merge queue / `IN_MERGE_QUEUE` tracking.
+- Generate completion summaries when work finishes.
+
+### Fix loops and resilience
+
+- Queue review comments for human fix approval.
+- Run a fixer agent to address approved PR feedback.
+- Push fixes and return to PR watching.
+- Auto-retry transient git-agent and fixer failures up to a configurable limit.
+- Reap stale locks using state-specific timeout windows.
+- Preserve failed issues for inspection and manual retry.
+
+### Dashboard
+
+- Web dashboard with REST API and server-sent events.
+- Pipeline view for active work and items awaiting humans.
+- Issue detail panel with overview, activity, ask, plan, PR stack, and actions.
+- Diff/review workspace for human code review.
+- Archive view for completed work.
+- Settings UI for runtime, model, repo, Linear, GitHub, worktree, and VM options.
+- Prompt editor for all agent system prompts.
+- Learnings view for accumulated review patterns.
+- Live agent-output streaming for running agents.
+- Browser notification support.
+
+### Desktop app and bridge
+
+- Native macOS desktop window powered by Deno Desktop.
+- Connect to a local or VM-hosted Forge backend.
+- Persist backend selection in `~/.config/forge/forge-desktop.json`.
+- Run Linear CLI jobs locally on macOS while the VM owns the database.
+- Fetch Linear issue details, sync Linear issue state, and list assigned issues through the desktop bridge.
+
+### VM and workspace support
+
+- Run backend, scheduler, agents, and GitHub automation inside a Linux/Orb VM.
+- Use macOS desktop bridge for Linear CLI when the backend runs in the VM.
+- Configure host/VM path prefix mapping.
+- Configure workspace-run commands for frontend, backend, and database workflows.
+- Support local-first setups and VM-backed setups.
+
+### Observability and audit trail
+
+- Store every agent run with start time, exit time, exit code, and log path.
+- Store activity events for state changes, decisions, steering, retries, failures, and completion.
+- Store archived AI review verdicts.
+- Generate `summary.md` at completion.
+- Expose issue, decision, run, activity, diff, prompt, settings, archive, and desktop job APIs.
+
+### Extensibility
+
+- Agent prompts are plain Markdown files in `agents/`.
+- State machine is explicit in `scheduler.ts` and `agent-runner.js`.
+- Database schema and migrations are centralized in `db.ts`.
+- Optional pi extension shim exposes `/forge` commands.
+- Snapshot script safely publishes sanitized daily GitHub snapshots.
+
+---
+
 ## Architecture
 
 | Piece | Purpose |
