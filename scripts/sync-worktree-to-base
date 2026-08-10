@@ -6,12 +6,15 @@ const fs = require("fs");
 const path = require("path");
 
 function usage() {
-  console.error("Usage: scripts/sync-worktree-to-base <worktree-path> [base-branch]");
+  console.error("Usage: scripts/sync-worktree-to-base <worktree-path> [base-branch] [--allow-diverged-current]");
   process.exit(2);
 }
 
-const worktreePath = process.argv[2];
-const baseBranch = process.argv[3] || "main";
+const args = process.argv.slice(2);
+const allowDivergedCurrent = args.includes("--allow-diverged-current") || process.env.FORGE_SYNC_ALLOW_DIVERGED_CURRENT === "1";
+const positionalArgs = args.filter(arg => !arg.startsWith("--"));
+const worktreePath = positionalArgs[0];
+const baseBranch = positionalArgs[1] || "main";
 if (!worktreePath) usage();
 
 const cwd = path.resolve(worktreePath);
@@ -31,6 +34,12 @@ function git(args, options = {}) {
 
 function isClean() {
   return git(["status", "--porcelain"]).trim() === "";
+}
+
+function remoteOnlyCommitsArePatchEquivalent(remoteRef) {
+  const output = git(["cherry", "HEAD", remoteRef]).trim();
+  if (!output) return true;
+  return output.split("\n").every(line => line.startsWith("- "));
 }
 
 try {
@@ -61,21 +70,54 @@ try {
   process.exit(2);
 }
 
+let currentBranch = "";
+try {
+  currentBranch = git(["branch", "--show-current"]).trim();
+} catch {}
+
+if (currentBranch) {
+  const currentRemoteRef = `refs/remotes/origin/${currentBranch}`;
+  try {
+    console.log(`[forge:sync-base] Fetching origin/${currentBranch}…`);
+    git(["fetch", "--prune", "origin", `+refs/heads/${currentBranch}:${currentRemoteRef}`], { timeout: 120000, stdio: "inherit" });
+
+    try {
+      execFileSync("git", ["merge-base", "--is-ancestor", "HEAD", currentRemoteRef], { cwd, stdio: "ignore" });
+      console.log(`[forge:sync-base] Fast-forwarding ${currentBranch} from origin/${currentBranch}…`);
+      git(["merge", "--ff-only", currentRemoteRef], { timeout: 120000, stdio: "inherit" });
+    } catch {
+      try {
+        execFileSync("git", ["merge-base", "--is-ancestor", currentRemoteRef, "HEAD"], { cwd, stdio: "ignore" });
+        console.log(`[forge:sync-base] ${currentBranch} already contains origin/${currentBranch}.`);
+      } catch {
+        if (allowDivergedCurrent && remoteOnlyCommitsArePatchEquivalent(currentRemoteRef)) {
+          console.log(`[forge:sync-base] ${currentBranch} and origin/${currentBranch} have diverged, but remote-only commits are patch-equivalent to local history; continuing before force-with-lease push.`);
+        } else {
+          console.error(`[forge:sync-base] ${currentBranch} and origin/${currentBranch} have diverged; refusing to pull before rebase.`);
+          process.exit(2);
+        }
+      }
+    }
+  } catch (error) {
+    console.log(`[forge:sync-base] No remote branch origin/${currentBranch} to pull, or fetch failed: ${error.message}`);
+  }
+}
+
 try {
   execFileSync("git", ["merge-base", "--is-ancestor", remoteRef, "HEAD"], { cwd, stdio: "ignore" });
   console.log(`[forge:sync-base] Already contains origin/${baseBranch}.`);
   process.exit(0);
 } catch {
-  // origin/base is not an ancestor; merge below.
+  // origin/base is not an ancestor; rebase below.
 }
 
 try {
-  console.log(`[forge:sync-base] Merging origin/${baseBranch} into current branch…`);
-  git(["merge", "--no-edit", "--no-stat", `origin/${baseBranch}`], { timeout: 120000, stdio: "inherit" });
-  console.log(`[forge:sync-base] Synced with origin/${baseBranch}.`);
+  console.log(`[forge:sync-base] Rebasing current branch onto origin/${baseBranch}…`);
+  git(["rebase", remoteRef], { timeout: 120000, stdio: "inherit" });
+  console.log(`[forge:sync-base] Rebasing onto origin/${baseBranch} complete.`);
   process.exit(0);
 } catch (error) {
-  try { git(["merge", "--abort"], { timeout: 30000, stdio: "ignore" }); } catch {}
-  console.error(`[forge:sync-base] Merge failed; aborted. ${error.message}`);
+  try { git(["rebase", "--abort"], { timeout: 30000, stdio: "ignore" }); } catch {}
+  console.error(`[forge:sync-base] Rebase failed; aborted. ${error.message}`);
   process.exit(2);
 }

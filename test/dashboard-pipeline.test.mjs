@@ -1,7 +1,7 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { FORGE_DIR } from "./helpers.mjs";
+import { FORGE_DIR, readAllDashboardSource } from "./helpers.mjs";
 
 function read(path) {
   return readFileSync(path, "utf8");
@@ -9,7 +9,7 @@ function read(path) {
 
 describe("dashboard v3 queue pipeline", () => {
   test("reactive source defines the three primary queue stages", () => {
-    const src = read(`${FORGE_DIR}/dashboard/frontend/src/main.ts`);
+    const src = readAllDashboardSource();
 
     assert.match(src, /const\s+PIPELINE_STAGES/);
     for (const label of ["Available", "Active", "Awaiting You"]) {
@@ -18,7 +18,7 @@ describe("dashboard v3 queue pipeline", () => {
   });
 
   test("pipeline stage helper maps Forge states into v3 stages", () => {
-    const src = read(`${FORGE_DIR}/dashboard/frontend/src/main.ts`);
+    const src = readAllDashboardSource();
 
     assert.match(src, /function\s+classifyIssueToPipelineStage/);
     assert.match(src, /PENDING[\s\S]*available/);
@@ -30,7 +30,7 @@ describe("dashboard v3 queue pipeline", () => {
   });
 
   test("queue view renders toolbar and pipeline columns in the reactive app", () => {
-    const src = read(`${FORGE_DIR}/dashboard/frontend/src/main.ts`);
+    const src = readAllDashboardSource();
 
     assert.match(src, /function\s+QueuePipelineView/);
     assert.match(src, /queue-toolbar/);
@@ -39,7 +39,7 @@ describe("dashboard v3 queue pipeline", () => {
   });
 
   test("queue view implements search, quick filters, and sorting helpers", () => {
-    const src = read(`${FORGE_DIR}/dashboard/frontend/src/main.ts`);
+    const src = readAllDashboardSource();
 
     assert.match(src, /type QueueFilter/);
     assert.match(src, /type QueueSort/);
@@ -55,7 +55,7 @@ describe("dashboard v3 queue pipeline", () => {
   });
 
   test("queue review-next selects earliest workflow pending decision context", () => {
-    const src = read(`${FORGE_DIR}/dashboard/frontend/src/main.ts`);
+    const src = readAllDashboardSource();
 
     assert.match(src, /function\s+selectReviewNextDecision/);
     assert.match(src, /sortDecisionsByWorkflow/);
@@ -63,7 +63,7 @@ describe("dashboard v3 queue pipeline", () => {
   });
 
   test("queue toolbar exposes add issue and refresh Linear affordances", () => {
-    const src = read(`${FORGE_DIR}/dashboard/frontend/src/main.ts`);
+    const src = readAllDashboardSource();
 
     assert.match(src, /Add issue/);
     assert.match(src, /Refresh Linear/);

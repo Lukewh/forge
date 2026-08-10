@@ -71,6 +71,7 @@ For each changed file, verify:
 - **Formatting/tooling**: Did the implementation rely on project scripts rather than standalone `prettier`?
 - **Tests**: If the plan called for tests, are they present?
 - **Scope creep**: Is there code that wasn't in the plan? Flag it.
+- **Target contract drift**: Do changed files and implementation choices obey `target_paths`, `avoid_paths`, and `scope_notes` from the Issue Target Contract? Flag any drift.
 
 ## Step 6: Write verdict
 
@@ -109,15 +110,25 @@ Or if changes are needed:
 
 - `approved` — Plan is implemented, all checks pass, conventions are followed, no significant issues
 - `needs_changes` — TypeScript errors, lint failures, missing plan items, clear convention violations, no tests when required
-- **Do NOT request changes for**: minor style preferences not in the rules, subjective naming, small optimisations that weren't in the plan
+- **Do NOT request changes for**: minor style preferences not in the rules, subjective naming, small optimisations that weren’t in the plan, alternative approaches that are equally valid, missing comments/docs not required by project rules
 - **Be specific**: every feedback item must reference the rule it violates or the plan item it misses
 - If you cannot get the diff or read the files, write `approved` with a note in summary — do not block on tooling issues
+
+## Review round awareness
+
+You are round `current_round` of `max_rounds`. Each review round costs significant time and resources.
+
+- **If this is round 2+**, re-read your previous feedback (in the Review Feedback section) and verify whether the coder addressed it. Only raise issues that are genuinely unresolved or newly introduced.
+- **Do NOT re-raise issues** that were addressed, even if the fix differs from what you suggested — as long as the fix is correct.
+- **Do NOT introduce new nitpicks** in later rounds that you didn’t flag in round 1. Focus only on correctness and the original feedback.
+- **Bias toward approval** in later rounds. If the remaining issues are minor and the code is functional and correct, approve with notes in the summary rather than sending back for another round.
+- If you are at `max_rounds`, approve unless there are critical correctness issues (crashes, data loss, security). Style and convention issues at this point should be noted in summary but should NOT block approval.
 
 ## Environment
 
 - Runtime commands use Forge's workspace runner: `$FORGE_DIR/scripts/workspace-run <worktree-path> -- <command...>`
 - Run project commands such as `the project package manager`, tests, lint, typecheck, app scripts, and `project fixers` through the workspace runner
-- Run project runtime commands through the workspace runner so execution follows the configured local/SSH mode
+- Use the Forge Runtime Environment section for the current execution mode. Do not inspect container runtimes, raw SSH, or alternate VM setup yourself.
 - Runtime commands may run in parallel across separate worktrees; avoid launching overlapping runtime commands in the same worktree or commands that contend for the same DB/port/shared service
 - Keep git commands scoped to the issue worktree
 - Use the package manager already used by the repository

@@ -21,6 +21,7 @@ const { execFileSync, execFile, spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
+const { buildRuntimeEnvironmentContext, sanitizeHistoricalRuntimeNoise } = require("./lib/runtime-context.js");
 
 // ── Parse args ──────────────────────────────────────────────────────
 
@@ -53,6 +54,10 @@ db.pragma("foreign_keys = ON");
 function getSetting(key) {
   const row = db.prepare("SELECT value FROM settings WHERE key = ?").get(key);
   return row?.value;
+}
+
+function parseJson(value, fallback) {
+  try { return JSON.parse(value || ""); } catch { return fallback; }
 }
 
 function getAgentModel(type) {
@@ -104,6 +109,7 @@ const LINEAR_STATE_MAP = {
   SPLITTING:              "In Review",
   AWAITING_FIX_APPROVAL:  "In Review",
   FIXING:                 "In Review",
+  AWAITING_FIX_REVIEW:    "In Review",
   PUSHING:                "In Review",
   REBASING:               "In Review",
   DONE:                   "Done",
@@ -217,6 +223,22 @@ function getHandoffPath(issueRow) {
   return path.join(getProjectDir(issueRow), "handoff.md");
 }
 
+function gitOutput(cwd, args, timeout = 10000) {
+  try {
+    return execFileSync("git", args, { cwd, encoding: "utf-8", timeout, stdio: ["ignore", "pipe", "pipe"] });
+  } catch {
+    return "";
+  }
+}
+
+function worktreeStatusPorcelain(cwd) {
+  return gitOutput(cwd, ["status", "--porcelain"]);
+}
+
+function worktreeCurrentBranch(cwd) {
+  return gitOutput(cwd, ["branch", "--show-current"]).trim() || gitOutput(cwd, ["rev-parse", "--abbrev-ref", "HEAD"]).trim();
+}
+
 function ensureHandoffFile(issueRow) {
   const handoffPath = getHandoffPath(issueRow);
   fs.mkdirSync(path.dirname(handoffPath), { recursive: true });
@@ -311,6 +333,34 @@ function downloadAssets(linearData, issueRow) {
 
 // ── Context builder ──────────────────────────────────────────────────
 
+function parseJsonMaybe(value, fallback = null) {
+  if (!value) return fallback;
+  try { return JSON.parse(value); } catch { return fallback; }
+}
+
+function latestApprovedFixDecision(issueRow) {
+  return db.prepare(`
+    SELECT * FROM decision_queue
+    WHERE issue_id = ? AND type = 'FIX_APPROVAL' AND verdict = 'approved'
+    ORDER BY resolved_at DESC, created_at DESC LIMIT 1
+  `).get(issueRow.id) ?? null;
+}
+
+function fixDecisionComments(issueRow) {
+  const decision = latestApprovedFixDecision(issueRow);
+  const artifact = parseJsonMaybe(decision?.artifact_ref, {});
+  return Array.isArray(artifact?.comments) ? artifact.comments : [];
+}
+
+function fixerTargetPr(issueRow) {
+  const prStack = db.prepare("SELECT * FROM pr_stack WHERE issue_id = ? ORDER BY position ASC").all(issueRow.id);
+  const openStack = prStack.filter(pr => pr.gt_branch && pr.status !== "merged" && pr.status !== "closed");
+  const comments = fixDecisionComments(issueRow);
+  const commentPrNumbers = new Set(comments.map(c => Number(c.prNumber)).filter(Number.isFinite));
+  const commentedPr = openStack.find(pr => pr.pr_number && commentPrNumbers.has(Number(pr.pr_number)));
+  return commentedPr ?? openStack[0] ?? null;
+}
+
 function buildContextBundle(issueRow, linearData, assetMap) {
   const lines = [];
 
@@ -328,6 +378,11 @@ function buildContextBundle(issueRow, linearData, assetMap) {
   const handoffPath = ensureHandoffFile(issueRow);
   lines.push(`Handoff file: ${handoffPath}`);
   lines.push("");
+
+  lines.push(buildRuntimeEnvironmentContext({
+    forgeDir: FORGE_DIR,
+    worktreePath: issueRow.wt_path || WT_ROOT,
+  }));
 
   if (linearData) {
     lines.push("## Linear Issue Details");
@@ -356,15 +411,32 @@ function buildContextBundle(issueRow, linearData, assetMap) {
     lines.push("");
   }
 
+  const targetPaths = parseJson(issueRow.target_paths_json, []);
+  const avoidPaths = parseJson(issueRow.avoid_paths_json, []);
+  const projectMap = parseJson(issueRow.project_map_snapshot_json, null);
+  if (issueRow.target_kind || targetPaths.length || avoidPaths.length || issueRow.scope_notes) {
+    lines.push("## 🎯 Issue Target Contract (AUTHORITATIVE)");
+    lines.push("All agents must obey this contract unless explicit steering or human feedback changes it. Do not infer a different app/package from generic prompt examples.");
+    lines.push(`target_kind: ${issueRow.target_kind || "unspecified"}`);
+    lines.push(`target_paths: ${targetPaths.length ? targetPaths.join(", ") : "unspecified"}`);
+    lines.push(`avoid_paths: ${avoidPaths.length ? avoidPaths.join(", ") : "none"}`);
+    if (issueRow.scope_notes) lines.push(`scope_notes:\n${issueRow.scope_notes}`);
+    if (projectMap?.rules?.length) {
+      lines.push("project_map_rules:");
+      for (const rule of projectMap.rules) lines.push(`- ${rule}`);
+    }
+    lines.push("");
+  }
+
   if (issueRow.project_file_path && fs.existsSync(issueRow.project_file_path)) {
     lines.push("## Project Plan");
-    lines.push(fs.readFileSync(issueRow.project_file_path, "utf-8"));
+    lines.push(sanitizeHistoricalRuntimeNoise(fs.readFileSync(issueRow.project_file_path, "utf-8")));
     lines.push("");
   }
 
   if (fs.existsSync(handoffPath)) {
     lines.push("## Shared Handoff");
-    lines.push(fs.readFileSync(handoffPath, "utf-8"));
+    lines.push(sanitizeHistoricalRuntimeNoise(fs.readFileSync(handoffPath, "utf-8")));
     lines.push("");
   }
 
@@ -375,11 +447,43 @@ function buildContextBundle(issueRow, linearData, assetMap) {
 
   const prStack = db.prepare("SELECT * FROM pr_stack WHERE issue_id = ? ORDER BY position ASC").all(issueRow.id);
   if (prStack.length) {
-    lines.push("## Current PR Stack");
+    lines.push("## Current GitHub PR Stack");
+    lines.push("Forge uses GitHub-native stacked PRs (child PR base = parent branch), not Graphite. The internal DB column `gt_branch` is legacy naming; treat it as the GitHub head branch name.");
     for (const pr of prStack) {
-      lines.push(`- PR ${pr.position}: #${pr.pr_number ?? "unknown"} branch=${pr.gt_branch} status=${pr.status} base_pr_id=${pr.base_pr_id ?? "none"}`);
+      lines.push(`- PR ${pr.position}: #${pr.pr_number ?? "unknown"} github_head_branch=${pr.gt_branch} status=${pr.status} base_pr_id=${pr.base_pr_id ?? "none"}`);
     }
     lines.push("");
+  }
+
+  if (agentType === "coder" && issueRow.wt_path && fs.existsSync(issueRow.wt_path)) {
+    const status = worktreeStatusPorcelain(issueRow.wt_path).trim();
+    if (status) {
+      lines.push("## ⚠️ Dirty Worktree Resume");
+      lines.push("This coder run is resuming uncommitted changes left by a previous interrupted coder run. Do not discard them.");
+      lines.push(`Current branch: ${worktreeCurrentBranch(issueRow.wt_path) || "unknown"}`);
+      lines.push("Review the existing changes first, continue from them, and commit when the implementation is complete.");
+      lines.push("Git status:");
+      lines.push("```text");
+      lines.push(status);
+      lines.push("```");
+      lines.push("");
+    }
+  }
+
+  if (agentType === "fixer") {
+    const targetPr = fixerTargetPr(issueRow);
+    const fixComments = fixDecisionComments(issueRow);
+    if (targetPr) {
+      lines.push("## Deterministic fixer target");
+      lines.push(`Target exactly one PR in this run: position ${targetPr.position}, PR #${targetPr.pr_number ?? "unknown"}, branch ${targetPr.gt_branch}.`);
+      lines.push("Start with the lowest stack PR that has surfaced review comments. Do not edit later PR branches in this fixer run except to rebase/resolve mechanical conflicts after the target branch has been committed and pushed.");
+      lines.push("Required order: checkout target branch → make target PR fixes → commit on target branch → rebase/update later stack branches onto their parents → stop. The Git Agent will push the target branch and updated later branches. Later PR review comments are handled by later fixer runs.");
+      const targetComments = fixComments.filter(c => targetPr.pr_number && Number(c.prNumber) === Number(targetPr.pr_number));
+      const laterComments = fixComments.filter(c => !targetPr.pr_number || Number(c.prNumber) !== Number(targetPr.pr_number));
+      if (targetComments.length) lines.push(`Target PR comments in this batch: ${targetComments.length}.`);
+      if (laterComments.length) lines.push(`Comments for other PRs are present (${laterComments.length}); do not apply those requested changes in this run unless the same code must move into the target PR to satisfy the target PR review.`);
+      lines.push("");
+    }
   }
 
   if (issueRow.steering_context) {
@@ -421,11 +525,25 @@ function buildContextBundle(issueRow, linearData, assetMap) {
   }
 
   // Pending decision feedback (e.g. after rejection)
-  const lastDecision = db.prepare(`
-    SELECT * FROM decision_queue
-    WHERE issue_id = ? AND verdict = 'rejected'
-    ORDER BY resolved_at DESC LIMIT 1
-  `).get(issueId);
+  // Only show feedback relevant to the current agent:
+  //   coder  → CODE_REVIEW rejections (user rejected code review)
+  //   planner → PLAN_REVIEW rejections (user rejected plan)
+  //   fixer  → FIX_APPROVAL rejections
+  //   coder  → AI_CODE_REVIEW rejections (AI reviewer needs_changes)
+  //   planner → AI_PLAN_REVIEW rejections (AI plan reviewer needs_changes)
+  const feedbackTypeMap = {
+    coder:           "('CODE_REVIEW','AI_CODE_REVIEW')",
+    planner:         "('PLAN_REVIEW','AI_PLAN_REVIEW')",
+    fixer:           "('FIX_APPROVAL')",
+  };
+  const feedbackTypes = feedbackTypeMap[agentType];
+  const lastDecision = feedbackTypes
+    ? db.prepare(`
+        SELECT * FROM decision_queue
+        WHERE issue_id = ? AND verdict = 'rejected' AND type IN ${feedbackTypes}
+        ORDER BY resolved_at DESC LIMIT 1
+      `).get(issueId)
+    : null;
 
   if (lastDecision?.feedback_json) {
     lines.push("## Review Feedback to Address");
@@ -458,8 +576,14 @@ function loadSystemPrompt(type) {
   return overlay ? `${basePrompt}\n\n---\n\n# Project-specific instructions\n\n${overlay}\n` : basePrompt;
 }
 
-// Max runtime: 45 minutes — prevents runaway agents eating RAM
-const MAX_RUNTIME_MS = 45 * 60 * 1000;
+// Max runtime — prevents runaway agents eating resources.
+// Large planning/coding/fixing runs can legitimately need more than
+// 20 minutes; keep the cap high enough to avoid killing productive agents.
+const DEFAULT_MAX_RUNTIME_MS = 45 * 60 * 1000;
+const AGENT_MAX_RUNTIME_MS = { fixer: 45 * 60 * 1000, rebaser: 45 * 60 * 1000 };
+function maxRuntimeMsForAgent(type) {
+  return AGENT_MAX_RUNTIME_MS[type] ?? DEFAULT_MAX_RUNTIME_MS;
+}
 
 // ── Pi spawner ───────────────────────────────────────────────────────
 
@@ -498,7 +622,16 @@ function spawnPi(systemPromptPath, userPrompt, cwd, issueRow) {
     log(`Spawning pi SDK runner in ${cwd}`);
     const proc = spawn(process.execPath, piArgs, {
       cwd: cwd || FORGE_DIR,
-      env: { ...process.env, FORGE_DIR },
+      env: {
+        ...process.env,
+        FORGE_DIR,
+        // Prevent agent-run git commands such as `git rebase --continue` from
+        // blocking forever in an interactive editor for commit/rebase messages.
+        GIT_EDITOR: process.env.GIT_EDITOR || "true",
+        GIT_SEQUENCE_EDITOR: process.env.GIT_SEQUENCE_EDITOR || "true",
+        VISUAL: process.env.VISUAL || "true",
+        EDITOR: process.env.EDITOR || "true",
+      },
       shell: false,
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -506,10 +639,11 @@ function spawnPi(systemPromptPath, userPrompt, cwd, issueRow) {
     activePiProc = proc;
 
     // Hard kill if agent runs too long
+    const maxRuntimeMs = maxRuntimeMsForAgent(agentType);
     const killTimer = setTimeout(() => {
-      log(`ERROR: Max runtime exceeded (${MAX_RUNTIME_MS / 60000}min) — killing pi SDK runner`);
+      log(`ERROR: Max runtime exceeded (${maxRuntimeMs / 60000}min) — killing pi SDK runner`);
       try { proc.kill("SIGKILL"); } catch {}
-    }, MAX_RUNTIME_MS);
+    }, maxRuntimeMs);
 
     let lastAssistantText = "";
     let lineBuffer = "";
@@ -1010,7 +1144,7 @@ const NEXT_STATE_MAP = {
   CREATING_PR:    "WATCHING_PR",
   SPLIT_PLANNING: "AWAITING_SPLIT_APPROVAL",
   SPLITTING:      "WATCHING_PR",
-  FIXING:         "PUSHING",
+  FIXING:         "AWAITING_FIX_REVIEW",
   PUSHING:     "WATCHING_PR",
 };
 
@@ -1018,11 +1152,146 @@ function determineNextState(currentState) {
   return NEXT_STATE_MAP[currentState] ?? null;
 }
 
+function getIssueBaseBranch(issueRow) {
+  try {
+    if (issueRow?.project_file_path && fs.existsSync(issueRow.project_file_path)) {
+      const content = fs.readFileSync(issueRow.project_file_path, "utf-8");
+      const base = content.match(/^base-branch:\s*(.+)$/m)?.[1]?.trim();
+      if (base) return base;
+    }
+  } catch {}
+  return getSetting("default_branch") || "main";
+}
+
+function changedFilesAgainstBase(cwd) {
+  const base = getSetting("default_branch") || "main";
+  try {
+    execFileSync("git", ["fetch", "--prune", "origin", `+refs/heads/${base}:refs/remotes/origin/${base}`], { cwd, timeout: 120000, stdio: "pipe" });
+  } catch (e) {
+    log(`WARN: Could not fetch origin/${base} for scope check: ${e.message}`);
+  }
+  try {
+    return execFileSync("git", ["diff", "--name-only", `refs/remotes/origin/${base}...HEAD`], { cwd, timeout: 30000, encoding: "utf-8" })
+      .split("\n")
+      .map(line => line.trim())
+      .filter(Boolean);
+  } catch (e) {
+    log(`WARN: Could not compute changed files for scope check: ${e.message}`);
+    return [];
+  }
+}
+
+function runDeterministicAgentIfAvailable(issueRow, cwd) {
+  const env = { ...process.env, FORGE_DIR };
+  if (agentType === "git-agent" && ["CREATING_PR", "PUSHING"].includes(issueRow.state)) {
+    const script = path.join(FORGE_DIR, "scripts", "git-agent-pr-stack");
+    if (!fs.existsSync(script)) return null;
+    log(`Running deterministic git-agent script for ${issueRow.state}…`);
+    try {
+      execFileSync(script, ["--issue-id", String(issueRow.id), "--state", issueRow.state], { cwd, env, timeout: 300000, stdio: "inherit" });
+      return 0;
+    } catch (e) {
+      if (e.status === 78) {
+        log("Deterministic git-agent requested LLM fallback.");
+        return null;
+      }
+      log(`Deterministic git-agent failed: ${e.message}`);
+      return e.status || 1;
+    }
+  }
+
+  if (agentType === "rebaser" && issueRow.state === "REBASING") {
+    const script = path.join(FORGE_DIR, "scripts", "rebase-pr-stack");
+    if (!fs.existsSync(script)) return null;
+    log("Running deterministic rebase script…");
+    try {
+      execFileSync(script, ["--issue-id", String(issueRow.id)], { cwd, env, timeout: 300000, stdio: "inherit" });
+      return 0;
+    } catch (e) {
+      log(`Deterministic rebase failed; falling back to LLM rebaser for conflict handling: ${e.message}`);
+      return null;
+    }
+  }
+
+  return null;
+}
+
+function validateScopeBeforeGitAgent(issueRow, cwd) {
+  const avoidPaths = parseJson(issueRow.avoid_paths_json, []);
+  if (!avoidPaths.length || !cwd || !fs.existsSync(cwd)) return true;
+  const normalizedAvoids = avoidPaths.map(p => String(p).replace(/^\.\//, "").replace(/\/+$/, "") + "/");
+  const changed = changedFilesAgainstBase(cwd);
+  const violations = changed.filter(file => normalizedAvoids.some(prefix => file === prefix.slice(0, -1) || file.startsWith(prefix)));
+  if (!violations.length) return true;
+  log(`ERROR: Scope drift detected. Changed files touch avoid_paths: ${violations.join(", ")}`);
+  logActivity("scope_drift_detected", "Scope drift blocked git-agent before PR creation", { avoidPaths, violations });
+  return false;
+}
+
+function gitPath(cwd, name) {
+  try {
+    return execFileSync("git", ["rev-parse", "--git-path", name], { cwd, encoding: "utf-8", timeout: 10000 }).trim();
+  } catch {
+    return null;
+  }
+}
+
+function isRebaseInProgress(cwd) {
+  const rebaseMerge = gitPath(cwd, "rebase-merge");
+  const rebaseApply = gitPath(cwd, "rebase-apply");
+  return Boolean((rebaseMerge && fs.existsSync(path.resolve(cwd, rebaseMerge))) || (rebaseApply && fs.existsSync(path.resolve(cwd, rebaseApply))));
+}
+
+function unmergedFiles(cwd) {
+  try {
+    return execFileSync("git", ["diff", "--name-only", "--diff-filter=U"], { cwd, encoding: "utf-8", timeout: 10000 })
+      .split("\n")
+      .map(line => line.trim())
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function branchRebasePlan(issueRow) {
+  const allPrStack = db.prepare("SELECT * FROM pr_stack WHERE issue_id = ? ORDER BY position ASC").all(issueRow.id);
+  const openStack = allPrStack.filter(pr => pr.gt_branch && pr.status !== "merged" && pr.status !== "closed");
+  const baseBranch = getIssueBaseBranch(issueRow);
+  return openStack.map(pr => {
+    const parent = pr.base_pr_id ? allPrStack.find(candidate => candidate.id === pr.base_pr_id) : null;
+    return { branch: pr.gt_branch, base: parent?.gt_branch || `origin/${baseBranch}` };
+  });
+}
+
+function queueRebaserForGitAgentConflict(issueRow, cwd) {
+  if (agentType !== "git-agent" || issueRow.state !== "PUSHING" || !cwd || !fs.existsSync(cwd)) return false;
+  const conflicts = unmergedFiles(cwd);
+  if (!isRebaseInProgress(cwd) && conflicts.length === 0) return false;
+  const plan = branchRebasePlan(issueRow);
+  const context = [
+    "Git-agent encountered a rebase conflict while pushing a GitHub-native PR stack (`gh stack`).",
+    "Continue the existing paused rebase in the same worktree. Resolve conflicts carefully, preserving behavior and the approved fix.",
+    "After the paused rebase completes, continue rebasing any remaining stack branches onto their intended parent branches and push affected branches with --force-with-lease.",
+    "Use git + gh only; do not use Graphite/gt. After all branches are pushed, ensure the GitHub stack remains linked with `gh stack link --base <base> <pr1> <pr2> ...` if needed.",
+    "",
+    `Worktree: ${cwd}`,
+    `Failed state: ${issueRow.state}`,
+    conflicts.length ? `Unmerged files: ${conflicts.join(", ")}` : "Unmerged files: none detected",
+    plan.length ? "Branch rebase plan:" : "Branch rebase plan: unavailable; inspect current PR stack and git history.",
+    ...plan.map(item => `- ${item.branch} onto ${item.base}`),
+  ].join("\n");
+  db.prepare("UPDATE issues SET steering_context = ?, updated_at = datetime('now') WHERE id = ?").run(context, issueId);
+  transition("REBASING");
+  logActivity("rebase_requested", "Queued rebaser after git-agent hit a stack rebase conflict", { conflicts, branchPlan: plan });
+  return true;
+}
+
 function determineDecisionType(nextState) {
   const map = {
     AWAITING_PLAN_APPROVAL: "PLAN_REVIEW",
     AWAITING_CODE_REVIEW:   "CODE_REVIEW",
     AWAITING_FIX_APPROVAL:  "FIX_APPROVAL",
+    AWAITING_FIX_REVIEW:    "FIX_REVIEW",
     AWAITING_SPLIT_APPROVAL:"SPLIT_APPROVAL",
   };
   return map[nextState] ?? null;
@@ -1085,21 +1354,93 @@ async function main() {
     ? issueRow.wt_path
     : WT_ROOT;
 
-  if (["planner", "plan-reviewer", "coder"].includes(agentType) && cwd && fs.existsSync(cwd)) {
-    const baseBranch = getSetting("default_branch") || "main";
-    log(`Syncing worktree with origin/${baseBranch} before ${agentType}…`);
-    try {
-      execFileSync(path.join(FORGE_DIR, "scripts", "sync-worktree-to-base"), [cwd, baseBranch], { cwd, timeout: 180000, stdio: "pipe" });
-      log(`Worktree synced with origin/${baseBranch}`);
-    } catch (e) {
-      log(`ERROR: Could not sync worktree with origin/${baseBranch}: ${e.message}`);
-      finishRun(1);
-      logActivity("agent_failed", `Failed to sync worktree with origin/${baseBranch} before ${agentType}`, { error: e.message });
-      transition("FAILED");
-      unlock();
-      db.close();
-      logStream.end();
-      process.exit(1);
+  if (!cleanupMode && ["planner", "plan-reviewer", "coder", "reviewer", "fixer", "git-agent"].includes(agentType) && cwd && fs.existsSync(cwd)) {
+    let skipBaseSync = false;
+    if (agentType === "coder") {
+      if (isRebaseInProgress(cwd)) {
+        log("ERROR: Coder preflight found an in-progress rebase; refusing to resume dirty implementation work inside a paused rebase.");
+        logActivity("agent_failed", "Coder refused in-progress rebase before resume", { branch: worktreeCurrentBranch(cwd) });
+        finishRun(1);
+        transition("FAILED");
+        unlock();
+        db.close();
+        logStream.end();
+        process.exit(1);
+      }
+      const dirtyStatus = worktreeStatusPorcelain(cwd).trim();
+      if (dirtyStatus) {
+        skipBaseSync = true;
+        log("Dirty worktree detected before coder preflight; preserving existing implementation changes and resuming coder without base sync.");
+        logActivity("dirty_worktree_resume", "Coder resumed with uncommitted changes from a previous interrupted run", { branch: worktreeCurrentBranch(cwd), status: dirtyStatus.split("\n") });
+      }
+    }
+    if (agentType === "fixer") {
+      if (isRebaseInProgress(cwd)) {
+        const currentBranch = worktreeCurrentBranch(cwd);
+        const context = [
+          "Fixer preflight found an in-progress rebase. Deterministic fixing must not continue inside a paused rebase.",
+          `Worktree: ${cwd}`,
+          `Current branch: ${currentBranch || "unknown"}`,
+          "Continue or abort the existing rebase deliberately, then return to the fixer flow.",
+        ].join("\n");
+        db.prepare("UPDATE issues SET steering_context = ?, updated_at = datetime('now') WHERE id = ?").run(context, issueId);
+        log("Fixer preflight found an in-progress rebase; routing to REBASING before any review fixes are applied.");
+        logActivity("rebase_requested", "Fixer preflight routed paused rebase to rebaser", { branch: currentBranch });
+        finishRun(1);
+        transition("REBASING");
+        unlock();
+        db.close();
+        logStream.end();
+        process.exit(1);
+      }
+
+      const dirtyStatus = worktreeStatusPorcelain(cwd).trim();
+      if (dirtyStatus) {
+        log("ERROR: Dirty worktree detected before fixer preflight; refusing to run fixer so review fixes cannot land on the wrong stack branch.");
+        logActivity("agent_failed", "Fixer refused dirty worktree before deterministic stack fixing", { branch: worktreeCurrentBranch(cwd), status: dirtyStatus.split("\n") });
+        finishRun(1);
+        transition("FAILED");
+        unlock();
+        db.close();
+        logStream.end();
+        process.exit(1);
+      }
+
+      const targetPr = fixerTargetPr(issueRow);
+      if (targetPr?.gt_branch) {
+        try {
+          log(`Checking out deterministic fixer target branch ${targetPr.gt_branch} (position ${targetPr.position}, PR #${targetPr.pr_number ?? "unknown"})…`);
+          execFileSync("git", ["checkout", targetPr.gt_branch], { cwd, timeout: 60000, stdio: "pipe" });
+        } catch (e) {
+          log(`ERROR: Could not check out fixer target branch ${targetPr.gt_branch}: ${e.message}`);
+          finishRun(1);
+          logActivity("agent_failed", "Failed to check out deterministic fixer target branch", { branch: targetPr.gt_branch, error: e.message });
+          transition("FAILED");
+          unlock();
+          db.close();
+          logStream.end();
+          process.exit(1);
+        }
+      }
+    }
+    if (!skipBaseSync) {
+      const baseBranch = getIssueBaseBranch(issueRow);
+      log(`Pulling current branch and rebasing worktree onto origin/${baseBranch} before ${agentType}…`);
+      try {
+        const syncArgs = [cwd, baseBranch];
+        if (agentType === "git-agent") syncArgs.push("--allow-diverged-current");
+        execFileSync(path.join(FORGE_DIR, "scripts", "sync-worktree-to-base"), syncArgs, { cwd, timeout: 180000, stdio: "pipe" });
+        log(`Worktree pulled and rebased with origin/${baseBranch}`);
+      } catch (e) {
+        log(`ERROR: Could not pull/rebase worktree with origin/${baseBranch}: ${e.message}`);
+        finishRun(1);
+        logActivity("agent_failed", `Failed to pull/rebase worktree with origin/${baseBranch} before ${agentType}`, { error: e.message });
+        transition("FAILED");
+        unlock();
+        db.close();
+        logStream.end();
+        process.exit(1);
+      }
     }
   }
 
@@ -1117,6 +1458,15 @@ async function main() {
     const vp = path.join(FORGE_DIR, "projects", String(issueId), "plan-review-verdict.json");
     try { if (fs.existsSync(vp)) fs.unlinkSync(vp); } catch {}
   }
+  if (agentType === "git-agent" && issueRow.state === "CREATING_PR" && !validateScopeBeforeGitAgent(issueRow, cwd)) {
+    finishRun(1);
+    transition("FAILED");
+    unlock();
+    db.close();
+    logStream.end();
+    process.exit(1);
+  }
+
   if (agentType === "splitter" && issueRow.project_file_path) {
     const prsPath = path.join(path.dirname(issueRow.project_file_path), "prs.json");
     try { if (fs.existsSync(prsPath)) fs.unlinkSync(prsPath); } catch {}
@@ -1138,22 +1488,37 @@ async function main() {
     clearSteeringContext();
   }
 
-  // Spawn pi SDK runner
+  // Spawn deterministic script when available; otherwise fall back to pi SDK runner.
   let exitCode = 1;
-  try {
-    const result = await spawnPi(systemPromptPath, userPrompt, cwd, issueRow);
-    exitCode = result.exitCode;
-    log(`pi SDK runner exited with code ${exitCode}`);
-  } catch (e) {
-    log(`ERROR spawning pi SDK runner: ${e.message}`);
-  } finally {
-    // Cleanup temp files
+  const deterministicExitCode = runDeterministicAgentIfAvailable(issueRow, cwd);
+  if (deterministicExitCode !== null) {
+    exitCode = deterministicExitCode;
+    log(`deterministic ${agentType} exited with code ${exitCode}`);
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+  } else {
+    try {
+      const result = await spawnPi(systemPromptPath, userPrompt, cwd, issueRow);
+      exitCode = result.exitCode;
+      log(`pi SDK runner exited with code ${exitCode}`);
+    } catch (e) {
+      log(`ERROR spawning pi SDK runner: ${e.message}`);
+    } finally {
+      // Cleanup temp files
+      try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+    }
   }
 
   finishRun(exitCode);
 
   if (exitCode !== 0) {
+    if (queueRebaserForGitAgentConflict(issueRow, cwd)) {
+      log("git-agent failed with a rebase conflict. Queued rebaser instead of retrying git-agent.");
+      unlock();
+      db.close();
+      logStream.end();
+      process.exit(exitCode);
+    }
+
     // Auto-retry for deterministic agents that fail due to transient errors
     // (network blips, gh auth hiccups, git push conflicts, etc.).
     const RETRIABLE_AGENTS = new Set(["git-agent", "fixer"]);
@@ -1287,7 +1652,7 @@ async function main() {
 
   // Rebaser post-processing: restore the state that requested the rebase.
   if (issueRow.state === "REBASING" && agentType === "rebaser") {
-    const restoreState = ["AWAITING_CODE_REVIEW", "WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL"].includes(updatedIssue.previous_state)
+    const restoreState = ["AWAITING_CODE_REVIEW", "WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL", "AWAITING_FIX_REVIEW"].includes(updatedIssue.previous_state)
       ? updatedIssue.previous_state
       : "WATCHING_PR";
     transition(restoreState);
@@ -1308,13 +1673,19 @@ async function main() {
   }
 
   // Determine next state
-  const nextState = determineNextState(issueRow.state);
+  let nextState = determineNextState(issueRow.state);
   if (!nextState) {
     log(`No automatic next state for ${issueRow.state}. Leaving state unchanged.`);
     unlock();
     db.close();
     logStream.end();
     return;
+  }
+
+  // Auto-fix bypass: skip AWAITING_FIX_REVIEW when auto_fix_enabled
+  if (nextState === "AWAITING_FIX_REVIEW" && Number(updatedIssue.auto_fix_enabled) === 1) {
+    log("Auto-fix enabled — skipping fix review, going straight to PUSHING");
+    nextState = "PUSHING";
   }
 
   transition(nextState);

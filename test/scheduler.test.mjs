@@ -252,7 +252,7 @@ describe("Stale reap on tick", () => {
     const issue = db.createIssue({ source: "linear", linearId: "BAND-230", title: "Stale" });
     db.transitionState(issue.id, "WORKING");
     db.lockIssue(issue.id, 9999);
-    makeStale(db, issue.id, 15);
+    makeStale(db, issue.id, 30); // WORKING is a LONG_STATE, needs >25 min
 
     const ForgeScheduler = loadForgeScheduler();
     const scheduler = new ForgeScheduler(db, () => {});

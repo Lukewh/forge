@@ -5,11 +5,29 @@
 import { createJiti }  from "jiti";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
-import { mkdtempSync, rmSync, existsSync } from "fs";
+import { mkdtempSync, rmSync, existsSync, readFileSync, readdirSync } from "fs";
 import { tmpdir }      from "os";
 import { join }        from "path";
 
 export const FORGE_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+/**
+ * Read all dashboard v3 frontend source files concatenated into a single string.
+ * Tests that regex-match against source should use this instead of reading main.ts alone,
+ * since the codebase is now split across multiple modules.
+ */
+export function readAllDashboardSource() {
+  const srcDir = join(FORGE_DIR, "dashboard/frontend/src");
+  const files = [];
+  function walk(dir) {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) walk(join(dir, entry.name));
+      else if (/\.(ts|tsx)$/.test(entry.name)) files.push(join(dir, entry.name));
+    }
+  }
+  walk(srcDir);
+  return files.map(f => readFileSync(f, "utf8")).join("\n");
+}
 
 // jiti instance for loading TypeScript files
 const jiti = createJiti(fileURLToPath(import.meta.url), { interopDefault: true });

@@ -1,7 +1,7 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { FORGE_DIR } from "./helpers.mjs";
+import { FORGE_DIR, readAllDashboardSource } from "./helpers.mjs";
 
 function read(path) {
   return readFileSync(path, "utf8");
@@ -9,7 +9,7 @@ function read(path) {
 
 describe("dashboard v3 app shell", () => {
   test("reactive source defines the persistent shell and all primary nav destinations", () => {
-    const src = read(`${FORGE_DIR}/dashboard/frontend/src/main.ts`);
+    const src = readAllDashboardSource();
 
     assert.match(src, /function\s+DashboardShell/);
     assert.match(src, /forge-v3-shell/);
@@ -21,7 +21,7 @@ describe("dashboard v3 app shell", () => {
   });
 
   test("shell exposes status fields required by the migration plan", () => {
-    const src = read(`${FORGE_DIR}/dashboard/frontend/src/main.ts`);
+    const src = readAllDashboardSource();
 
     for (const field of [
       "scheduler",
@@ -60,7 +60,7 @@ describe("dashboard v3 app shell", () => {
   });
 
   test("v3 route syncing supports direct issue links and redirects review deep links to issue scope", () => {
-    const src = read(`${FORGE_DIR}/dashboard/frontend/src/main.ts`);
+    const src = readAllDashboardSource();
 
     assert.match(src, /function\s+parseDashboardRoute/);
     assert.match(src, /viewOrEntity\s*===\s*"issue"/);
@@ -72,7 +72,7 @@ describe("dashboard v3 app shell", () => {
   });
 
   test("v3 shell subscribes to live dashboard events with notification de-dup", () => {
-    const src = read(`${FORGE_DIR}/dashboard/frontend/src/main.ts`);
+    const src = readAllDashboardSource();
     const css = read(`${FORGE_DIR}/dashboard/frontend/src/style.css`);
 
     assert.match(src, /new EventSource\("\/api\/events"\)/);
@@ -96,7 +96,7 @@ describe("dashboard v3 app shell", () => {
   });
 
   test("v3 route syncing no longer depends on legacy DOM view containers", () => {
-    const src = read(`${FORGE_DIR}/dashboard/frontend/src/main.ts`);
+    const src = readAllDashboardSource();
 
     assert.match(src, /function\s+syncDashboardRoute/);
     assert.doesNotMatch(src, /showLegacyView/);

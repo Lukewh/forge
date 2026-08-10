@@ -194,7 +194,7 @@ describe("Stale reaping", () => {
     const issue = db.createIssue({ source: "linear", linearId: "BAND-50", title: "Go stale" });
     db.transitionState(issue.id, "WORKING");
     db.lockIssue(issue.id, 999);
-    makeStale(db, issue.id);
+    makeStale(db, issue.id, 30); // WORKING is a LONG_STATE, needs >25 min
     const stale = db.reapStaleIssues(10);
     assert.equal(stale.length, 1);
     assert.equal(db.getIssue(issue.id).state, "FAILED");
@@ -217,7 +217,7 @@ describe("Stale reaping", () => {
     const issue = db.createIssue({ source: "linear", linearId: "BAND-52", title: "Stale working" });
     db.transitionState(issue.id, "WORKING");
     db.lockIssue(issue.id, 777);
-    makeStale(db, issue.id);
+    makeStale(db, issue.id, 30); // WORKING is a LONG_STATE, needs >25 min
     const stale = db.reapStaleIssues(10);
     assert.equal(stale.length, 1);
     assert.equal(db.getIssue(issue.id).state, "FAILED");

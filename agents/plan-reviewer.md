@@ -34,6 +34,11 @@ Evaluate:
 - Does the approach make sense given the codebase?
 - Are there any obvious technical issues with the proposed approach?
 
+**Target/scope alignment**
+- Does the plan obey the Issue Target Contract?
+- Are `target_paths`, `avoid_paths`, and `scope_notes` reflected in the plan/frontmatter?
+- If work is generic/shared, does the plan avoid app-specific wording and paths?
+
 ## Step 3: Write verdict
 
 Write your verdict to the `verdict_path` shown in your context. Use this exact JSON format:

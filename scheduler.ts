@@ -16,6 +16,26 @@ const RUNNER_PATH  = path.join(FORGE_DIR, "agent-runner.js");
 const WATCHER_PATH = path.join(FORGE_DIR, "watcher.js");
 const SETUP_PATH   = path.join(FORGE_DIR, "setup.js");
 
+// Watcher backoff: after N consecutive no-change polls, increase the interval
+// between spawns. This prevents thousands of wasted watcher runs on long-lived PRs.
+// Key = issue id, Value = { consecutiveNoOps, lastSpawnedAt }
+const watcherBackoff = new Map<number, { consecutiveNoOps: number; lastSpawnedAt: number }>();
+
+// Backoff tiers: [noOpThreshold, minIntervalSeconds]
+// After 5 consecutive no-ops, poll every 2 min; after 15 → 5 min; after 30 → 10 min
+const WATCHER_BACKOFF_TIERS: [number, number][] = [
+  [30, 600],   // 30+ no-ops → every 10 min
+  [15, 300],   // 15+ no-ops → every 5 min
+  [5,  120],   // 5+ no-ops  → every 2 min
+];
+
+function getWatcherMinInterval(consecutiveNoOps: number): number {
+  for (const [threshold, interval] of WATCHER_BACKOFF_TIERS) {
+    if (consecutiveNoOps >= threshold) return interval;
+  }
+  return 0; // no backoff yet
+}
+
 // Map from issue state → agent type to spawn
 // Maps each schedulable state to the agent type that handles it
 const STATE_AGENT_MAP: Partial<Record<string, AgentType>> = {
@@ -105,6 +125,14 @@ export class ForgeScheduler {
       const schedulable = this.db.listSchedulableIssues();
       if (schedulable.length === 0) return;
 
+      // Prune backoff entries for issues no longer in watcher states
+      for (const [id] of watcherBackoff) {
+        const issue = schedulable.find(i => i.id === id);
+        if (!issue || (issue.state !== "WATCHING_PR" && issue.state !== "IN_MERGE_QUEUE")) {
+          watcherBackoff.delete(id);
+        }
+      }
+
       this.log(`[forge:scheduler] ${schedulable.length} schedulable issue(s). Spawning up to ${available}.`);
 
       let spawned = 0;
@@ -122,6 +150,18 @@ export class ForgeScheduler {
     if (!agentType) {
       this.log(`[forge:scheduler] No agent mapped for state ${issue.state} (issue #${issue.id})`);
       return false;
+    }
+
+    // Watcher backoff: skip if we haven't waited long enough since the last poll
+    if (agentType === "watcher") {
+      const backoff = watcherBackoff.get(issue.id);
+      if (backoff) {
+        const minInterval = getWatcherMinInterval(backoff.consecutiveNoOps);
+        const elapsed = (Date.now() - backoff.lastSpawnedAt) / 1000;
+        if (elapsed < minInterval) {
+          return false; // skip this tick — backoff not yet expired
+        }
+      }
     }
 
     // Set up log file for watcher runs so output is inspectable
@@ -190,6 +230,21 @@ export class ForgeScheduler {
     // Update PID now that we have it
     this.db.updateAgentPid(issue.id, proc.pid ?? 0);
 
+    // Track watcher backoff: increment consecutive no-op count.
+    // The watcher itself resets this via DB when it transitions the issue.
+    if (agentType === "watcher") {
+      const prev = watcherBackoff.get(issue.id) ?? { consecutiveNoOps: 0, lastSpawnedAt: 0 };
+      watcherBackoff.set(issue.id, {
+        consecutiveNoOps: prev.consecutiveNoOps + 1,
+        lastSpawnedAt: Date.now(),
+      });
+    }
+
     return true;
+  }
+
+  /** Reset watcher backoff for an issue (called when watcher detects a state change). */
+  resetWatcherBackoff(issueId: number): void {
+    watcherBackoff.delete(issueId);
   }
 }

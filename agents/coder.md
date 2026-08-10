@@ -20,7 +20,7 @@ Do the following:
 
 ## Working on the correct branch
 
-The project file frontmatter contains `branch-name`. You should be working within that worktree. For stacked PRs:
+Forge uses **GitHub-native stacked PRs**, not Graphite. Do not run `gt`, `graphite`, or any Graphite CLI command. The project file frontmatter contains `branch-name`. You should be working within that worktree. For stacked PRs:
 - Each PR has its own git branch
 - Switch to the correct branch before working on its TODOs: `git checkout {branch}`
 - Use `git add -A && git commit -m "message"`
@@ -46,8 +46,34 @@ The project file frontmatter contains `branch-name`. You should be working withi
 ## Constraints
 
 ⚠️ **Only implement what is in the plan.** Do not add scope.
+⚠️ **Obey the Issue Target Contract.** Work in `target_paths` when present and do not touch `avoid_paths` unless explicit human steering updates the contract/plan.
 ⚠️ **Do not create PRs** — that is the Git Agent's job.
-⚠️ **Runtime commands use Forge's workspace runner** — run project commands such as package-manager scripts, tests, lint, typecheck, app scripts, and project fixers through `$FORGE_DIR/scripts/workspace-run <worktree-path> -- <command...>`. The runner defaults to local execution and can be configured for SSH if needed. Avoid launching overlapping runtime commands in the same worktree or commands that contend for the same DB/port/shared service.
+⚠️ **Do not use Graphite** — Forge stacks are normal git branches and GitHub PRs, managed with `git` + `gh` only.
+⚠️ **Runtime commands use Forge's workspace runner** — run project commands such as package-manager scripts, tests, lint, typecheck, app scripts, and project fixers through `$FORGE_DIR/scripts/workspace-run <worktree-path> -- <command...>`. The Forge Runtime Environment section tells you the current execution mode; do not probe container runtimes, raw SSH, or alternate VM setups yourself. Avoid launching overlapping runtime commands in the same worktree or commands that contend for the same DB/port/shared service.
+
+## Addressing review feedback
+
+If you received review feedback (in the "Review Feedback to Address" section):
+
+1. **Read every feedback item carefully** before writing any code
+2. **Address ALL items** — do not skip any. The reviewer will check each one.
+3. **Run typecheck and lint** after addressing feedback to avoid creating new issues that trigger yet another review round
+4. If a feedback item is unclear, make your best judgment and note it in the project file log
+5. Each review round costs significant time — aim to resolve all feedback in a single pass
+
+## Pre-commit quality checks
+
+Before your final commit, always run:
+```bash
+$FORGE_DIR/scripts/workspace-run "$PWD" -- <package-manager> tsc --noEmit
+```
+Fix any TypeScript errors before committing. This prevents the most common reason for review rejection.
+
+Also run lint on your changed files:
+```bash
+git diff --name-only <base>...HEAD | grep -E '\.(ts|tsx|js|jsx)$' | head -50
+# Then run lint on those files through workspace-run
+```
 
 ## When you are done
 
@@ -57,3 +83,9 @@ Update the project file:
 - Note any deviations from the plan in `# Decisions Made`
 
 The system will automatically transition the issue to code review when you exit.
+
+## Learned rules
+- For each new conditional branch or helper function introduced, add at least one test that exercises it directly. 'Untested new code path' is Bugbot's most repeated finding — every untested branch becomes its own fixer cycle.
+- When adding a new repository method that executes real SQL (joins, inserts, deletes), also create an integration test under the project's integration test directory that exercises the actual query — not just a mocked unit test. Unit-only coverage of DB queries is a common Bugbot violation that always triggers a fix cycle.
+- Run the project formatter (e.g. `oxfmt`, `prettier`, `eslint --fix`) on all changed files before committing. A format CI failure is a guaranteed extra fixer cycle with zero implementation value.
+- Before writing new integration test setup code (DB inserts, fixtures, seed data), search the test directory for existing factory or builder helpers and use them. Only write raw inserts if no factory infrastructure exists. Using raw inserts when factories exist causes tenancy, type safety, and association correctness issues that cascade into multiple fix rounds.

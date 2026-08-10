@@ -156,6 +156,24 @@ const context = {
   existing_summary_md: summary,
 };
 
+// Gather existing suggestions and prompt content so the reflector can avoid duplicates
+const existingSuggestions = db.prepare(
+  "SELECT target, suggestion, status FROM learning_suggestions WHERE status IN ('pending', 'applied') ORDER BY created_at DESC LIMIT 50"
+).all();
+
+const existingPromptRules = {};
+for (const target of new Set(existingSuggestions.map(s => s.target))) {
+  const match = String(target).match(/^agents\/([a-z-]+)\.md$/);
+  if (!match) continue;
+  const promptPath = path.join(FORGE_DIR, "agents", `${match[1]}.md`);
+  const content = safeRead(promptPath, 8000);
+  const learnedSection = content.match(/## Learned rules[\s\S]*$/)?.[0] ?? "";
+  if (learnedSection) existingPromptRules[target] = learnedSection;
+}
+
+context.existing_suggestions = existingSuggestions;
+context.existing_prompt_rules = existingPromptRules;
+
 const systemPrompt = safeRead(REFLECTOR_PROMPT, 12000) || "You are Forge's reflection agent. Output valid JSON only.";
 const userPrompt = `Analyze this Forge issue and produce the JSON reflection.\n\nContext:\n${JSON.stringify(context, null, 2)}`;
 

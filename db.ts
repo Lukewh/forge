@@ -37,6 +37,7 @@ export type IssueState =
   | "SPLITTING"
   | "AWAITING_FIX_APPROVAL"
   | "FIXING"
+  | "AWAITING_FIX_REVIEW"
   | "PUSHING"
   | "REBASING"
   | "DONE"
@@ -47,7 +48,7 @@ export type IssueState =
 
 export type AgentType = "setup" | "planner" | "plan-reviewer" | "coder" | "reviewer" | "git-agent" | "fixer" | "watcher" | "split-planner" | "splitter" | "rebaser";
 
-export type DecisionType = "PLAN_REVIEW" | "CODE_REVIEW" | "FIX_APPROVAL" | "SPLIT_APPROVAL" | "AI_CODE_REVIEW" | "AI_PLAN_REVIEW";
+export type DecisionType = "PLAN_REVIEW" | "CODE_REVIEW" | "FIX_APPROVAL" | "FIX_REVIEW" | "SPLIT_APPROVAL" | "AI_CODE_REVIEW" | "AI_PLAN_REVIEW";
 
 export type PrStatus = "open" | "merged" | "closed" | "draft";
 
@@ -70,6 +71,11 @@ export interface IssueRow {
   pr_approved_at: string | null;
   auto_fix_enabled: number;
   focus_rank: number | null;
+  target_kind: string | null;
+  target_paths_json: string | null;
+  avoid_paths_json: string | null;
+  scope_notes: string | null;
+  project_map_snapshot_json: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -127,6 +133,7 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   linear_enabled: "false",
   linear_team: "",
   linear_poll_interval_seconds: "300",
+  github_use_desktop: "false",
   worktree_provider: "git",
   wt_root: "",
   repo_root: "",
@@ -156,6 +163,7 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   vm_backend_staging_command: "",
   vm_backend_local_command: "",
   vm_database_command: "",
+  project_map_json: "",
 };
 
 // ── Database ─────────────────────────────────────────────────────────
@@ -198,6 +206,11 @@ export class ForgeDB {
         pr_approved_at           TEXT,
         auto_fix_enabled         INTEGER NOT NULL DEFAULT 0,
         focus_rank               INTEGER,
+        target_kind              TEXT,
+        target_paths_json        TEXT,
+        avoid_paths_json         TEXT,
+        scope_notes              TEXT,
+        project_map_snapshot_json TEXT,
         created_at               TEXT    NOT NULL DEFAULT (datetime('now')),
         updated_at         TEXT    NOT NULL DEFAULT (datetime('now'))
       );
@@ -224,7 +237,7 @@ export class ForgeDB {
       CREATE TABLE IF NOT EXISTS decision_queue (
         id            INTEGER PRIMARY KEY AUTOINCREMENT,
         issue_id      INTEGER NOT NULL REFERENCES issues(id) ON DELETE CASCADE,
-        type          TEXT    NOT NULL CHECK(type IN ('PLAN_REVIEW','CODE_REVIEW','FIX_APPROVAL','SPLIT_APPROVAL','AI_CODE_REVIEW','AI_PLAN_REVIEW')),
+        type          TEXT    NOT NULL CHECK(type IN ('PLAN_REVIEW','CODE_REVIEW','FIX_APPROVAL','FIX_REVIEW','SPLIT_APPROVAL','AI_CODE_REVIEW','AI_PLAN_REVIEW')),
         artifact_ref  TEXT    NOT NULL,
         feedback_json TEXT,
         verdict       TEXT    CHECK(verdict IN ('approved','rejected')),
@@ -375,6 +388,11 @@ export class ForgeDB {
     addColumn("issues", "pr_approved_at", "TEXT");
     addColumn("issues", "auto_fix_enabled", "INTEGER NOT NULL DEFAULT 0");
     addColumn("issues", "focus_rank", "INTEGER");
+    addColumn("issues", "target_kind", "TEXT");
+    addColumn("issues", "target_paths_json", "TEXT");
+    addColumn("issues", "avoid_paths_json", "TEXT");
+    addColumn("issues", "scope_notes", "TEXT");
+    addColumn("issues", "project_map_snapshot_json", "TEXT");
     addColumn("issues", "pi_sessions_json", "TEXT");
 
     this.db.prepare("UPDATE settings SET value = replace(value, 'IS_' || 'DEV' || 'CONTAINER=1 ', '') WHERE key LIKE 'vm_%_command'").run();
@@ -427,14 +445,14 @@ export class ForgeDB {
 
     // Expand decision_queue CHECK constraint to include newer decision types
     const dqSql = (this.db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='decision_queue'").get() as any)?.sql ?? '';
-    if (!dqSql.includes('AI_PLAN_REVIEW') || !dqSql.includes('SPLIT_APPROVAL')) {
+    if (!dqSql.includes('AI_PLAN_REVIEW') || !dqSql.includes('SPLIT_APPROVAL') || !dqSql.includes('FIX_REVIEW')) {
       this.db.exec(`
         BEGIN;
         ALTER TABLE decision_queue RENAME TO _dq_old;
         CREATE TABLE decision_queue (
           id            INTEGER PRIMARY KEY AUTOINCREMENT,
           issue_id      INTEGER NOT NULL REFERENCES issues(id) ON DELETE CASCADE,
-          type          TEXT    NOT NULL CHECK(type IN ('PLAN_REVIEW','CODE_REVIEW','FIX_APPROVAL','SPLIT_APPROVAL','AI_CODE_REVIEW','AI_PLAN_REVIEW')),
+          type          TEXT    NOT NULL CHECK(type IN ('PLAN_REVIEW','CODE_REVIEW','FIX_APPROVAL','FIX_REVIEW','SPLIT_APPROVAL','AI_CODE_REVIEW','AI_PLAN_REVIEW')),
           artifact_ref  TEXT    NOT NULL,
           feedback_json TEXT,
           verdict       TEXT    CHECK(verdict IN ('approved','rejected')),
@@ -489,16 +507,26 @@ export class ForgeDB {
     linearId?: string;
     title: string;
     priority?: number;
+    targetKind?: string;
+    targetPaths?: string[];
+    avoidPaths?: string[];
+    scopeNotes?: string;
+    projectMapSnapshotJson?: string;
   }): IssueRow {
     return this.db.prepare(`
-      INSERT INTO issues (source, linear_id, title, priority)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO issues (source, linear_id, title, priority, target_kind, target_paths_json, avoid_paths_json, scope_notes, project_map_snapshot_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       RETURNING *
     `).get(
       params.source,
       params.linearId ?? null,
       params.title,
       params.priority ?? 0,
+      params.targetKind ?? null,
+      JSON.stringify(params.targetPaths ?? []),
+      JSON.stringify(params.avoidPaths ?? []),
+      params.scopeNotes ?? null,
+      params.projectMapSnapshotJson ?? null,
     ) as IssueRow;
   }
 
@@ -622,16 +650,14 @@ export class ForgeDB {
   /**
    * Mark issues whose lock is older than the per-state threshold as FAILED.
    *
-   * LLM agents (coder / fixer / planner / reviewer) can legitimately run for
-   * up to MAX_RUNTIME_MS (45 min).  Using a 10-minute global threshold was
-   * prematurely killing those agents mid-work.  We now use:
-   *   - 50 min for heavy LLM states  (WORKING, FIXING, PLANNING, AI_* …)
-   *   - 12 min for quick-turnaround states (CREATING_PR, PUSHING, SETTING_UP …)
+   * LLM agents (coder / fixer / planner / reviewer) have MAX_RUNTIME_MS = 20 min.
+   * We give them 25 min here (buffer for startup/shutdown) before reaping.
+   * Deterministic / git / network agents get 12 min.
    */
   reapStaleIssues(_unusedLegacyMinutes?: number): IssueRow[] {
-    // States driven by long-running LLM agents — give them the full budget.
+    // States driven by long-running LLM agents — give them the full budget + buffer.
     const LONG_STATES = `'WORKING','FIXING','PLANNING','AI_REVIEWING','AI_PLAN_REVIEWING','SPLIT_PLANNING','SPLITTING'`;
-    const LONG_MINUTES = 50;
+    const LONG_MINUTES = 25;
     // States driven by deterministic / git / network agents — short turnaround.
     const SHORT_MINUTES = 12;
 
@@ -648,7 +674,7 @@ export class ForgeDB {
         AND locked_at < datetime('now', '-${SHORT_MINUTES} minutes')
         AND state NOT IN (${LONG_STATES},'DONE','PAUSED','IGNORED',
                           'AWAITING_PLAN_APPROVAL','AWAITING_CODE_REVIEW',
-                          'AWAITING_FIX_APPROVAL','AWAITING_SPLIT_APPROVAL')
+                          'AWAITING_FIX_APPROVAL','AWAITING_FIX_REVIEW','AWAITING_SPLIT_APPROVAL')
     `).all() as IssueRow[];
 
     const stale = [...longStale, ...shortStale];

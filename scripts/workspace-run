@@ -4,13 +4,14 @@
 const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
+const { describeWorkspaceRunConfig } = require("../lib/runtime-context.js");
 
 const FORGE_DIR = process.env.FORGE_DIR || path.resolve(__dirname, "..");
 const CONFIG_PATH = path.join(FORGE_DIR, "workspace-run.config.json");
 
 function usage(exitCode = 2) {
   const out = exitCode === 0 ? console.log : console.error;
-  out(`Usage:\n  scripts/workspace-run <worktree-path> -- <command...>\n  scripts/workspace-run <worktree-path> "<command>"\n\nRuns project runtime commands in the configured workspace environment.\nConfig: ${CONFIG_PATH} (optional; defaults to local mode)`);
+  out(`Usage:\n  scripts/workspace-run --describe <worktree-path>\n  scripts/workspace-run <worktree-path> -- <command...>\n  scripts/workspace-run <worktree-path> "<command>"\n\nRuns project runtime commands in the configured workspace environment.\nConfig: ${CONFIG_PATH} (optional; defaults to local mode)`);
   process.exit(exitCode);
 }
 
@@ -95,6 +96,8 @@ function runSsh(config, worktreePath, command) {
 function main() {
   const args = process.argv.slice(2);
   if (args.includes("-h") || args.includes("--help")) usage(0);
+  const describe = args[0] === "--describe";
+  if (describe) args.shift();
   const worktreePath = args.shift();
   if (!worktreePath) usage();
 
@@ -102,6 +105,11 @@ function main() {
   if (!fs.existsSync(resolvedWorktree)) {
     console.error(`Worktree path does not exist: ${resolvedWorktree}`);
     process.exit(2);
+  }
+
+  if (describe) {
+    console.log(JSON.stringify(describeWorkspaceRunConfig({ forgeDir: FORGE_DIR, worktreePath: resolvedWorktree }), null, 2));
+    process.exit(0);
   }
 
   const command = commandFromArgs(args);

@@ -68,20 +68,17 @@ Initial plan created by Forge Planner agent.
 - **Small**: aim for ~200–400 lines of diff per PR
 - **Deployable**: each PR leaves the codebase in a working state
 
-## Codebase locations
+## Target contract and codebase locations
 
-This is a monorepo. **Start your exploration here — do not crawl the whole repo.**
+The context may include an **Issue Target Contract** and a project map. Treat them as authoritative:
 
-| Layer | Path |
-|-------|------|
-| **Frontend** | `frontend/apps/pricing/src/` |
-| **Backend** | `functions/src/modules/marketPricing/pricing/` |
+- Start exploration in `target_paths` when present.
+- Do not plan work in `avoid_paths` unless explicit Linear comments or steering override the contract.
+- If the contract says work is generic/shared, do not scope the plan, summary, PR stack, or app/layer fields to a specific frontend app.
+- If the contract is missing or ambiguous, inspect the repository map and issue details first, then record the chosen app/package in frontmatter before planning.
+- If multiple apps/packages could plausibly own the work, write a short **Target decision** under `# Decisions Made` explaining why you chose the target and which paths are intentionally excluded.
 
-For frontend issues: look at the feature slice in `frontend/apps/pricing/src/` first — entities, widgets, pages, shared.
-For backend issues: look at the module in `functions/src/modules/marketPricing/pricing/` first — controllers, services, repositories.
-For fullstack issues: start at the backend endpoint, then trace to the frontend query/mutation.
-
-⚠️ **Do not explore outside these paths unless you have a specific reason** (e.g. shared utilities at `frontend/shared/` or `functions/src/shared/`). Resist the urge to `find` the whole worktree.
+This is a monorepo. Explore narrowly from the selected target paths. Do not crawl the whole repo unless the target cannot be determined from the contract, project map, and issue details.
 
 ## Constraints
 
@@ -95,7 +92,7 @@ All implementation decisions must be expressed as TODO items — not code.
 
 - All project runtime commands must use Forge's workspace runner: `$FORGE_DIR/scripts/workspace-run <worktree-path> -- <command...>`
 - Lint/format fixes: use project/package-level commands in the relevant package, always through the workspace runner
-- Plan project runtime commands through Forge's workspace runner so execution follows the configured local/SSH mode
+- Use the Forge Runtime Environment section for the current execution mode. Do not inspect container runtimes, raw SSH, or alternate VM setup yourself.
 - Runtime commands may run in parallel across separate worktrees; avoid planning overlapping runtime commands in the same worktree or commands that contend for the same DB/port/shared service
 - Do not plan or instruct agents to run standalone `prettier`; formatting must go through project scripts
 - Type/typecheck: `$FORGE_DIR/scripts/workspace-run <worktree-path> -- <project typecheck command>` in the relevant package

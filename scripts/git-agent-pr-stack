@@ -1,0 +1,79 @@
+#!/usr/bin/env node
+"use strict";
+
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+const { makeGitAgentPlan, runGitAgentPlan } = require("../lib/deterministic-agents.js");
+
+function arg(name) {
+  const i = process.argv.indexOf(name);
+  return i === -1 ? null : process.argv[i + 1];
+}
+
+const issueId = Number(arg("--issue-id"));
+const state = arg("--state");
+if (!issueId || !state) {
+  console.error("Usage: scripts/git-agent-pr-stack --issue-id <id> --state <CREATING_PR|PUSHING>");
+  process.exit(2);
+}
+
+const FORGE_DIR = process.env.FORGE_DIR || path.join(os.homedir(), ".pi", "agent", "extensions", "forge");
+const Database = require(path.join(FORGE_DIR, "node_modules", "better-sqlite3"));
+const db = new Database(path.join(FORGE_DIR, "forge.db"));
+
+function setting(key, fallback = "") {
+  return db.prepare("SELECT value FROM settings WHERE key = ?").get(key)?.value || fallback;
+}
+
+function baseBranch(issue) {
+  try {
+    const content = fs.readFileSync(issue.project_file_path, "utf-8");
+    return content.match(/^base-branch:\s*(.+)$/m)?.[1]?.trim() || setting("default_branch", "main");
+  } catch {
+    return setting("default_branch", "main");
+  }
+}
+
+function seedSingleBranchStack(issue) {
+  const existing = db.prepare("SELECT * FROM pr_stack WHERE issue_id = ? ORDER BY position ASC").all(issue.id);
+  if (existing.length) return existing;
+  let branch = null;
+  try {
+    const content = fs.readFileSync(issue.project_file_path, "utf-8");
+    branch = content.match(/^branch-name:\s*(.+)$/m)?.[1]?.trim();
+  } catch {}
+  if (!branch) return [];
+  const row = db.prepare("INSERT INTO pr_stack (issue_id, gt_branch, position, status) VALUES (?, ?, 1, 'open') RETURNING *").get(issue.id, branch);
+  return [row];
+}
+
+try {
+  const issue = db.prepare("SELECT * FROM issues WHERE id = ?").get(issueId);
+  if (!issue) throw new Error(`Issue not found: ${issueId}`);
+  const prStack = seedSingleBranchStack(issue);
+  if (!prStack.length) {
+    console.error("[forge:git-agent] No PR stack or branch-name found; falling back to LLM git-agent");
+    db.close();
+    process.exit(78);
+  }
+
+  const plan = makeGitAgentPlan({ state, issue, baseBranch: baseBranch(issue), prStack });
+  const prs = runGitAgentPlan({ cwd: issue.wt_path, plan, prStack, log: msg => console.log(`[forge:git-agent] ${msg}`) });
+
+  const prsPath = issue.project_file_path ? path.join(path.dirname(issue.project_file_path), "prs.json") : null;
+  if (prsPath) fs.writeFileSync(prsPath, JSON.stringify(prs, null, 2) + "\n", "utf-8");
+
+  for (const pr of prs) {
+    if (pr.pr_number) {
+      db.prepare("UPDATE pr_stack SET pr_number = ?, status = 'open' WHERE issue_id = ? AND gt_branch = ?").run(pr.pr_number, issueId, pr.branch);
+    }
+  }
+  db.prepare("INSERT INTO activity_log (issue_id, type, actor, message, metadata) VALUES (?, 'deterministic_git_agent', 'git-agent-pr-stack', ?, ?)")
+    .run(issueId, `Ran deterministic git agent for ${state}`, JSON.stringify(plan));
+  db.close();
+} catch (error) {
+  console.error(`[forge:git-agent] ${error.message}`);
+  db.close();
+  process.exit(1);
+}

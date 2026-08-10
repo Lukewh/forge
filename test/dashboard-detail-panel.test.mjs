@@ -1,7 +1,7 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { FORGE_DIR } from "./helpers.mjs";
+import { FORGE_DIR, readAllDashboardSource } from "./helpers.mjs";
 
 function read(path) {
   return readFileSync(path, "utf8");
@@ -9,7 +9,7 @@ function read(path) {
 
 describe("dashboard v3 detail panel", () => {
   test("reactive source defines issue detail panel state and renderer", () => {
-    const src = read(`${FORGE_DIR}/dashboard/frontend/src/main.ts`);
+    const src = readAllDashboardSource();
 
     assert.match(src, /selectedIssueId/);
     assert.match(src, /function\s+IssueDetailPanel/);
@@ -18,7 +18,7 @@ describe("dashboard v3 detail panel", () => {
   });
 
   test("issue cards open the right-side detail panel instead of full-page navigation", () => {
-    const src = read(`${FORGE_DIR}/dashboard/frontend/src/main.ts`);
+    const src = readAllDashboardSource();
 
     assert.match(src, /onOpenIssue/);
     assert.match(src, /setSelectedIssueId/);
@@ -26,7 +26,7 @@ describe("dashboard v3 detail panel", () => {
   });
 
   test("detail panel exposes issue-scoped tabs and fix approval affordance", () => {
-    const src = read(`${FORGE_DIR}/dashboard/frontend/src/main.ts`);
+    const src = readAllDashboardSource();
 
     for (const label of ["Overview", "Activity"]) {
       assert.match(src, new RegExp(`label:\\s*[\"']${label}[\"']`));
@@ -39,7 +39,7 @@ describe("dashboard v3 detail panel", () => {
   });
 
   test("detail panel renders decision-specific workflows", () => {
-    const src = read(`${FORGE_DIR}/dashboard/frontend/src/main.ts`);
+    const src = readAllDashboardSource();
 
     assert.match(src, /parseDecisionArtifact/);
     assert.match(src, /selectedFixCommentIds/);
@@ -52,7 +52,7 @@ describe("dashboard v3 detail panel", () => {
   });
 
   test("detail panel restores admin and runtime controls", () => {
-    const src = read(`${FORGE_DIR}/dashboard/frontend/src/main.ts`);
+    const src = readAllDashboardSource();
     const css = read(`${FORGE_DIR}/dashboard/frontend/src/style.css`);
 
     assert.match(src, /Admin & runtime/);
@@ -82,7 +82,7 @@ describe("dashboard v3 detail panel", () => {
   });
 
   test("detail panel wires PR sync, feedback, and auto-fix controls", () => {
-    const src = read(`${FORGE_DIR}/dashboard/frontend/src/main.ts`);
+    const src = readAllDashboardSource();
     const css = read(`${FORGE_DIR}/dashboard/frontend/src/style.css`);
 
     assert.match(src, /onSyncPrs/);
@@ -100,7 +100,7 @@ describe("dashboard v3 detail panel", () => {
   });
 
   test("activity tab uses real activity log and run logs", () => {
-    const src = read(`${FORGE_DIR}/dashboard/frontend/src/main.ts`);
+    const src = readAllDashboardSource();
     const css = read(`${FORGE_DIR}/dashboard/frontend/src/style.css`);
 
     assert.match(src, /type ActivityLogEntry/);

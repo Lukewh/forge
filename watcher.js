@@ -17,6 +17,7 @@ const { execFileSync } = require("child_process");
 const path = require("path");
 const os = require("os");
 const fs = require("fs");
+const crypto = require("crypto");
 
 // ── Args ─────────────────────────────────────────────────────────────
 
@@ -62,6 +63,7 @@ const LINEAR_STATE_MAP = {
   IN_MERGE_QUEUE:         "In Review",
   AWAITING_FIX_APPROVAL:  "In Review",
   FIXING:                 "In Review",
+  AWAITING_FIX_REVIEW:    "In Review",
   PUSHING:                "In Review",
   DONE:                   "Done",
 };
@@ -192,7 +194,52 @@ function autoFixComments(comments, artifactRef) {
 
 // ── GitHub / GT helpers ──────────────────────────────────────────────
 
+function sleep(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function getFreshDesktopCache(key, maxAgeSeconds = 90) {
+  const row = db.prepare(
+    "SELECT value_json, updated_at FROM desktop_cache WHERE key = ? AND updated_at > datetime('now', ?)"
+  ).get(key, `-${maxAgeSeconds} seconds`);
+  if (!row) return null;
+  try { return JSON.parse(row.value_json); } catch { return null; }
+}
+
+function ghDesktopCacheKey(args) {
+  return crypto.createHash("sha256").update(JSON.stringify({ args })).digest("hex").slice(0, 32);
+}
+
+function ghJsonViaDesktop(args) {
+  const cacheKey = ghDesktopCacheKey(args);
+  const cacheName = `gh.${cacheKey}`;
+  const cached = getFreshDesktopCache(cacheName);
+  if (cached?.ok) return cached.result;
+  if (cached && cached.ok === false) {
+    log(`WARN: desktop gh ${args.slice(0,3).join(" ")} failed: ${String(cached.error || "unknown error").split("\n")[0]}`);
+  }
+
+  const jobId = enqueueDesktopJobOnce("gh.json", { args, cacheKey });
+  if (!jobId) return null;
+
+  // The desktop companion polls every few seconds. Wait briefly so watcher runs
+  // can still complete in a single cycle when the bridge is available.
+  for (let i = 0; i < 40; i += 1) {
+    sleep(500);
+    const updated = getFreshDesktopCache(cacheName);
+    if (updated?.ok) return updated.result;
+    if (updated && updated.ok === false) {
+      log(`WARN: desktop gh ${args.slice(0,3).join(" ")} failed: ${String(updated.error || "unknown error").split("\n")[0]}`);
+      return null;
+    }
+  }
+
+  log(`WARN: desktop gh ${args.slice(0,3).join(" ")} still pending — will retry next scheduler tick`);
+  return null;
+}
+
 function ghJson(args, cwd) {
+  if (getSetting("github_use_desktop") === "true") return ghJsonViaDesktop(args);
   try {
     const out = execFileSync("gh", args, { encoding: "utf-8", timeout: 30000, cwd });
     return JSON.parse(out);
@@ -247,7 +294,10 @@ function getResolvedReviewThreadCommentIds(prNumber, cwd) {
     if (cursor) args.push("-f", `cursor=${cursor}`);
     const data = ghJson(args, cwd);
     const threads = data?.data?.repository?.pullRequest?.reviewThreads;
-    if (!threads) break;
+    if (!threads) {
+      log(`WARN: PR #${prNumber}: could not fetch review-thread resolution state`);
+      return null;
+    }
     for (const thread of threads.nodes ?? []) {
       if (!thread.isResolved) continue;
       for (const comment of thread.comments?.nodes ?? []) {
@@ -267,6 +317,10 @@ function getInlineComments(prNumber, cwd) {
   const repo = getGithubRepo();
   if (!repo.trim()) return [];
   const resolvedThreadCommentIds = getResolvedReviewThreadCommentIds(prNumber, cwd);
+  if (!resolvedThreadCommentIds) {
+    log(`WARN: PR #${prNumber}: skipping inline comments because resolution state is unavailable`);
+    return [];
+  }
   // --paginate makes gh concatenate all pages into a single JSON array
   const data = ghJson(["api", "--paginate", `repos/${repo}/pulls/${prNumber}/comments`], cwd);
   if (!Array.isArray(data)) {

@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { readFileSync } from "node:fs";
 
-const source = readFileSync(new URL("../dashboard/frontend/src/main.ts", import.meta.url), "utf8");
+import { readAllDashboardSource } from "./helpers.mjs";
+const source = readAllDashboardSource();
 const styles = readFileSync(new URL("../dashboard/frontend/src/style.css", import.meta.url), "utf8");
 const docs = readFileSync(new URL("../docs/DASHBOARD_FRONTEND.md", import.meta.url), "utf8");
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));

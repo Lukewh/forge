@@ -33,7 +33,7 @@ type ShellStatus = {
   concurrencyLimit: number;
 };
 
-type PrStackItem = { pr_number?: number | null; branch?: string | null; gt_branch?: string | null; status?: string | null; reviewDecision?: string | null; mergeable?: string | null; isInMergeQueue?: boolean | null; mergeQueuePosition?: number | null; mergeQueueEnqueuedAt?: string | null; checksTotal?: number | null; checksFailed?: number | null; checksPending?: number | null; liveState?: string | null; url?: string | null };
+type PrStackItem = { id?: number | null; position?: number | null; pr_number?: number | null; branch?: string | null; gt_branch?: string | null; status?: string | null; reviewDecision?: string | null; mergeable?: string | null; isInMergeQueue?: boolean | null; mergeQueuePosition?: number | null; mergeQueueEnqueuedAt?: string | null; checksTotal?: number | null; checksFailed?: number | null; checksPending?: number | null; liveState?: string | null; url?: string | null };
 
 type Issue = {
   id: number;
@@ -50,6 +50,10 @@ type Issue = {
   steering_context?: string | null;
   pr_approved_at?: string | null;
   auto_fix_enabled?: number | boolean | null;
+  target_kind?: string | null;
+  target_paths_json?: string | null;
+  avoid_paths_json?: string | null;
+  scope_notes?: string | null;
   locked_at?: string | null;
   agent_pid?: number | null;
 };
@@ -133,12 +137,14 @@ type FixApprovalComment = {
   source?: string | null;
 };
 
+type SplitStackEntry = { branch?: string; title?: string; summary?: string };
+
 type DecisionArtifact = {
   comments?: FixApprovalComment[];
   summary?: string;
   plan?: string;
-  proposedStack?: Array<{ branch?: string; title?: string; summary?: string }>;
-  stack?: Array<{ branch?: string; title?: string; summary?: string }>;
+  proposedStack?: SplitStackEntry[];
+  stack?: SplitStackEntry[];
 };
 
 type Overview = {
@@ -212,7 +218,7 @@ type SettingEntry = {
   value: string;
 };
 
-type AgentPromptType = "planner" | "plan-reviewer" | "coder" | "reviewer" | "git-agent" | "fixer" | "split-planner" | "splitter" | "rebaser";
+type AgentPromptType = "planner" | "plan-reviewer" | "coder" | "reviewer" | "git-agent" | "fixer" | "split-planner" | "splitter" | "rebaser" | "reflector";
 
 type AgentPromptState = {
   type: AgentPromptType;
@@ -282,7 +288,7 @@ const NAV_ITEMS: NavItem[] = [
 const PIPELINE_STAGES: PipelineStage[] = [
   { key: "available", label: "Available", states: ["PENDING"] },
   { key: "active", label: "Active", states: ["SETTING_UP", "PLANNING", "AI_PLAN_REVIEWING", "WORKING", "AI_REVIEWING", "SPLIT_PLANNING", "SPLITTING", "CREATING_PR", "WATCHING_PR", "IN_MERGE_QUEUE", "FIXING", "PUSHING", "REBASING"] },
-  { key: "awaiting", label: "Awaiting You", states: ["AWAITING_PLAN_APPROVAL", "AWAITING_SPLIT_APPROVAL", "AWAITING_CODE_REVIEW", "AWAITING_FIX_APPROVAL", "STEERING", "FAILED", "PAUSED", "IGNORED"] },
+  { key: "awaiting", label: "Awaiting You", states: ["AWAITING_PLAN_APPROVAL", "AWAITING_SPLIT_APPROVAL", "AWAITING_CODE_REVIEW", "AWAITING_FIX_APPROVAL", "AWAITING_FIX_REVIEW", "STEERING", "FAILED", "PAUSED", "IGNORED"] },
 ];
 
 const DETAIL_TABS: DetailTab[] = [
@@ -293,7 +299,7 @@ const DETAIL_TABS: DetailTab[] = [
 
 const SETTING_GROUPS: SettingGroup[] = [
   { label: "Automation", keys: ["concurrency_limit", "scheduler_interval_seconds", "ai_review_max_rounds", "auto_retry_max", "forge_reuse_pi_sessions"] },
-  { label: "External Services", keys: ["linear_enabled", "linear_team", "github_repo", "linear_poll_interval_seconds"] },
+  { label: "External Services", keys: ["linear_enabled", "linear_team", "github_repo", "github_use_desktop", "linear_poll_interval_seconds"] },
   { label: "Code Workspace", keys: ["worktree_provider", "repo_root", "wt_root", "worktree_root", "branch_prefix", "default_branch"] },
   { label: "Command Runtime", keys: ["runtime_mode", "vm_ssh_target", "host_path_prefix", "vm_path_prefix", "vm_frontend_staging_backend_command", "vm_frontend_local_backend_command", "vm_backend_staging_command", "vm_backend_local_command", "vm_database_command", "vm_command", "terminal_command"] },
   { label: "Agent Context", keys: ["project_prompt_overlay"] },
@@ -303,7 +309,7 @@ const SETTING_GROUPS: SettingGroup[] = [
 const SETTING_GROUP_DESCRIPTIONS: Record<SettingGroup["label"], string> = {
   Automation: "How many issues Forge can run, how often it wakes up, and how hard it should retry or loop before asking you.",
   "External Services": "Linear and GitHub identifiers used for issue lookup, PR links, review comments, and merge status.",
-  "Code Workspace": "Where Forge finds your repository and where it creates issue worktrees and branches.",
+  "Code Workspace": "Git/worktree paths. For plain git worktrees, Repo root is the main clone and Worktree root is where issue worktrees are created. Worktrunk root is only used when Worktree tool is wt.",
   "Command Runtime": "How project commands are launched. Leave SSH fields blank for local-only command execution.",
   "Agent Context": "Repo-specific instructions appended to every agent prompt without editing the base prompt files.",
   "Dashboard Backend": "Connection details for this dashboard process and the desktop companion.",
@@ -330,11 +336,12 @@ const SETTING_LABELS: Record<string, { label: string; hint: string }> = {
   linear_enabled: { label: "Run Linear CLI on backend", hint: "Enable only if the backend machine has an authenticated Linear CLI. Otherwise the desktop companion can handle Linear jobs." },
   linear_team: { label: "Linear team key", hint: "Team prefix for issues to list and enqueue, such as TEAM in TEAM-1234." },
   github_repo: { label: "GitHub repository", hint: "Repository slug in owner/name format, used for PR links, gh commands, comments, and merge status." },
+  github_use_desktop: { label: "Run GitHub CLI on desktop", hint: "Use the desktop companion's local gh auth for GitHub PR polling. Leave off to run gh on the backend machine." },
   linear_poll_interval_seconds: { label: "Linear polling interval", hint: "How many seconds to wait between Linear sync/list checks when Linear integration is enabled." },
-  worktree_provider: { label: "Worktree tool", hint: "Use git for plain git worktrees, or wt if you use Worktrunk." },
-  repo_root: { label: "Main repository path", hint: "Path to the primary local clone. Required when Worktree tool is git." },
-  wt_root: { label: "Worktrunk root path", hint: "Path to the Worktrunk repo root. Only used when Worktree tool is wt." },
-  worktree_root: { label: "New worktrees folder", hint: "Directory where Forge creates new git worktrees for each issue." },
+  worktree_provider: { label: "Worktree tool", hint: "Choose git for normal git worktree add. Choose wt only when Forge should call the Worktrunk CLI." },
+  repo_root: { label: "Repo root / main clone", hint: "For Worktree tool = git: path to the real repository clone Forge fetches from and runs git worktree add against. Example: /home/user/repo. Do not use a Worktrunk metadata folder." },
+  wt_root: { label: "Worktrunk root", hint: "Only for Worktree tool = wt. Path where the wt CLI should run. Leave blank when using normal git worktrees." },
+  worktree_root: { label: "Issue worktrees folder", hint: "For Worktree tool = git: parent folder where Forge creates per-issue worktrees, e.g. /mnt/mac/Users/user/Projects." },
   branch_prefix: { label: "Branch owner prefix", hint: "Prefix added before generated branch names, for example user/TEAM-1234-fix." },
   default_branch: { label: "Default base branch", hint: "Branch Forge fetches and uses as the base for new work." },
   runtime_mode: { label: "Runtime mode", hint: "Optional high-level runtime selector used by desktop/runtime helpers." },
@@ -371,7 +378,7 @@ const SETTING_PLACEHOLDERS: Record<string, string> = {
   dashboard_port: "3142",
 };
 
-const AGENT_PROMPT_TYPES: AgentPromptType[] = ["planner", "plan-reviewer", "coder", "reviewer", "git-agent", "fixer", "split-planner", "splitter", "rebaser"];
+const AGENT_PROMPT_TYPES: AgentPromptType[] = ["planner", "plan-reviewer", "coder", "reviewer", "git-agent", "fixer", "split-planner", "splitter", "rebaser", "reflector"];
 
 const PROMPT_MODEL_SETTINGS: Record<AgentPromptType, string> = {
   planner: "model_planner",
@@ -383,6 +390,7 @@ const PROMPT_MODEL_SETTINGS: Record<AgentPromptType, string> = {
   "split-planner": "model_split_planner",
   splitter: "model_splitter",
   rebaser: "model_rebaser",
+  reflector: "model_reflector",
 };
 
 const MODEL_SETTING_KEYS = ["model", "default_model", ...Object.values(PROMPT_MODEL_SETTINGS)];
@@ -429,7 +437,8 @@ const NEXT_STATE_BY_STATE: Record<string, string> = {
   WATCHING_PR: "IN_MERGE_QUEUE",
   IN_MERGE_QUEUE: "DONE",
   AWAITING_FIX_APPROVAL: "FIXING",
-  FIXING: "PUSHING",
+  FIXING: "AWAITING_FIX_REVIEW",
+  AWAITING_FIX_REVIEW: "PUSHING",
   PUSHING: "WATCHING_PR",
   REBASING: "WATCHING_PR",
   FAILED: "WORKING",
@@ -447,8 +456,9 @@ const JUMP_STATE_OPTIONS: JumpStateOption[] = [
   { state: "AI_REVIEWING", label: "🤖 AI Review", hint: "Run the AI reviewer on current code" },
   { state: "CREATING_PR", label: "📤 Create PR", hint: "Skip to PR creation" },
   { state: "FIXING", label: "🔧 Fix", hint: "Jump to the fixer agent" },
+  { state: "AWAITING_FIX_REVIEW", label: "🔍 Fix review", hint: "Review the fix before pushing" },
   { state: "WATCHING_PR", label: "👁 Watch PR", hint: "Monitor open PRs for CI / reviews" },
-  { state: "REBASING", label: "↥ Rebase", hint: "Resolve rebase conflicts and push carefully" },
+  { state: "REBASING", label: "Rebase", hint: "Resolve rebase conflicts and push carefully" },
   { state: "SPLIT_PLANNING", label: "✂️ Plan Split", hint: "Ask an agent to propose a stacked PR split" },
   { state: "SPLITTING", label: "✂️ Split Stack", hint: "Execute the approved stacked PR split", risky: true },
   { state: "IN_MERGE_QUEUE", label: "🔀 Merge Queue", hint: "Mark PRs as entered into merge queue", risky: true },
@@ -472,6 +482,7 @@ const STATE_PROCESS_ORDER: Record<string, number> = {
   IN_MERGE_QUEUE: 140,
   AWAITING_FIX_APPROVAL: 150,
   FIXING: 160,
+  AWAITING_FIX_REVIEW: 165,
   PUSHING: 170,
   REBASING: 175,
   DONE: 180,
@@ -491,6 +502,7 @@ const STATE_TO_PIPELINE_STAGE: Record<string, PipelineStageKey> = {
   WORKING: "active",
   AI_REVIEWING: "active",
   FIXING: "active",
+  AWAITING_FIX_REVIEW: "awaiting",
   PUSHING: "active",
   REBASING: "active",
   CREATING_PR: "active",
@@ -546,6 +558,7 @@ const MOCK_STATE_NAMES = [
   "IN_MERGE_QUEUE",
   "AWAITING_FIX_APPROVAL",
   "FIXING",
+  "AWAITING_FIX_REVIEW",
   "PUSHING",
   "REBASING",
   "STEERING",
@@ -588,6 +601,7 @@ function mockDecisionForIssue(issue: Issue): Decision | null {
   if (issue.state === "AWAITING_PLAN_APPROVAL") return { id: 9101, issue_id: issue.id, type: "PLAN_REVIEW", issueTitle: issue.title };
   if (issue.state === "AWAITING_CODE_REVIEW") return { id: 9102, issue_id: issue.id, type: "CODE_REVIEW", issueTitle: issue.title };
   if (issue.state === "AWAITING_FIX_APPROVAL") return { id: 9103, issue_id: issue.id, type: "FIX_APPROVAL", issueTitle: issue.title, artifact_ref: JSON.stringify({ comments: [{ id: "c1", author: "Reviewer", body: "Please cover the empty-state path before merging.", path: "src/mock.ts", line: 3, pr_number: 4521, reviewState: "CHANGES_REQUESTED" }, { id: "ci-1", author: "CI", body: "Typecheck failure in mock review fixture.", path: "src/mock.ts", line: null, pr_number: 4521, source: "ci" }] }) };
+  if (issue.state === "AWAITING_FIX_REVIEW") return { id: 9104, issue_id: issue.id, type: "FIX_REVIEW", issueTitle: issue.title, artifact_ref: "fix-review" };
   if (issue.state === "AWAITING_SPLIT_APPROVAL") return { id: 9104, issue_id: issue.id, type: "SPLIT_APPROVAL", issueTitle: issue.title, artifact_ref: JSON.stringify({ summary: "Split generated code review prep from dashboard polish.", proposedStack: [{ branch: "mock/review-foundation", title: "Review foundation" }, { branch: "mock/review-polish", title: "Review polish" }] }) };
   return null;
 }
@@ -604,7 +618,7 @@ function mockIssues(): Issue[] {
     branch: `user/mock-${state.toLowerCase().replaceAll("_", "-")}`,
     wt_path: `/tmp/forge/mock/${state.toLowerCase()}`,
     project_file_path: `/tmp/forge/mock/${state.toLowerCase()}/plan.md`,
-    prStack: ["CREATING_PR", "WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL", "FIXING", "PUSHING", "REBASING"].includes(state)
+    prStack: ["CREATING_PR", "WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL", "FIXING", "AWAITING_FIX_REVIEW", "PUSHING", "REBASING"].includes(state)
       ? [{ pr_number: state === "CREATING_PR" ? null : 4521 + index, branch: `user/mock-${index + 1}`, status: state === "IN_MERGE_QUEUE" ? "merged" : "open" }]
       : [],
   }));
@@ -665,6 +679,7 @@ function issueProgress(issue: Issue): number {
   if (state === "AI_REVIEWING") return 55;
   if (state === "AWAITING_CODE_REVIEW") return 62;
   if (state === "AWAITING_FIX_APPROVAL") return 73;
+  if (state === "AWAITING_FIX_REVIEW") return 78;
   if (["WATCHING_PR", "FIXING", "PUSHING", "REBASING"].includes(state)) return 84;
   if (state === "IN_MERGE_QUEUE") return 95;
   if (state === "DONE") return 100;
@@ -755,6 +770,7 @@ function issueStateLabel(issue: Issue): string {
     SPLITTING: "splitting",
     AWAITING_FIX_APPROVAL: "awaiting fix approval",
     FIXING: "fixing",
+    AWAITING_FIX_REVIEW: "awaiting fix review",
     PUSHING: "pushing",
     REBASING: "rebasing",
     FAILED: "failed",
@@ -843,11 +859,12 @@ function issueMetaText(issue: Issue): string {
   return `Updated ${elapsed} ago`;
 }
 
-function issueDecisionKind(decisions: Decision[]): "plan" | "code" | "fix" | "split" | "generic" | null {
+function issueDecisionKind(decisions: Decision[]): "plan" | "code" | "fix" | "fix-review" | "split" | "generic" | null {
   const type = decisions[0]?.type ?? "";
   if (!type) return null;
   if (type.includes("PLAN")) return "plan";
   if (type.includes("CODE")) return "code";
+  if (type === "FIX_REVIEW") return "fix-review";
   if (type.includes("FIX")) return "fix";
   if (type.includes("SPLIT")) return "split";
   return "generic";
@@ -863,8 +880,70 @@ function parseDecisionArtifact(decision?: Decision): DecisionArtifact {
   }
 }
 
+function looksLikeArtifactPath(value?: string | null): boolean {
+  return Boolean(value && /(?:^|[\\/])(?:plan|handoff|summary)\.md$/i.test(value.trim()));
+}
+
+function extractMarkdownSection(markdown: string, heading: string): string {
+  const lines = markdown.replace(/^---[\s\S]*?---\s*/, "").split("\n");
+  const headingPattern = new RegExp(`^(#{1,6})\\s+${heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, "i");
+  const start = lines.findIndex((line) => headingPattern.test(line.trim()));
+  if (start < 0) return "";
+  const level = lines[start].match(/^\s*(#{1,6})/)?.[1].length ?? 1;
+  let end = lines.length;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const match = lines[index].match(/^\s*(#{1,6})\s+/);
+    if (match && match[1].length <= level) {
+      end = index;
+      break;
+    }
+  }
+  return lines.slice(start, end).join("\n").trim();
+}
+
+function splitStackFromMarkdown(section: string): SplitStackEntry[] {
+  if (!section.trim()) return [];
+  const entries: SplitStackEntry[] = [];
+  const blocks = section.split(/\n(?=###\s+)/g).filter((block) => /^###\s+/.test(block.trim()));
+  for (const block of blocks) {
+    const title = block.match(/^###\s+(?:Part\s+\d+\s+[—-]\s+)?(.+)$/m)?.[1]?.trim();
+    const branch = block.match(/^[-*]\s+\*\*Branch:\*\*\s+`?([^`\n]+)`?/m)?.[1]?.trim();
+    const base = block.match(/^[-*]\s+\*\*Base:\*\*\s+`?([^`\n]+)`?/m)?.[1]?.trim();
+    const commits = block.match(/^[-*]\s+\*\*Commits?:\*\*\s+(.+)$/m)?.[1]?.replace(/`/g, "").trim();
+    if (title || branch) entries.push({ title, branch, summary: [base ? `Base: ${base}` : null, commits ? `Commits: ${commits}` : null].filter(Boolean).join(" · ") || branch });
+  }
+  return entries;
+}
+
+function splitApprovalPresentation(decision: Decision | undefined, artifact: DecisionArtifact, detail: IssueDetail | null): { summary: string; markdown: string; stack: SplitStackEntry[] } {
+  const artifactSummary = !looksLikeArtifactPath(artifact.summary) ? artifact.summary : undefined;
+  const artifactPlan = !looksLikeArtifactPath(artifact.plan) ? artifact.plan : undefined;
+  const planSection = extractMarkdownSection(detailPlan(detail), "Split Plan");
+  const markdown = artifactPlan ?? planSection;
+  const stack = artifact.proposedStack ?? artifact.stack ?? splitStackFromMarkdown(markdown);
+  return {
+    summary: artifactSummary ?? (markdown ? "Review the proposed PR stack split from the split planner." : "Review the proposed PR stack split."),
+    markdown,
+    stack,
+  };
+}
+
 function fixCommentId(comment: FixApprovalComment, index: number): string {
   return String(comment.id ?? `${comment.path ?? "comment"}-${comment.line ?? index}-${index}`);
+}
+
+function fixCommentPrNumber(comment: FixApprovalComment): number | null {
+  const raw = comment.pr_number ?? comment.prNumber;
+  const parsed = typeof raw === "number" ? raw : Number(String(raw ?? "").replace(/^#/, ""));
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function fixCommentPrLabel(comment: FixApprovalComment, prStack: PrStackItem[]): string {
+  const prNumber = fixCommentPrNumber(comment);
+  const pr = prNumber ? prStack.find((entry) => Number(entry.pr_number) === prNumber) : null;
+  const position = pr?.position ? `PR ${pr.position}` : "PR";
+  const branch = pr?.gt_branch ?? pr?.branch;
+  return [prNumber ? `${position} #${prNumber}` : position, branch].filter(Boolean).join(" · ");
 }
 
 function formatReviewSectionLabel(raw: string): string {
@@ -916,6 +995,7 @@ function expectedDecisionTypeForState(state?: string | null): string | null {
   if (state === "AWAITING_PLAN_APPROVAL") return "PLAN_REVIEW";
   if (state === "AWAITING_CODE_REVIEW") return "CODE_REVIEW";
   if (state === "AWAITING_FIX_APPROVAL") return "FIX_APPROVAL";
+  if (state === "AWAITING_FIX_REVIEW") return "FIX_REVIEW";
   if (state === "AWAITING_SPLIT_APPROVAL") return "SPLIT_APPROVAL";
   return null;
 }
@@ -926,6 +1006,7 @@ function issueBanner(issue: Issue, decisions: Decision[]) {
   if (decisionKind === "plan" || state === "AWAITING_PLAN_APPROVAL") return { icon: "📋", tone: "awaiting", title: "Plan ready for review", text: "Planner generated a plan. AI plan reviewer approved with notes for your review.", live: false };
   if (decisionKind === "code" || state === "AWAITING_CODE_REVIEW") return { icon: "⬡", tone: "awaiting", title: "Code review ready", text: "AI reviewer finished. Review the diff, then approve or request changes.", live: false };
   if (decisionKind === "fix" || state === "AWAITING_FIX_APPROVAL") return { icon: "💬", tone: "awaiting", title: "PR comments ready for review", text: "Select which comments and failures should be sent to the fixer agent.", live: false };
+  if (state === "AWAITING_FIX_REVIEW") return { icon: "🔍", tone: "awaiting", title: "Fix ready for review", text: "The fixer addressed review comments. Review the diff and approve to push, or reject to send back for more changes.", live: false };
   if (state === "AWAITING_SPLIT_APPROVAL") return { icon: "⑂", tone: "awaiting", title: "Split plan ready", text: "Review the proposed PR stack split before Forge creates branch work.", live: false };
   if (state === "REBASING") return { icon: "↥", tone: "running", title: "Rebasing branch", text: "Forge is rebasing onto the base branch. If conflicts appear, the rebaser agent will resolve them carefully and stop rather than guess.", live: true };
   if (isPrApproved(issue) && ["WATCHING_PR", "IN_MERGE_QUEUE"].includes(state)) return { icon: "✓", tone: "running", title: "PR approved", text: issue.pr_approved_at ? `GitHub review approved ${timeAgoShort(issue.pr_approved_at)} ago. Forge is watching for merge queue and merge status.` : "GitHub review is approved. Forge is watching for merge queue and merge status.", live: false };
@@ -987,13 +1068,13 @@ function phaseIndexForState(state?: string | null): number {
   if (["WORKING", "SPLITTING"].includes(state ?? "")) return 2;
   if (["AI_REVIEWING", "AWAITING_CODE_REVIEW"].includes(state ?? "")) return 3;
   if (["CREATING_PR"].includes(state ?? "")) return 4;
-  if (["WATCHING_PR", "AWAITING_FIX_APPROVAL", "FIXING", "PUSHING", "REBASING", "IN_MERGE_QUEUE"].includes(state ?? "")) return 5;
+  if (["WATCHING_PR", "AWAITING_FIX_APPROVAL", "FIXING", "AWAITING_FIX_REVIEW", "PUSHING", "REBASING", "IN_MERGE_QUEUE"].includes(state ?? "")) return 5;
   if (state === "DONE") return 6;
   return 0;
 }
 
 function isWaitingState(state?: string | null): boolean {
-  return ["AWAITING_PLAN_APPROVAL", "AWAITING_CODE_REVIEW", "AWAITING_FIX_APPROVAL", "AWAITING_SPLIT_APPROVAL"].includes(state ?? "");
+  return ["AWAITING_PLAN_APPROVAL", "AWAITING_CODE_REVIEW", "AWAITING_FIX_APPROVAL", "AWAITING_FIX_REVIEW", "AWAITING_SPLIT_APPROVAL"].includes(state ?? "");
 }
 
 function detailPlan(detail: IssueDetail | null): string {
@@ -1014,16 +1095,16 @@ function hasHandoff(detail: IssueDetail | null): boolean {
 }
 
 function hasWrittenCode(state?: string | null): boolean {
-  return ["AI_REVIEWING", "AWAITING_CODE_REVIEW", "CREATING_PR", "WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL", "FIXING", "PUSHING", "REBASING", "FAILED", "PAUSED"].includes(state ?? "");
+  return ["AI_REVIEWING", "AWAITING_CODE_REVIEW", "CREATING_PR", "WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL", "FIXING", "AWAITING_FIX_REVIEW", "PUSHING", "REBASING", "FAILED", "PAUSED"].includes(state ?? "");
 }
 
 function canRequestSplitPrStack(state?: string | null): boolean {
-  return ["AI_REVIEWING", "AWAITING_CODE_REVIEW", "CREATING_PR", "WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL", "FIXING", "PUSHING", "REBASING"].includes(state ?? "");
+  return ["AI_REVIEWING", "AWAITING_CODE_REVIEW", "CREATING_PR", "WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL", "FIXING", "AWAITING_FIX_REVIEW", "PUSHING", "REBASING"].includes(state ?? "");
 }
 
 function canRebaseIssue(issue?: Issue | null): boolean {
   if (!issue) return false;
-  return ["AWAITING_CODE_REVIEW", "WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL"].includes(issue.state ?? "") && !isRunningIssue(issue) && !issue.locked_at && !issue.agent_pid;
+  return ["AWAITING_CODE_REVIEW", "WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL", "AWAITING_FIX_REVIEW"].includes(issue.state ?? "") && !isRunningIssue(issue) && !issue.locked_at && !issue.agent_pid;
 }
 
 function diffLineClass(line: string): string {
@@ -1224,6 +1305,10 @@ function decisionPrimaryActionLabel(decision: Decision): string {
   return "View diff";
 }
 
+function primaryPrUrl(issue: Issue): string | null {
+  return (issue.prStack ?? []).find((pr) => pr.url)?.url ?? null;
+}
+
 function prMetadataBadges(issue: Issue): Array<{ className: string; label: string }> {
   const prs = issue.prStack ?? [];
   const state = issue.state ?? "";
@@ -1247,7 +1332,7 @@ function issueMatchesQueueSearch(issue: Issue, query: string): boolean {
 
 function issueMatchesQueueFilter(issue: Issue, filter: QueueFilter): boolean {
   const state = issue.state ?? "";
-  if (filter === "needs-me") return ["AWAITING_PLAN_APPROVAL", "AWAITING_CODE_REVIEW", "AWAITING_FIX_APPROVAL", "AWAITING_SPLIT_APPROVAL", "STEERING"].includes(state);
+  if (filter === "needs-me") return ["AWAITING_PLAN_APPROVAL", "AWAITING_CODE_REVIEW", "AWAITING_FIX_APPROVAL", "AWAITING_FIX_REVIEW", "AWAITING_SPLIT_APPROVAL", "STEERING"].includes(state);
   if (filter === "running") return isRunningIssue(issue);
   if (filter === "failed") return state === "FAILED";
   if (filter === "watching-pr") return ["WATCHING_PR", "CREATING_PR", "IN_MERGE_QUEUE"].includes(state);
@@ -1294,6 +1379,7 @@ function decisionWorkflowRank(decision: Decision, issues: Issue[]): number {
   if (decision.type === "SPLIT_APPROVAL") return STATE_PROCESS_ORDER.AWAITING_SPLIT_APPROVAL;
   if (decision.type === "CODE_REVIEW") return STATE_PROCESS_ORDER.AWAITING_CODE_REVIEW;
   if (decision.type === "FIX_APPROVAL") return STATE_PROCESS_ORDER.AWAITING_FIX_APPROVAL;
+  if (decision.type === "FIX_REVIEW") return STATE_PROCESS_ORDER.AWAITING_FIX_REVIEW;
   return 999;
 }
 
@@ -1420,12 +1506,14 @@ function submitIssueFeedback(issueId: number, body: string, prNumber?: number | 
   return postJson<{ ok: boolean }>(`/api/issues/${issueId}/feedback`, { body, prNumber: prNumber ?? null });
 }
 
-function createManualIssue(title: string, description = "") {
-  return postJson<{ ok: boolean; issueId?: number }>("/api/issues", { title, description });
+type TargetDraft = { targetKind?: string; targetPaths?: string; avoidPaths?: string; scopeNotes?: string };
+
+function createManualIssue(title: string, description = "", target?: TargetDraft) {
+  return postJson<{ ok: boolean; issueId?: number }>("/api/issues", { title, description, ...target });
 }
 
-function enqueueLinearIssueApi(linearId: string, planningGuidance = "") {
-  return postJson<{ ok: boolean; issueId?: number }>("/api/linear/enqueue", { linearId, planningGuidance });
+function enqueueLinearIssueApi(linearId: string, planningGuidance = "", target?: TargetDraft) {
+  return postJson<{ ok: boolean; issueId?: number }>("/api/linear/enqueue", { linearId, planningGuidance, ...target });
 }
 
 function loadDesktopCapabilities() {
@@ -1455,7 +1543,16 @@ async function notifyPendingDecisionOnce(decision: Decision, issue?: Issue, desk
     } catch {}
   }
   if (!browserNotificationsAvailable() || window.Notification.permission !== "granted") return;
-  new window.Notification(title, { body, tag });
+  const notification = new window.Notification(title, { body, tag });
+  notification.onclick = () => {
+    window.focus();
+    const issueId = issue?.id ?? decision.issue_id;
+    const url = new URL(window.location.href);
+    url.searchParams.set("view", "queue");
+    url.searchParams.set("issue", String(issueId));
+    url.searchParams.set("panel", "review");
+    window.location.href = url.toString();
+  };
 }
 
 function shellStatusFromData(overview: Overview, settings: Settings): ShellStatus {
@@ -1650,7 +1747,7 @@ function stageIcon(stage: PipelineStageKey): string {
   return ({ available: "○", active: "▣", awaiting: "⚡" } satisfies Record<PipelineStageKey, string>)[stage];
 }
 
-function BacklogCard({ issue, onEnqueue }: { issue: LinearBacklogIssue; onEnqueue: (linearId: string, planningGuidance?: string) => void }) {
+function BacklogCard({ issue, onEnqueue }: { issue: LinearBacklogIssue; onEnqueue: (linearId: string, planningGuidance?: string, target?: TargetDraft) => void }) {
   const requestEnqueue = async () => {
     const planningGuidance = (await showForgePrompt({ title: `Enqueue ${issue.identifier}`, message: "Add optional planning guidance before Forge creates the plan.", label: "Planning guidance", confirmText: "Enqueue" }))?.trim() ?? "";
     onEnqueue(issue.identifier, planningGuidance);
@@ -1668,6 +1765,14 @@ function BacklogCard({ issue, onEnqueue }: { issue: LinearBacklogIssue; onEnqueu
   );
 }
 
+function stopCardEvent(event: Event) {
+  event.stopPropagation();
+}
+
+function isInteractiveCardTarget(event: Event): boolean {
+  return event.composedPath().some((target) => target instanceof HTMLElement && Boolean(target.closest?.("button,a,input,select,textarea")));
+}
+
 function IssueCardInner({ issue, selected, onOpenIssue, onIssueAction, onReviewIssue }: { issue: Issue; selected: boolean; onOpenIssue: (issueId: number) => void; onIssueAction: (issueId: number, action: IssueAction) => void; onReviewIssue: (issueId: number) => void }) {
   const progress = issueProgress(issue);
   const stage = classifyIssueToPipelineStage(issue);
@@ -1677,10 +1782,11 @@ function IssueCardInner({ issue, selected, onOpenIssue, onIssueAction, onReviewI
   const issueActionLabel = issueAction === "unpause" ? "Resume" : issueAction === "retry" ? "Retry" : "Pause";
   const runtimeBadges = issueRuntimeBadges(issue);
   const prBadges = prMetadataBadges(issue);
+  const prUrl = primaryPrUrl(issue);
   return h(
     "article",
-    { class: `forge-v3-issue-card ${selected ? "selected" : ""} ${isPrApproved(issue) ? "pr-approved" : ""} ${(issue.prStack ?? []).some((pr) => pr.isInMergeQueue) ? "in-merge-queue" : ""} state-${issue.state ?? "unknown"} stage-${stage}`, "data-issue-id": String(issue.id), tabIndex: 0, "aria-label": `Open issue ${issue.linear_id ?? issue.id}`, onPointerDown: (event: PointerEvent) => { if ((event.target as HTMLElement).closest("button,a,input,select,textarea")) return; onOpenIssue(issue.id); }, onKeyDown: (event: KeyboardEvent) => { if (event.key === "Enter" || event.key === " ") onOpenIssue(issue.id); } },
-    h("div", { class: "forge-v3-ic-hover", "aria-hidden": "true" },
+    { class: `forge-v3-issue-card ${selected ? "selected" : ""} ${isPrApproved(issue) ? "pr-approved" : ""} ${(issue.prStack ?? []).some((pr) => pr.isInMergeQueue) ? "in-merge-queue" : ""} state-${issue.state ?? "unknown"} stage-${stage}`, "data-issue-id": String(issue.id), tabIndex: 0, "aria-label": `Open issue ${issue.linear_id ?? issue.id}`, onPointerDown: (event: PointerEvent) => { if (isInteractiveCardTarget(event)) return; onOpenIssue(issue.id); }, onKeyDown: (event: KeyboardEvent) => { if (isInteractiveCardTarget(event)) return; if (event.key === "Enter" || event.key === " ") onOpenIssue(issue.id); } },
+    h("div", { class: "forge-v3-ic-hover", onPointerDown: stopCardEvent },
       isAvailable
         ? h("button", { class: "forge-v3-hact", type: "button", onClick: (event: Event) => { event.stopPropagation(); onIssueAction(issue.id, "ignore"); } }, "Ignore")
         : issue.state === "AWAITING_PLAN_APPROVAL"
@@ -1695,11 +1801,11 @@ function IssueCardInner({ issue, selected, onOpenIssue, onIssueAction, onReviewI
               ]
             : issue.state === "FAILED"
               ? [
-                  h("button", { class: "forge-v3-hact", type: "button", onClick: (event: Event) => { event.stopPropagation(); onIssueAction(issue.id, "retry"); } }, "↺ Retry"),
+                  h("button", { class: "forge-v3-hact", type: "button", onClick: (event: Event) => { event.stopPropagation(); onIssueAction(issue.id, "retry"); } }, "Retry"),
                   h("button", { class: "forge-v3-hact", type: "button", onClick: (event: Event) => { event.stopPropagation(); onOpenIssue(issue.id); } }, "Log")
                 ]
               : issue.state === "PAUSED"
-                ? h("button", { class: "forge-v3-hact", type: "button", onClick: (event: Event) => { event.stopPropagation(); onIssueAction(issue.id, "unpause"); } }, "▶ Resume")
+                ? h("button", { class: "forge-v3-hact", type: "button", onClick: (event: Event) => { event.stopPropagation(); onIssueAction(issue.id, "unpause"); } }, "Resume")
                 : isRunning
                   ? [
                       issue.state === "WORKING" ? h("button", { class: "forge-v3-hact", type: "button", onClick: (event: Event) => { event.stopPropagation(); onOpenIssue(issue.id); } }, "Listen live") : null,
@@ -1707,7 +1813,9 @@ function IssueCardInner({ issue, selected, onOpenIssue, onIssueAction, onReviewI
                       h("button", { class: "forge-v3-hact", type: "button", onClick: (event: Event) => { event.stopPropagation(); onIssueAction(issue.id, "pause"); } }, "Pause")
                     ]
                   : [
-                      h("button", { class: "forge-v3-hact", type: "button", onClick: (event: Event) => { event.stopPropagation(); onOpenIssue(issue.id); } }, issue.state === "WATCHING_PR" ? "View PR" : "Open"),
+                      issue.state === "WATCHING_PR" && prUrl
+                        ? h("a", { class: "forge-v3-hact", href: prUrl, target: "_blank", rel: "noreferrer", onClick: (event: MouseEvent) => event.stopPropagation() }, "View PR")
+                        : h("button", { class: "forge-v3-hact", type: "button", onClick: (event: Event) => { event.stopPropagation(); onOpenIssue(issue.id); } }, issue.state === "WATCHING_PR" ? "View PR" : "Open"),
                       h("button", { class: "forge-v3-hact", type: "button", onClick: (event: Event) => { event.stopPropagation(); onReviewIssue(issue.id); } }, issue.state === "WATCHING_PR" ? "Add feedback" : "Diff")
                     ]
     ),
@@ -1734,7 +1842,7 @@ function IssueCardInner({ issue, selected, onOpenIssue, onIssueAction, onReviewI
     !isAvailable && prBadges.length ? h("div", { class: "forge-v3-pr-metadata" }, prBadges.map((badge) => h("span", { class: badge.className }, badge.label))) : null,
     ),
     h("div", { class: "forge-v3-ic-progress forge-v3-issue-progress", "aria-hidden": "true" }, h("span", { class: "forge-v3-ic-fill", style: { width: `${progress}%` } })),
-    h("div", { class: "forge-v3-issue-actions" },
+    h("div", { class: "forge-v3-issue-actions", onPointerDown: stopCardEvent },
       h("button", { type: "button", onClick: (event: Event) => { event.stopPropagation(); onOpenIssue(issue.id); } }, "Open"),
       h("button", { type: "button", onClick: (event: Event) => { event.stopPropagation(); onOpenIssue(issue.id); } }, "Open plan"),
       h("button", { type: "button", onClick: (event: Event) => { event.stopPropagation(); onReviewIssue(issue.id); } }, "Review diff"),
@@ -1744,34 +1852,6 @@ function IssueCardInner({ issue, selected, onOpenIssue, onIssueAction, onReviewI
 }
 
 const IssueCard = memo(IssueCardInner, (prev, next) => prev.issue === next.issue && prev.selected === next.selected);
-
-function DecisionInbox({ decisions, issues, onResolveDecision, onReviewDecision }: { decisions: Decision[]; issues: Issue[]; onResolveDecision: (decisionId: number, verdict: DecisionVerdict, feedback?: unknown) => void; onReviewDecision: (issueId: number, decisionId: number) => void }) {
-  const orderedDecisions = sortDecisionsByWorkflow(decisions, issues);
-  return h(
-    "section",
-    { id: "decisions-inbox", class: `forge-v3-decision-inbox ${decisions.length === 0 ? "is-empty" : ""}`, "aria-label": "Decision inbox" },
-    h("div", { class: "forge-v3-section-heading" },
-      h("span", { class: "forge-v3-inbox-flash", "aria-hidden": "true" }),
-      h("h2", null, decisions.length, " decisions need your attention"),
-      h("span", { class: "forge-v3-inbox-title" }, decisions.length ? "— Forge is paused on these issues until reviewed" : "review queue")
-    ),
-    h("div", { class: "forge-v3-decision-row" },
-      orderedDecisions.length === 0
-        ? h("article", { class: "forge-v3-decision-card forge-v3-decision-empty" }, h("strong", null, "No decisions need your attention"), h("span", { class: "forge-v3-decision-title" }, "Forge will pause here when plan, code, fix, or split approvals are ready."))
-        : orderedDecisions.map((decision) =>
-            h("article", { key: decision.id, class: `forge-v3-decision-card ${decisionTypeClass(decision)}`, "data-decision-id": String(decision.id) },
-              h("strong", null, h("span", { class: "forge-v3-cmd-item-icon", "aria-hidden": "true" }, decisionIcon(decision)), decisionTypeLabel(decision)),
-              h("span", { class: "forge-v3-decision-title" }, decision.issueTitle ?? `Issue #${decision.issue_id}`),
-              h("div", { class: "forge-v3-decision-actions" },
-                h("button", { type: "button", onClick: () => onReviewDecision(decision.issue_id, decision.id) }, decisionPrimaryActionLabel(decision)),
-                h("button", { type: "button", class: "ok", onClick: () => onResolveDecision(decision.id, "approved") }, "✓ Approve"),
-                h("button", { type: "button", class: "bad", onClick: () => onResolveDecision(decision.id, "rejected", { reason: "Requested from dashboard v3" }) }, "✕ Reject")
-              )
-            )
-          )
-    )
-  );
-}
 
 function RuntimeDock({ status, onStopVm }: { status: ShellStatus; onStopVm: () => void }) {
   return h("aside", { class: "forge-v3-runtime-dock", "aria-label": "Runtime dock" },
@@ -1811,15 +1891,34 @@ function CommandPalette({ open, decisions, onClose, onNavigate, onRefresh, onOpe
   );
 }
 
-function QueuePipelineView({ issues, decisions, linearBacklog, selectedIssueId, addIssueOpen, onOpenIssue, onIssueAction, onResolveDecision, onReviewNext, onReviewIssue, onAddIssue, onCloseAddIssue, onRefreshLinear, onCreateManualIssue, onEnqueueLinear }: { issues: Issue[]; decisions: Decision[]; linearBacklog: LinearBacklogIssue[]; selectedIssueId: number | null; addIssueOpen: boolean; onOpenIssue: (issueId: number) => void; onIssueAction: (issueId: number, action: IssueAction) => void; onResolveDecision: (decisionId: number, verdict: DecisionVerdict, feedback?: unknown) => void; onReviewNext: () => void; onReviewIssue: (issueId: number, decisionId?: number) => void; onAddIssue: () => void; onCloseAddIssue: () => void; onRefreshLinear: () => void; onCreateManualIssue: (title: string, description?: string) => void; onEnqueueLinear: (linearId: string, planningGuidance?: string) => void }) {
+function QueuePipelineView({ issues, decisions, linearBacklog, selectedIssueId, addIssueOpen, onOpenIssue, onIssueAction, onResolveDecision, onReviewNext, onReviewIssue, onAddIssue, onCloseAddIssue, onRefreshLinear, onCreateManualIssue, onEnqueueLinear }: { issues: Issue[]; decisions: Decision[]; linearBacklog: LinearBacklogIssue[]; selectedIssueId: number | null; addIssueOpen: boolean; onOpenIssue: (issueId: number) => void; onIssueAction: (issueId: number, action: IssueAction) => void; onResolveDecision: (decisionId: number, verdict: DecisionVerdict, feedback?: unknown) => void; onReviewNext: () => void; onReviewIssue: (issueId: number, decisionId?: number) => void; onAddIssue: () => void; onCloseAddIssue: () => void; onRefreshLinear: () => void; onCreateManualIssue: (title: string, description?: string, target?: TargetDraft) => void; onEnqueueLinear: (linearId: string, planningGuidance?: string, target?: TargetDraft) => void }) {
   const [queueSearch, setQueueSearch] = useState("");
-  const [queueFilter, setQueueFilter] = useState<QueueFilter>("all");
-  const [queueSort, setQueueSort] = useState<QueueSort>("priority");
+  const savedPrefs = useMemo(() => {
+    try {
+      const raw = window.localStorage.getItem("forge.v3.queuePrefs");
+      if (!raw) return { filter: "all" as QueueFilter, sort: "priority" as QueueSort };
+      const p = JSON.parse(raw);
+      return {
+        filter: ["all","needs-me","running","failed","watching-pr","paused"].includes(p.filter) ? p.filter as QueueFilter : "all" as QueueFilter,
+        sort: ["priority","newest","oldest","recently-updated"].includes(p.sort) ? p.sort as QueueSort : "priority" as QueueSort,
+      };
+    } catch { return { filter: "all" as QueueFilter, sort: "priority" as QueueSort }; }
+  }, []);
+  const [queueFilter, setQueueFilter] = useState<QueueFilter>(savedPrefs.filter);
+  const [queueSort, setQueueSort] = useState<QueueSort>(savedPrefs.sort);
+  // Persist filter/sort prefs
+  useEffect(() => {
+    try { window.localStorage.setItem("forge.v3.queuePrefs", JSON.stringify({ filter: queueFilter, sort: queueSort })); } catch {}
+  }, [queueFilter, queueSort]);
   const [addMode, setAddMode] = useState<"manual" | "linear">("linear");
   const [manualTitle, setManualTitle] = useState("");
   const [manualDescription, setManualDescription] = useState("");
   const [linearId, setLinearId] = useState("");
   const [planningGuidance, setPlanningGuidance] = useState("");
+  const [targetKind, setTargetKind] = useState("");
+  const [targetPaths, setTargetPaths] = useState("");
+  const [avoidPaths, setAvoidPaths] = useState("");
+  const [scopeNotes, setScopeNotes] = useState("");
   const visibleIssues = useMemo(() => sortQueueIssues(
     issues.filter((issue) => isQueueIssue(issue) && issueMatchesQueueSearch(issue, queueSearch) && issueMatchesQueueFilter(issue, queueFilter)),
     queueSort
@@ -1833,20 +1932,24 @@ function QueuePipelineView({ issues, decisions, linearBacklog, selectedIssueId, 
   }, [visibleIssues]);
   const visibleBacklog = useMemo(() => linearBacklog.filter((issue) => backlogMatchesQueueSearch(issue, queueSearch)).slice(0, 12), [linearBacklog, queueSearch]);
   const mockMode = mockStatesEnabled();
+  const targetDraft = (): TargetDraft => ({ targetKind: targetKind.trim(), targetPaths: targetPaths.trim(), avoidPaths: avoidPaths.trim(), scopeNotes: scopeNotes.trim() });
+  const resetTargetDraft = () => { setTargetKind(""); setTargetPaths(""); setAvoidPaths(""); setScopeNotes(""); };
   const submitManualIssue = () => {
     const title = manualTitle.trim();
     if (!title) return;
-    onCreateManualIssue(title, manualDescription.trim());
+    onCreateManualIssue(title, manualDescription.trim(), targetDraft());
     setManualTitle("");
     setManualDescription("");
+    resetTargetDraft();
     onCloseAddIssue();
   };
   const submitLinearIssue = () => {
     const id = linearId.trim();
     if (!id) return;
-    onEnqueueLinear(id, planningGuidance.trim());
+    onEnqueueLinear(id, planningGuidance.trim(), targetDraft());
     setLinearId("");
     setPlanningGuidance("");
+    resetTargetDraft();
     onCloseAddIssue();
   };
 
@@ -1885,7 +1988,13 @@ function QueuePipelineView({ issues, decisions, linearBacklog, selectedIssueId, 
           ] : [
             h("label", null, "Title", h("input", { type: "text", placeholder: "Manual issue title", value: manualTitle, onInput: (event: Event) => setManualTitle((event.target as HTMLInputElement).value) })),
             h("label", null, "Description", h("textarea", { rows: 6, placeholder: "Optional issue description or project notes…", value: manualDescription, onInput: (event: Event) => setManualDescription((event.target as HTMLTextAreaElement).value) }))
-          ]
+          ],
+          h("div", { class: "forge-v3-scope-grid" },
+            h("label", null, "Target kind", h("input", { type: "text", placeholder: "backend-shared, pricing-frontend, fullstack…", value: targetKind, onInput: (event: Event) => setTargetKind((event.target as HTMLInputElement).value) })),
+            h("label", null, "Target paths", h("textarea", { rows: 2, placeholder: "One per line, e.g. functions/", value: targetPaths, onInput: (event: Event) => setTargetPaths((event.target as HTMLTextAreaElement).value) })),
+            h("label", null, "Avoid paths", h("textarea", { rows: 2, placeholder: "One per line, e.g. frontend/apps/pricing/", value: avoidPaths, onInput: (event: Event) => setAvoidPaths((event.target as HTMLTextAreaElement).value) })),
+            h("label", null, "Scope notes", h("textarea", { rows: 2, placeholder: "Generic shared endpoint; do not describe as pricing-scoped.", value: scopeNotes, onInput: (event: Event) => setScopeNotes((event.target as HTMLTextAreaElement).value) }))
+          )
         ),
         h("footer", null,
           h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: onCloseAddIssue }, "Cancel"),
@@ -1934,7 +2043,7 @@ function QueuePipelineView({ issues, decisions, linearBacklog, selectedIssueId, 
 
 function inputTypeForSetting(key: string): "number" | "checkbox" | "text" {
   if (key.includes("limit") || key.includes("seconds") || key.includes("rounds") || key.endsWith("_max") || key === "dashboard_port") return "number";
-  if (key.startsWith("enable_") || key.startsWith("use_") || key.endsWith("_enabled") || key.includes("reuse")) return "checkbox";
+  if (key.startsWith("enable_") || key.startsWith("use_") || key.endsWith("_enabled") || key.includes("reuse") || key.includes("use_desktop")) return "checkbox";
   return "text";
 }
 
@@ -2403,13 +2512,28 @@ function ArchiveView() {
   const totalCompleted = visibleIssues.length;
   const completedThisWeek = visibleIssues.filter((issue) => isWithinLastWeek(issue.merged ?? issue.updated_at)).length;
   const averagePrs = totalCompleted ? (visibleIssues.reduce((sum, issue) => sum + Number(issue.pr_count ?? issue.prStack?.length ?? 0), 0) / totalCompleted).toFixed(1) : "0.0";
+  const avgMergeTime = (() => {
+    const durations = visibleIssues
+      .filter((issue) => issue.created_at && (issue.merged ?? issue.updated_at))
+      .map((issue) => {
+        const start = parseTimestamp(issue.created_at!);
+        const end = parseTimestamp((issue.merged ?? issue.updated_at)!);
+        return Number.isFinite(start) && Number.isFinite(end) ? end - start : 0;
+      })
+      .filter((d) => d > 0);
+    if (!durations.length) return "—";
+    const avgMs = durations.reduce((a, b) => a + b, 0) / durations.length;
+    const hours = Math.round(avgMs / 3_600_000);
+    if (hours < 24) return `${hours}h`;
+    return `${(hours / 24).toFixed(1)}d`;
+  })();
 
   return h(PageFrame, { view: "archive", className: `forge-v3-archive-wrap ${selectedArchiveIssue ? "forge-v3-has-archive-detail" : ""}` }, [
-    h(PageHeader, { icon: "🗃️", title: "Archive", subtitle: `${totalCompleted} completed issues${normalizedSearch ? ` matching “${archiveSearch.trim()}”` : ""} — all PRs merged`, actions: h("input", { class: "forge-v3-toolbar-search", type: "search", placeholder: "Search archive…", "aria-label": "Search archive", value: archiveSearch, onInput: (event: Event) => setArchiveSearch((event.target as HTMLInputElement).value) }) }),
+    h(PageHeader, { icon: "🗃️", title: "Archive", subtitle: `${totalCompleted} completed issues${normalizedSearch ? ` matching "${archiveSearch.trim()}"` : ""} — all PRs merged`, actions: h("input", { class: "forge-v3-toolbar-search", type: "search", placeholder: "Search archive…", "aria-label": "Search archive", value: archiveSearch, onInput: (event: Event) => setArchiveSearch((event.target as HTMLInputElement).value) }) }),
     h("section", { class: "forge-v3-archive-stats forge-v3-stats-strip", "aria-label": "Archive stats" },
       h("article", null, h("span", null, "Total completed"), h("strong", null, String(totalCompleted))),
       h("article", null, h("span", null, "Completed this week"), h("strong", null, String(completedThisWeek))),
-      h("article", null, h("span", null, "Average time to merge"), h("strong", null, "—")),
+      h("article", null, h("span", null, "Average time to merge"), h("strong", null, avgMergeTime)),
       h("article", null, h("span", null, "Average PRs per issue"), h("strong", null, averagePrs))
     ),
     archiveError
@@ -2609,6 +2733,35 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
       });
   }, [diffModalOpen, diffStatus, issueId, reviewMode]);
 
+  // Keyboard shortcuts for diff/review view: j/k navigate files, a add comment, r toggle reviewed
+  useEffect(() => {
+    if (!diffModalOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT") return;
+      const files = parseUnifiedDiff(diffText);
+      if (!files.length) return;
+      const currentIndex = files.findIndex((f) => f.path === activeDiffPath);
+      if (event.key === "j" || event.key === "J") {
+        event.preventDefault();
+        const next = Math.min(currentIndex + 1, files.length - 1);
+        setActiveDiffPath(files[next].path);
+      } else if (event.key === "k" || event.key === "K") {
+        event.preventDefault();
+        const prev = Math.max(currentIndex - 1, 0);
+        setActiveDiffPath(files[prev].path);
+      } else if (event.key === "r" && reviewMode && activeDiffPath) {
+        event.preventDefault();
+        setReviewedFiles((rf) => rf.includes(activeDiffPath) ? rf.filter((p) => p !== activeDiffPath) : [...rf, activeDiffPath]);
+      } else if (event.key === "a" && reviewMode && activeDiffPath) {
+        event.preventDefault();
+        addReviewComment(activeDiffPath, null);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [diffModalOpen, diffText, activeDiffPath, reviewMode]);
+
   if (!issueId) return null;
 
   const issue = detail?.issue;
@@ -2655,7 +2808,11 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
   const advanceIssue = async () => {
     if (!issue?.id) return;
     const nextState = nextStateForIssue(issue.state);
-    const confirmed = await showForgeConfirm({ title: "Advance workflow state?", message: `Manually advance ${issue.linear_id ?? `issue #${issue.id}`} to ${nextState}?`, confirmText: "Advance" });
+    const agentMap: Record<string, string> = { SETTING_UP: "setup", PLANNING: "planner", AI_PLAN_REVIEWING: "plan-reviewer", WORKING: "coder", AI_REVIEWING: "reviewer", CREATING_PR: "git-agent", FIXING: "fixer", PUSHING: "git-agent", REBASING: "rebaser", SPLIT_PLANNING: "split-planner", SPLITTING: "splitter" };
+    const nextAgent = agentMap[nextState] ?? null;
+    const agentHint = nextAgent ? ` Forge will run the ${nextAgent} agent next.` : "";
+    const skipHint = issue.state?.startsWith("AWAITING") ? " This skips the pending human approval gate." : "";
+    const confirmed = await showForgeConfirm({ title: "Advance workflow state?", message: `Move ${issue.linear_id ?? `issue #${issue.id}`} from "${issueStateLabel(issue)}" to "${issueStateLabel({ id: 0, state: nextState })}"?${agentHint}${skipHint}`, confirmText: "Advance" });
     if (!confirmed) return;
     onIssueAction(issue.id, "advance", { nextState });
   };
@@ -2732,11 +2889,13 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
   const planDecision = decisions.find((decision) => decision.type === "PLAN_REVIEW") ?? (decisionKind === "plan" ? decisions[0] : undefined);
   const codeDecision = decisions.find((decision) => decision.type === "CODE_REVIEW") ?? (decisionKind === "code" ? decisions[0] : undefined);
   const fixDecision = decisions.find((decision) => decision.type === "FIX_APPROVAL") ?? (decisionKind === "fix" ? decisions[0] : undefined);
+  const fixReviewDecision = decisions.find((decision) => decision.type === "FIX_REVIEW") ?? (decisionKind === "fix-review" ? decisions[0] : undefined);
   const splitDecision = decisions.find((decision) => decision.type === "SPLIT_APPROVAL") ?? (decisionKind === "split" ? decisions[0] : undefined);
   const fixArtifact = parseDecisionArtifact(fixDecision);
   const fixComments = fixArtifact.comments ?? [];
   const splitArtifact = parseDecisionArtifact(splitDecision);
-  const splitStack = splitArtifact.proposedStack ?? splitArtifact.stack ?? [];
+  const splitApproval = splitApprovalPresentation(splitDecision, splitArtifact, detail);
+  const splitStack = splitApproval.stack;
   const expectedDecisionType = expectedDecisionTypeForState(issue?.state);
   const staleDecisions = expectedDecisionType ? decisions.filter((decision) => decision.type && decision.type !== expectedDecisionType) : decisions.filter((decision) => decision.type);
   const addReviewComment = async (file: string, line: number | null) => {
@@ -2906,43 +3065,46 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
             ? h("pre", { class: "forge-v3-failure-log" }, detail.failureContext.logTail)
             : h("p", { class: "forge-v3-empty forge-v3-compact-empty" }, "No log output captured."),
           h("div", { class: "forge-v3-dp-actions" },
-            h("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !issue?.id, onClick: () => issue?.id ? onIssueAction(issue.id, "retry") : undefined }, "↺ Retry"),
-            h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !issue?.id, onClick: requestSteering }, "💬 Steer before retry")
+            h("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !issue?.id, onClick: () => issue?.id ? onIssueAction(issue.id, "retry") : undefined }, "Retry"),
+            h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !issue?.id, onClick: requestSteering }, "Steer before retry")
           )
         ) : null,
         h("section", { class: "forge-v3-ds" },
           h("div", { class: "forge-v3-ds-label" }, decisionKind ? "Actions · Decision needed" : "Actions"),
           h("div", { class: "forge-v3-dp-actions" },
-            isRunningIssue(safeIssue) ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", onClick: openLiveListen }, "👁 Listen live") : null,
+            isRunningIssue(safeIssue) ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", onClick: openLiveListen }, "Listen live") : null,
             decisionKind === "plan" && planDecision ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: approvePlanWithSteering }, "✓ Approve plan") : null,
             decisionKind === "plan" && planDecision ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => setPlanModalOpen(true) }, "✗ Request changes") : null,
-            decisionKind === "code" && codeDecision ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", onClick: () => openDiffSidecar("review") }, "⬡ Review code") : null,
+            decisionKind === "code" && codeDecision ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", onClick: () => openDiffSidecar("review") }, "Review code") : null,
             decisionKind === "fix" && fixDecision ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: approveSelectedFixes }, `✓ Fix selected (${selectedFixCommentIds.length})`) : null,
             decisionKind === "fix" && fixDecision ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: skipAllFixes }, "Skip all") : null,
+            decisionKind === "fix-review" && fixReviewDecision ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: () => resolveDecisionOptimistically(fixReviewDecision.id, "approved") }, "✓ Approve fix & push") : null,
+            decisionKind === "fix-review" && fixReviewDecision ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => requestDecisionChanges(fixReviewDecision, "Fix review") }, "✗ Send back to fixer") : null,
+            decisionKind === "fix-review" ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => openDiffSidecar("diff") }, "Review diff") : null,
             decisionKind === "split" && splitDecision ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: () => resolveDecisionOptimistically(splitDecision.id, "approved") }, "✓ Approve split plan") : null,
             decisionKind === "split" && splitDecision ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => requestDecisionChanges(splitDecision, "Split plan") }, "✗ Revise split") : null,
             decisionKind === "generic" && decisions[0] ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: () => resolveDecisionOptimistically(decisions[0].id, "approved") }, "✓ Approve") : null,
             decisionKind === "generic" && decisions[0] ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => requestDecisionChanges(decisions[0], "Decision") }, "✗ Request changes") : null,
-            docsAvailable ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => setPlanModalOpen(true) }, handoffAvailable ? "📋 View plan / handoff" : "📋 View plan") : null,
-            diffAvailable ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => openDiffSidecar("diff") }, "📊 View diff") : null,
-            steerAvailable ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !issue?.id, onClick: requestSteering }, "💬 Steer") : null,
-            h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !issue?.id, onClick: advanceIssue }, "⤴ Advance state"),
-            h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !issue?.id || issue?.state === "DONE", onClick: () => setJumpModalOpen(true) }, "↕ Jump to state"),
+            docsAvailable ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => setPlanModalOpen(true) }, handoffAvailable ? "View plan / handoff" : "View plan") : null,
+            diffAvailable ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => openDiffSidecar("diff") }, "View diff") : null,
+            steerAvailable ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !issue?.id, onClick: requestSteering }, "Steer") : null,
+            h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !issue?.id, onClick: advanceIssue }, "Advance state"),
+            h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !issue?.id || issue?.state === "DONE", onClick: () => setJumpModalOpen(true) }, "Jump to state"),
             splitAvailable ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !issue?.id, onClick: async () => {
               if (!issue?.id) return;
               const instructions = (await showForgePrompt({ title: "Split PR stack", message: "Optional instructions for the split planner.", label: "Split instructions", confirmText: "Request split" }))?.trim();
               onIssueAction(issue.id, "split-pr-stack", instructions ? { instructions } : {});
-            } }, "⑂ Split PR") : null,
+            } }, "Split PR") : null,
             rebaseAvailable ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !issue?.id, onClick: async () => {
               if (!issue?.id) return;
               const confirmed = await showForgeConfirm({ title: "Rebase and push?", message: "Rebase this issue's open branch(es) onto their base branch, then push with --force-with-lease.", confirmText: "Rebase", danger: true });
               if (confirmed) onIssueAction(issue.id, "rebase");
-            } }, "↥ Rebase") : null,
-            issue?.state === "FAILED" ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !issue?.id, onClick: () => issue?.id ? onIssueAction(issue.id, "retry") : undefined }, "↺ Retry") : null,
-            issue?.state === "PAUSED" ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !issue?.id, onClick: () => issue?.id ? onIssueAction(issue.id, "unpause") : undefined }, "▶ Resume") : null,
-            issue?.state === "IGNORED" ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !issue?.id, onClick: () => issue?.id ? onIssueAction(issue.id, "unignore") : undefined }, "▶ Unignore") : null,
-            ["WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL"].includes(issue?.state ?? "") ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !issue?.id, onClick: addPrFeedback }, "💬 Add PR feedback") : null,
-            isRunningIssue(safeIssue) ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !issue?.id, onClick: () => issue?.id ? onIssueAction(issue.id, "pause") : undefined }, "⏸ Pause") : null
+            } }, "Rebase") : null,
+            issue?.state === "FAILED" ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !issue?.id, onClick: () => issue?.id ? onIssueAction(issue.id, "retry") : undefined }, "Retry") : null,
+            issue?.state === "PAUSED" ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !issue?.id, onClick: () => issue?.id ? onIssueAction(issue.id, "unpause") : undefined }, "Resume") : null,
+            issue?.state === "IGNORED" ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !issue?.id, onClick: () => issue?.id ? onIssueAction(issue.id, "unignore") : undefined }, "Unignore") : null,
+            ["WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL", "AWAITING_FIX_REVIEW"].includes(issue?.state ?? "") ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !issue?.id, onClick: addPrFeedback }, "Add PR feedback") : null,
+            isRunningIssue(safeIssue) ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !issue?.id, onClick: () => issue?.id ? onIssueAction(issue.id, "pause") : undefined }, "Pause") : null
           )
         ),
         staleDecisions.length ? h("section", { class: "forge-v3-ds forge-v3-stale-decisions" },
@@ -2955,12 +3117,14 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
           fixComments.length ? h("div", { class: "forge-v3-fix-comment-list" }, fixComments.map((comment, index) => {
             const id = fixCommentId(comment, index);
             const location = comment.path ? `${comment.path}${comment.line ? `:${comment.line}` : ""}` : "general";
+            const prNumber = fixCommentPrNumber(comment);
+            const prLabel = prNumber ? fixCommentPrLabel(comment, prStack) : null;
             return h("label", { class: `forge-v3-fix-comment-card ${selectedFixCommentIds.includes(id) ? "selected" : ""}`, key: id },
               h("input", { type: "checkbox", checked: selectedFixCommentIds.includes(id), onChange: () => toggleFixComment(id) }),
               h("div", null,
-                h("div", { class: "forge-v3-fix-comment-meta" }, h("strong", null, comment.author ?? "Reviewer"), " · ", location, comment.pr_number ?? comment.prNumber ? ` · PR #${comment.pr_number ?? comment.prNumber}` : ""),
+                h("div", { class: "forge-v3-fix-comment-meta" }, h("strong", null, comment.author ?? "Reviewer"), prLabel ? [" · ", h("span", { class: "forge-v3-fix-comment-pr" }, prLabel)] : null, " · ", location),
                 renderFixCommentBody(comment.body),
-                h("div", { class: "forge-v3-fix-comment-badges" }, [comment.reviewState ?? comment.state, comment.source].filter(Boolean).map((badge) => h("span", null, badge)))
+                h("div", { class: "forge-v3-fix-comment-badges" }, [comment.reviewState ?? comment.state, comment.source, prLabel].filter(Boolean).map((badge) => h("span", null, badge)))
               )
             );
           })) : h("p", { class: "forge-v3-empty forge-v3-compact-empty" }, "No review comments were attached to this fix approval."),
@@ -2968,8 +3132,12 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
         ) : null,
         splitDecision ? h("section", { class: "forge-v3-ds forge-v3-split-approval" },
           h("div", { class: "forge-v3-ds-label" }, "Split approval"),
-          h("p", null, splitArtifact.summary ?? splitArtifact.plan ?? "Review the proposed PR stack split."),
+          h("p", null, splitApproval.summary),
           splitStack.length ? h("div", { class: "forge-v3-split-stack" }, splitStack.map((entry, index) => h("div", { class: "forge-v3-split-row", key: `${entry.branch}-${index}` }, h("span", null, String(index + 1)), h("strong", null, entry.title ?? entry.branch ?? `PR ${index + 1}`), h("small", null, entry.summary ?? entry.branch ?? "pending branch")))) : null,
+          splitApproval.markdown ? h("details", { class: "forge-v3-split-plan-preview" },
+            h("summary", null, "Full split plan"),
+            h("div", { class: "forge-v3-md-viewer", dangerouslySetInnerHTML: { __html: renderMarkdown(splitApproval.markdown) } })
+          ) : null,
           h("div", { class: "forge-v3-dp-actions" }, h("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: () => resolveDecisionOptimistically(splitDecision.id, "approved") }, "Approve split plan"), h("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => requestDecisionChanges(splitDecision, "Split plan") }, "Request split changes"))
         ) : null,
         h("section", { class: "forge-v3-ds" },
@@ -2977,8 +3145,8 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
           h("div", { class: "forge-v3-info-grid" },
             h("div", { class: "forge-v3-ig-label" }, "Source"), h("div", { class: "forge-v3-ig-value" }, issue?.linear_id ? h("a", { href: `https://linear.app/issue/${issue.linear_id}`, target: "_blank", rel: "noreferrer" }, issue.linear_id, " ↗") : `Issue #${issueId}`),
             h("div", { class: "forge-v3-ig-label" }, "Priority"), h("div", { class: `forge-v3-ig-value ${priorityClass(issue?.priority)}` }, priorityText),
-            h("div", { class: "forge-v3-ig-label" }, "Branch"), h("div", { class: "forge-v3-ig-value" }, issue?.branch ?? "—"),
-            h("div", { class: "forge-v3-ig-label" }, "Worktree"), h("div", { class: "forge-v3-ig-value" }, issue?.wt_path ?? "—"),
+            h("div", { class: "forge-v3-ig-label" }, "Branch"), h("div", { class: "forge-v3-ig-value forge-v3-copyable" }, issue?.branch ?? "—", issue?.branch ? h("button", { type: "button", class: "forge-v3-copy-btn", title: "Copy branch name", "aria-label": "Copy branch name", onClick: () => { navigator.clipboard?.writeText(issue.branch!).catch(() => {}); } }, "📋") : null),
+            h("div", { class: "forge-v3-ig-label" }, "Worktree"), h("div", { class: "forge-v3-ig-value forge-v3-copyable" }, issue?.wt_path ?? "—", issue?.wt_path ? h("span", { class: "forge-v3-copy-btns" }, h("button", { type: "button", class: "forge-v3-copy-btn", title: "Copy path", "aria-label": "Copy worktree path", onClick: () => { navigator.clipboard?.writeText(issue.wt_path!).catch(() => {}); } }, "📋"), h("button", { type: "button", class: "forge-v3-copy-btn", title: "Copy cd command", "aria-label": "Copy cd command", onClick: () => { navigator.clipboard?.writeText(`cd ${issue.wt_path}`).catch(() => {}); } }, "cd")) : null),
             h("div", { class: "forge-v3-ig-label" }, "Added"), h("div", { class: "forge-v3-ig-value" }, issue?.created_at ? `${timeAgoShort(issue.created_at)} ago` : "—"),
             h("div", { class: "forge-v3-ig-label" }, "Model"), h("div", { class: "forge-v3-ig-value" }, "configured in settings")
           )
@@ -3167,12 +3335,12 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
           h("p", null, "Operational recovery controls. Destructive actions require typed confirmation."),
           adminStatus ? h("div", { class: `forge-v3-admin-status ${adminStatus.includes("failed") ? "failed" : ""}` }, adminStatus) : null,
           h("div", { class: "forge-v3-dp-actions" },
-            h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !issue?.id, onClick: launchRuntime }, "🚀 Launch runtime"),
-            h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: onStopVm }, "■ Stop VM runtime"),
-            issue?.steering_context ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: clearSteering }, "⌫ Clear steering") : null,
-            issue?.state === "IGNORED" ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !issue?.id, onClick: () => issue?.id ? onIssueAction(issue.id, "unignore") : undefined }, "▶ Unignore") : h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !issue?.id || issue?.state === "DONE", onClick: () => issue?.id ? onIssueAction(issue.id, "ignore") : undefined }, "🚫 Ignore"),
-            h("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", disabled: !issue?.id || issue?.state === "DONE", onClick: fullResetIssue }, "↺ Full reset"),
-            h("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", disabled: !issue?.id || isRunningIssue(safeIssue), onClick: removeSelectedIssue }, "🗑 Remove issue")
+            h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !issue?.id, onClick: launchRuntime }, "Launch runtime"),
+            h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: onStopVm }, "Stop VM runtime"),
+            issue?.steering_context ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: clearSteering }, "Clear steering") : null,
+            issue?.state === "IGNORED" ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !issue?.id, onClick: () => issue?.id ? onIssueAction(issue.id, "unignore") : undefined }, "Unignore") : h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !issue?.id || issue?.state === "DONE", onClick: () => issue?.id ? onIssueAction(issue.id, "ignore") : undefined }, "Ignore"),
+            h("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", disabled: !issue?.id || issue?.state === "DONE", onClick: fullResetIssue }, "Full reset"),
+            h("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", disabled: !issue?.id || isRunningIssue(safeIssue), onClick: removeSelectedIssue }, "Remove issue")
           )
         )
       )
@@ -3205,6 +3373,8 @@ function DashboardShell() {
   const [activeView, setActiveView] = useState<NavKey>(initialRoute.view);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [actionStatus, setActionStatus] = useState("");
+  const [celebrationIssue, setCelebrationIssue] = useState<Issue | null>(null);
+  const previousIssueStatesRef = useRef<Map<number, string>>(new Map());
   const [detailReloadKey, setDetailReloadKey] = useState(0);
   const [addIssueOpen, setAddIssueOpen] = useState(initialRoute.addIssue);
   const [detailPanelWidth, setDetailPanelWidth] = useState(storedDetailPanelWidth);
@@ -3223,12 +3393,28 @@ function DashboardShell() {
     return `${issue?.state ?? ""}|${issue?.updated_at ?? ""}|${decisions}`;
   };
 
-  const refreshDashboard = () => Promise.all([getJson<unknown>("/api/overview"), getJson<Settings>("/api/settings"), getJson<ArchiveIssue[]>("/api/archive").catch(() => [] as ArchiveIssue[])])
-    .then(([overviewValue, settings, archiveIssues]) => {
+  const refreshDashboard = (includeArchive = false) => {
+    const fetches: [Promise<unknown>, Promise<Settings>, Promise<ArchiveIssue[]>] = [
+      getJson<unknown>("/api/overview"),
+      getJson<Settings>("/api/settings"),
+      includeArchive ? getJson<ArchiveIssue[]>("/api/archive").catch(() => [] as ArchiveIssue[]) : Promise.resolve([] as ArchiveIssue[]),
+    ];
+    return Promise.all(fetches).then(([overviewValue, settings, archiveIssues]) => {
       const nextOverview = normalizeOverview(overviewValue);
+      // Detect issues that just reached DONE for celebration
+      const prevStates = previousIssueStatesRef.current;
+      for (const issue of nextOverview.issues) {
+        const prev = prevStates.get(issue.id);
+        if (prev && prev !== "DONE" && issue.state === "DONE") {
+          setCelebrationIssue(issue);
+          setTimeout(() => setCelebrationIssue(null), 6000);
+        }
+        prevStates.set(issue.id, issue.state ?? "");
+      }
       overviewRef.current = nextOverview;
       setOverview(nextOverview);
-      setStatus({ ...shellStatusFromData(nextOverview, settings), archiveCount: archiveIssues.length });
+      const archiveCount = includeArchive ? archiveIssues.length : status.archiveCount;
+      setStatus({ ...shellStatusFromData(nextOverview, settings), archiveCount });
       nextOverview.decisions.forEach((decision) => {
         if (notifiedDecisionIds.current.has(decision.id)) return;
         notifiedDecisionIds.current.add(decision.id);
@@ -3236,6 +3422,16 @@ function DashboardShell() {
       });
       return nextOverview;
     });
+  };
+
+  // Debounced version for SSE events — prevents rapid-fire fetches
+  const debouncedRefresh = useRef((() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    return () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => refreshDashboard(), 300);
+    };
+  })());
 
   const runAction = (label: string, action: () => Promise<unknown>) => {
     setActionStatus(`${label}…`);
@@ -3330,8 +3526,8 @@ function DashboardShell() {
   };
 
   const refreshLinearBacklog = () => runAction("Linear backlog refreshed", () => getJson<LinearBacklogIssue[]>("/api/linear/issues").then((issues) => setLinearBacklog(Array.isArray(issues) ? issues : [])));
-  const createManualIssueFromQueue = (title: string, description = "") => runAction("Manual issue created", () => createManualIssue(title, description).then((result) => { if (result.issueId) openIssue(result.issueId); }));
-  const enqueueLinearIssue = (linearId: string, planningGuidance = "") => runAction(`Enqueued ${linearId}`, () => enqueueLinearIssueApi(linearId, planningGuidance).then((result) => { if (result.issueId) openIssue(result.issueId); }).then(() => getJson<LinearBacklogIssue[]>("/api/linear/issues")).then((issues) => setLinearBacklog(Array.isArray(issues) ? issues : [])));
+  const createManualIssueFromQueue = (title: string, description = "", target?: TargetDraft) => runAction("Manual issue created", () => createManualIssue(title, description, target).then((result) => { if (result.issueId) openIssue(result.issueId); }));
+  const enqueueLinearIssue = (linearId: string, planningGuidance = "", target?: TargetDraft) => runAction(`Enqueued ${linearId}`, () => enqueueLinearIssueApi(linearId, planningGuidance, target).then((result) => { if (result.issueId) openIssue(result.issueId); }).then(() => getJson<LinearBacklogIssue[]>("/api/linear/issues")).then((issues) => setLinearBacklog(Array.isArray(issues) ? issues : [])));
 
   const requestNotificationPermission = () => {
     if (desktopNotificationsAvailable) {
@@ -3432,7 +3628,7 @@ function DashboardShell() {
   useEffect(() => {
     let cancelled = false;
     const refreshStatus = () => {
-      refreshDashboard()
+      refreshDashboard(true)
         .catch(() => {
           if (!cancelled) setStatus(DEFAULT_STATUS);
         });
@@ -3452,12 +3648,18 @@ function DashboardShell() {
     let closed = false;
     const events = new EventSource("/api/events");
     const refreshFromEvent = (event: Event) => {
+      const includeArchive = event.type === "issue_updated" || event.type === "issue_removed";
       const selectedBefore = selectedIssueIdRef.current;
       const beforeSignature = issueDetailSignature(overviewRef.current, selectedBefore);
-      refreshDashboard()
+      // Debounce rapid SSE events (multiple can fire within milliseconds)
+      if (event.type === "tick") {
+        debouncedRefresh.current();
+        return;
+      }
+      refreshDashboard(includeArchive)
         .then((nextOverview) => {
           if (!selectedBefore) return;
-          if (event.type !== "tick" || issueDetailSignature(nextOverview, selectedBefore) !== beforeSignature) {
+          if (issueDetailSignature(nextOverview, selectedBefore) !== beforeSignature) {
             setDetailReloadKey((key) => key + 1);
           }
         })
@@ -3465,7 +3667,7 @@ function DashboardShell() {
     };
     events.onopen = () => { if (!closed) setEventStreamStatus("live"); };
     events.onerror = () => { if (!closed) setEventStreamStatus("offline"); };
-    ["tick", "issue_added", "issue_removed", "decision_resolved"].forEach((eventName) => {
+    ["tick", "issue_added", "issue_removed", "issue_updated", "decision_resolved"].forEach((eventName) => {
       events.addEventListener(eventName, refreshFromEvent);
     });
     return () => {
@@ -3527,6 +3729,7 @@ function DashboardShell() {
       )
     ),
     actionStatus ? h("div", { class: "forge-v3-action-status", role: "status" }, actionStatus) : null,
+    celebrationIssue ? h("div", { class: "forge-v3-celebration", role: "status" }, h("strong", null, "🎉 ", celebrationIssue.linear_id ?? `Issue #${celebrationIssue.id}`, " completed!"), h("small", null, celebrationIssue.title ?? "Issue merged and archived")) : null,
     activeView === "queue"
       ? h(QueuePipelineView, { issues: overview.issues, decisions: overview.decisions, linearBacklog, selectedIssueId, addIssueOpen, onOpenIssue: openIssue, onIssueAction: handleIssueAction, onResolveDecision: handleResolveDecision, onReviewNext: openReviewNext, onReviewIssue: openReviewIssue, onAddIssue: openAddIssue, onCloseAddIssue: closeAddIssue, onRefreshLinear: refreshLinearBacklog, onCreateManualIssue: createManualIssueFromQueue, onEnqueueLinear: enqueueLinearIssue })
       : activeView === "archive"
@@ -3540,9 +3743,37 @@ function DashboardShell() {
               : h("main", { class: "forge-v3-main", "data-active-view": activeView }, h("h1", null, NAV_ITEMS.find((item) => item.key === activeView)?.label ?? "Dashboard"), h("p", { class: "forge-v3-empty" }, "This v3 view will migrate in a later phase.")),
     h(IssueDetailPanel, { issueId: activeView === "queue" ? selectedIssueId : null, issuePreview: selectedIssuePreview, reloadKey: detailReloadKey, autoOpenDiffKey: detailAutoOpenDiffKey, onClose: closeIssue, onPanelResizeStart: startDetailPanelResize, onIssueAction: handleIssueAction, onRemoveIssue: handleRemoveIssue, onLaunchRuntime: handleLaunchRuntime, onStopVm: handleStopVm, onSyncPrs: handleSyncPrs, onSubmitFeedback: handleSubmitFeedback, onResolveDecision: handleResolveDecision }),
     h(CommandPalette, { open: commandPaletteOpen, decisions: overview.decisions, onClose: () => setCommandPaletteOpen(false), onNavigate: navigateToView, onRefresh: () => refreshDashboard(), onOpenIssue: openIssue, onReviewNext: openReviewNext, onAddIssue: openAddIssue, onStopVm: handleStopVm }),
-    h(RuntimeDock, { status, onStopVm: handleStopVm })
+    status.runningAgentsCount > 0 ? h(RuntimeDock, { status, onStopVm: handleStopVm }) : null
   );
 }
+
+// Intercept external link clicks in desktop webview — open in system browser
+(function installExternalLinkHandler() {
+  let isDesktop = false;
+  fetch("/api/desktop/open-url", { method: "OPTIONS" }).then((r) => { isDesktop = r.status !== 404; }).catch(() => {});
+  // Also check capabilities as a fallback signal
+  fetch("/api/desktop-capabilities").then((r) => r.json()).then((c) => { if (c?.notifications) isDesktop = true; }).catch(() => {});
+  document.addEventListener("click", (event) => {
+    if (!isDesktop) return;
+    const anchor = event.composedPath()
+      .find((target): target is HTMLAnchorElement => target instanceof HTMLAnchorElement && target.hasAttribute("href"));
+    if (!anchor) return;
+    const href = anchor.href;
+    if (!href || (!href.startsWith("https://") && !href.startsWith("http://"))) return;
+    // Only intercept truly external URLs (different origin)
+    try {
+      const linkUrl = new URL(href);
+      if (linkUrl.origin === window.location.origin) return;
+    } catch { return; }
+    event.preventDefault();
+    event.stopPropagation();
+    fetch("/api/desktop/open-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: href }),
+    }).catch(() => { window.open(href, "_blank"); });
+  }, true);
+})();
 
 const root = document.getElementById("forge-react-root");
 

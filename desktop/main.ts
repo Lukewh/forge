@@ -452,8 +452,21 @@ function desktopCliEnv(): Record<string, string> {
   };
 }
 
+async function findCliExecutable(cmd: string): Promise<string | undefined> {
+  if (cmd === "linear") return await findLinearExecutable();
+  if (cmd === "gh") {
+    for (const candidate of ["/opt/homebrew/bin/gh", "/usr/local/bin/gh", "/usr/bin/gh"]) {
+      try {
+        const stat = await Deno.stat(candidate);
+        if (stat.isFile) return candidate;
+      } catch { /* continue */ }
+    }
+  }
+  return cmd;
+}
+
 async function runCli(cmd: string, args: string[]): Promise<string> {
-  const executable = cmd === "linear" ? await findLinearExecutable() : cmd;
+  const executable = await findCliExecutable(cmd);
   if (!executable) {
     throw new Error(`Could not find ${cmd}. Set PATH before launching Forge Desktop or install it in /opt/homebrew/bin, /usr/local/bin, ~/.local/bin, or ~/.npm-global/bin.`);
   }
@@ -537,6 +550,12 @@ async function handleDesktopJob(job: { id: number; type: string; payload?: Recor
       "--sort", "priority", "--no-pager", "--json",
     ]);
     return normalizeLinearQueryResult(raw);
+  }
+  if (job.type === "gh.json") {
+    const args = Array.isArray(payload.args) ? payload.args.map((arg) => String(arg)) : [];
+    if (args.length === 0) throw new Error("gh.json job missing args");
+    const raw = await runCli("gh", args);
+    return JSON.parse(raw || "null");
   }
   throw new Error(`Unsupported desktop job: ${job.type}`);
 }
@@ -729,6 +748,23 @@ Deno.serve(async (request) => {
   if (request.method === "GET") {
     const localAsset = await serveLocalDashboardAsset(sourceUrl.pathname);
     if (localAsset) return localAsset;
+  }
+
+  if (sourceUrl.pathname === "/api/desktop/open-url") {
+    if (request.method === "OPTIONS") return json({ ok: true });
+    if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
+    try {
+      const body = await request.json().catch(() => ({}));
+      const url = String(body.url || "").trim();
+      if (!url || !(url.startsWith("https://") || url.startsWith("http://"))) {
+        return json({ error: "Invalid URL" }, 400);
+      }
+      const cmd = Deno.build.os === "darwin" ? "open" : Deno.build.os === "windows" ? "start" : "xdg-open";
+      await new Deno.Command(cmd, { args: [url], stdout: "null", stderr: "null" }).output();
+      return json({ ok: true });
+    } catch (error) {
+      return json({ error: error instanceof Error ? error.message : String(error) }, 500);
+    }
   }
 
   if (sourceUrl.pathname === "/api/desktop-capabilities") {

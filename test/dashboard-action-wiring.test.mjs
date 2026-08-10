@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { readFileSync } from "node:fs";
 
-const source = readFileSync(new URL("../dashboard/frontend/src/main.ts", import.meta.url), "utf8");
+import { readAllDashboardSource } from "./helpers.mjs";
+const source = readAllDashboardSource();
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
 describe("dashboard v3 action wiring", () => {
@@ -41,7 +42,7 @@ describe("dashboard v3 action wiring", () => {
   it("wires sidebar decision buttons to approve and request-change callbacks", () => {
     assert.match(source, /approvePlanWithSteering/);
     assert.match(source, /requestDecisionChanges/);
-    assert.match(source, /onResolveDecision\(splitDecision\.id, "approved"\)/);
+    assert.match(source, /resolveDecisionOptimistically\(splitDecision\.id, "approved"\)/);
     assert.match(source, /approveSelectedFixes/);
     assert.match(source, /Approve plan/);
     assert.match(source, /Request changes/);

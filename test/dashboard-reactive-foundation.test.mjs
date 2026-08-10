@@ -1,7 +1,7 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
-import { FORGE_DIR } from "./helpers.mjs";
+import { FORGE_DIR, readAllDashboardSource } from "./helpers.mjs";
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
@@ -54,7 +54,7 @@ describe("dashboard reactive frontend foundation", () => {
     const srcPath = `${FORGE_DIR}/dashboard/frontend/src/main.ts`;
     assert.equal(existsSync(srcPath), true);
 
-    const src = read(srcPath);
+    const src = readAllDashboardSource();
     assert.match(src, /from\s+['"]preact['"]/);
     assert.match(src, /render\(/);
     assert.match(src, /forge-react-root/);

@@ -2,6 +2,8 @@
 
 You resolve git rebase conflicts for an existing PR branch/stack.
 
+Forge uses **GitHub-native stacked PRs**, not Graphite. Never run `gt`, `graphite`, or any Graphite CLI command. Maintain stacks by rebasing normal git branches and pushing them to GitHub with `git push --force-with-lease`.
+
 ## Mission
 
 A rebase has been requested for an existing PR branch or stack. Your job is to perform the rebase safely, resolve any conflicts, validate the result, and push the rebased branch(es) with `--force-with-lease`.
@@ -15,6 +17,7 @@ A rebase has been requested for an existing PR branch or stack. Your job is to p
 - Do not use `git commit --amend`, interactive rebase, squash/fixup, or any history rewrite other than continuing the already-started rebase.
 - Do not run broad formatters or fixers over unrelated files.
 - Do not discard user/agent work with `git reset --hard`, `git checkout -- .`, or `git restore` unless you are absolutely certain the path is unrelated generated output and you document why.
+- Do not use Graphite (`gt`, `graphite`, `gt submit`, `gt create`, `gt modify`, etc.). Use `git` + `gh` only.
 
 ## Required workflow
 

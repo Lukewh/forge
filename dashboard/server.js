@@ -97,6 +97,7 @@ const FORGE_LINEAR_STATE_MAP = {
   SPLITTING:              "In Review",
   AWAITING_FIX_APPROVAL:  "In Review",
   FIXING:                 "In Review",
+  AWAITING_FIX_REVIEW:    "In Review",
   PUSHING:                "In Review",
   REBASING:               "In Review",
   DONE:                   "Done",
@@ -207,6 +208,11 @@ db.exec(`
     pr_approved_at TEXT,
     auto_fix_enabled INTEGER NOT NULL DEFAULT 0,
     focus_rank INTEGER,
+    target_kind TEXT,
+    target_paths_json TEXT,
+    avoid_paths_json TEXT,
+    scope_notes TEXT,
+    project_map_snapshot_json TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
@@ -225,7 +231,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS decision_queue (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     issue_id INTEGER NOT NULL REFERENCES issues(id) ON DELETE CASCADE,
-    type TEXT NOT NULL CHECK(type IN ('PLAN_REVIEW','CODE_REVIEW','FIX_APPROVAL','SPLIT_APPROVAL','AI_CODE_REVIEW','AI_PLAN_REVIEW')),
+    type TEXT NOT NULL CHECK(type IN ('PLAN_REVIEW','CODE_REVIEW','FIX_APPROVAL','FIX_REVIEW','SPLIT_APPROVAL','AI_CODE_REVIEW','AI_PLAN_REVIEW')),
     artifact_ref TEXT NOT NULL,
     feedback_json TEXT,
     verdict TEXT CHECK(verdict IN ('approved','rejected')),
@@ -339,6 +345,7 @@ db.exec(`
     ('dashboard_port','3142'),
     ('linear_enabled','false'),
     ('linear_team',''),
+    ('github_use_desktop','false'),
     ('model','anthropic-vertex/sonnet-4-6'),
     ('model_planner',''),
     ('model_plan_reviewer',''),
@@ -366,7 +373,8 @@ db.exec(`
     ('vm_frontend_local_backend_command',''),
     ('vm_backend_staging_command',''),
     ('vm_backend_local_command',''),
-    ('vm_database_command','');
+    ('vm_database_command',''),
+    ('project_map_json','');
 `);
 // Safe incremental migrations for existing DBs
 const addCol = (t, c, d) => { try { db.prepare(`ALTER TABLE ${t} ADD COLUMN ${c} ${d}`).run(); } catch {} };
@@ -377,6 +385,11 @@ addCol('issues', 'linear_state', 'TEXT');  // last-known Linear state we pushed
 addCol('issues', 'pr_approved_at', 'TEXT');
 addCol('issues', 'auto_fix_enabled', 'INTEGER NOT NULL DEFAULT 0');
 addCol('issues', 'focus_rank', 'INTEGER');
+addCol('issues', 'target_kind', 'TEXT');
+addCol('issues', 'target_paths_json', 'TEXT');
+addCol('issues', 'avoid_paths_json', 'TEXT');
+addCol('issues', 'scope_notes', 'TEXT');
+addCol('issues', 'project_map_snapshot_json', 'TEXT');
 addCol('issues', 'pi_sessions_json', 'TEXT');
 
 if (DASHBOARD_FIRST_RUN) db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('setup_completed', 'false')").run();
@@ -387,6 +400,7 @@ const insertSetting = db.prepare("INSERT OR IGNORE INTO settings (key, value) VA
 insertSetting.run("host_path_prefix", legacyVmTarget ? "/Users" : "");
 insertSetting.run("vm_path_prefix", legacyVmTarget ? "/mnt/mac/Users" : "");
 insertSetting.run("project_prompt_overlay", "");
+insertSetting.run("project_map_json", "");
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS learning_events (
@@ -430,7 +444,7 @@ db.exec(`
 
 // Migrate decision_queue CHECK constraint if it's missing new types
 const dqSchema = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='decision_queue'").get()?.sql ?? '';
-if (!dqSchema.includes('AI_PLAN_REVIEW') || !dqSchema.includes('SPLIT_APPROVAL')) {
+if (!dqSchema.includes('AI_PLAN_REVIEW') || !dqSchema.includes('SPLIT_APPROVAL') || !dqSchema.includes('FIX_REVIEW')) {
   console.log('  Migrating decision_queue constraint...');
   db.exec(`
     BEGIN;
@@ -438,7 +452,7 @@ if (!dqSchema.includes('AI_PLAN_REVIEW') || !dqSchema.includes('SPLIT_APPROVAL')
     CREATE TABLE decision_queue (
       id            INTEGER PRIMARY KEY AUTOINCREMENT,
       issue_id      INTEGER NOT NULL REFERENCES issues(id) ON DELETE CASCADE,
-      type          TEXT    NOT NULL CHECK(type IN ('PLAN_REVIEW','CODE_REVIEW','FIX_APPROVAL','SPLIT_APPROVAL','AI_CODE_REVIEW','AI_PLAN_REVIEW')),
+      type          TEXT    NOT NULL CHECK(type IN ('PLAN_REVIEW','CODE_REVIEW','FIX_APPROVAL','FIX_REVIEW','SPLIT_APPROVAL','AI_CODE_REVIEW','AI_PLAN_REVIEW')),
       artifact_ref  TEXT    NOT NULL,
       feedback_json TEXT,
       verdict       TEXT    CHECK(verdict IN ('approved','rejected')),
@@ -488,6 +502,91 @@ function slugify(str) {
   return String(str ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
 }
 
+function safeJsonParse(value, fallback) {
+  try { return JSON.parse(value || ""); } catch { return fallback; }
+}
+
+function normalizePathList(value) {
+  if (Array.isArray(value)) return value.map(v => String(v).trim()).filter(Boolean);
+  if (typeof value === "string") return value.split(/[\n,]/).map(v => v.trim()).filter(Boolean);
+  return [];
+}
+
+function readProjectMap() {
+  const configured = qOne("SELECT value FROM settings WHERE key = 'project_map_json'")?.value;
+  return safeJsonParse(configured, null) || scanProjectMap(false);
+}
+
+function scanProjectMap(persist = false) {
+  const repoRoot = qOne("SELECT value FROM settings WHERE key = 'repo_root'")?.value || process.cwd();
+  const map = { repoRoot, generatedAt: new Date().toISOString(), apps: [], packages: [], rules: [] };
+  const addEntry = (bucket, id, entryPath, extra = {}) => {
+    const abs = path.join(repoRoot, entryPath);
+    if (!fs.existsSync(abs)) return;
+    map[bucket].push({ id, path: entryPath.replace(/\\/g, "/"), ...extra });
+  };
+  for (const dir of ["apps", "frontend/apps"]) {
+    const abs = path.join(repoRoot, dir);
+    if (fs.existsSync(abs)) {
+      for (const name of fs.readdirSync(abs).filter(name => !name.startsWith("."))) {
+        const entryPath = `${dir}/${name}`;
+        addEntry("apps", name, entryPath, { kind: "app", status: /legacy|old|market-pricing/.test(name) ? "legacy" : "active" });
+      }
+    }
+  }
+  for (const dir of ["packages", "frontend/shared", "functions", "functions/src/shared", "functions/src/modules"]) {
+    const abs = path.join(repoRoot, dir);
+    if (!fs.existsSync(abs)) continue;
+    if (dir.endsWith("modules")) {
+      for (const name of fs.readdirSync(abs).filter(name => !name.startsWith("."))) {
+        addEntry("packages", name, `${dir}/${name}`, { kind: "backend-module" });
+      }
+    } else {
+      addEntry("packages", path.basename(dir), dir, { kind: dir === "functions" ? "backend" : "shared" });
+    }
+  }
+  if (map.apps.some(app => app.path === "frontend/apps/pricing")) {
+    map.rules.push("Market Pricing frontend work should target frontend/apps/pricing/ unless explicitly marked legacy.");
+  }
+  if (map.apps.some(app => app.path === "frontend/apps/market-pricing")) {
+    map.rules.push("frontend/apps/market-pricing/ is legacy; avoid unless the issue explicitly says legacy/old market-pricing.");
+  }
+  if (persist) run("INSERT OR REPLACE INTO settings (key, value) VALUES ('project_map_json', ?)", JSON.stringify(map, null, 2));
+  return map;
+}
+
+function inferIssueTarget({ title = "", description = "", planningGuidance = "", targetKind, targetPaths, avoidPaths, scopeNotes } = {}) {
+  const projectMap = readProjectMap();
+  const text = `${title}\n${description}\n${planningGuidance}`.toLowerCase();
+  const explicitTargetPaths = normalizePathList(targetPaths);
+  const explicitAvoidPaths = normalizePathList(avoidPaths);
+  let kind = String(targetKind || "").trim();
+  const targets = [...explicitTargetPaths];
+  const avoids = [...explicitAvoidPaths];
+  const notes = [];
+  if (scopeNotes) notes.push(String(scopeNotes).trim());
+  if (!kind && /(endpoint|api|controller|service|repository|migration|backend|shared|generic)/.test(text)) {
+    kind = /(shared|generic)/.test(text) ? "backend-shared" : "backend";
+    if (fs.existsSync(path.join(projectMap.repoRoot || "", "functions"))) targets.push("functions/");
+    if (/(shared|generic)/.test(text)) {
+      avoids.push("frontend/apps/pricing/", "frontend/apps/market-pricing/");
+      notes.push("Classified as generic/shared backend work; do not describe or implement as app-scoped unless the issue says so.");
+    }
+  }
+  if (!kind && /(market pricing|pricing|bands|company jobs)/.test(text)) {
+    kind = "pricing-frontend";
+    if (projectMap.apps?.some(app => app.path === "frontend/apps/pricing")) targets.push("frontend/apps/pricing/");
+    if (!/(legacy|old market-pricing|market-pricing app)/.test(text)) avoids.push("frontend/apps/market-pricing/");
+  }
+  return {
+    target_kind: kind || null,
+    target_paths_json: JSON.stringify([...new Set(targets)]),
+    avoid_paths_json: JSON.stringify([...new Set(avoids)]),
+    scope_notes: notes.filter(Boolean).join("\n") || null,
+    project_map_snapshot_json: JSON.stringify(projectMap),
+  };
+}
+
 function branchCandidatesForIssue(issue, prStack = []) {
   const branches = new Set(prStack.map(pr => pr.gt_branch).filter(Boolean));
 
@@ -502,13 +601,27 @@ function branchCandidatesForIssue(issue, prStack = []) {
   if (issue) {
     const branchPrefix = qOne("SELECT value FROM settings WHERE key = 'branch_prefix'")?.value || "lwh";
     const identifier = issue.linear_id ?? `issue-${issue.id}`;
-    branches.add(`${branchPrefix}/${identifier}-${slugify(issue.title)}`);
+    const baseBranch = `${branchPrefix}/${identifier}-${slugify(issue.title)}`;
+    branches.add(baseBranch);
+    // Stacked PR branches commonly append -part-N. Include likely branch names
+    // even if pr_stack/project files were already cleared by a prior failed reset.
+    for (let i = 1; i <= 12; i += 1) branches.add(`${baseBranch}-part-${i}`);
   }
 
   return [...branches];
 }
 
+async function localBranchExists(branch, cwd) {
+  try {
+    await execAsync("git", ["show-ref", "--verify", `refs/heads/${branch}`], { cwd, timeout: 10000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function deleteLocalBranches(branches, cwd, errors) {
+  const failed = [];
   for (const branch of branches) {
     try {
       await execAsync("git", ["branch", "-D", branch], { cwd, timeout: 15000 });
@@ -517,9 +630,11 @@ async function deleteLocalBranches(branches, cwd, errors) {
       const stderr = e.stderr ?? "";
       if (!message.includes("not found") && !stderr.includes("not found")) {
         errors.push(`git branch -D ${branch}: ${message.split("\n")[0]}`);
+        if (await localBranchExists(branch, cwd)) failed.push(branch);
       }
     }
   }
+  return failed;
 }
 
 // ── SSE ───────────────────────────────────────────────────────────────
@@ -634,18 +749,37 @@ function getRepoCommandCwd() {
 }
 
 async function removeIssueWorktree(worktreePath, errors) {
-  if (!worktreePath || !fs.existsSync(worktreePath)) return;
+  if (!worktreePath || !fs.existsSync(worktreePath)) return false;
   const provider = getWorktreeProvider();
   const cwd = getRepoCommandCwd();
+  let removedByTool = false;
   if (provider === "git") {
     await execAsync("git", ["worktree", "remove", "--force", worktreePath], { cwd, timeout: 30000 })
+      .then(() => { removedByTool = true; })
       .catch(e => errors.push(`git worktree remove: ${e.message}`));
     await execAsync("git", ["worktree", "prune"], { cwd, timeout: 30000 })
       .catch(e => errors.push(`git worktree prune: ${e.message}`));
-    return;
+  } else {
+    await execAsync("wt", ["remove", "--force", "-D", worktreePath], { cwd, timeout: 30000 })
+      .then(() => { removedByTool = true; })
+      .catch(e => errors.push(`wt remove: ${e.message}`));
   }
-  await execAsync("wt", ["remove", "--force", "-D", worktreePath], { cwd, timeout: 30000 })
-    .catch(e => errors.push(`wt remove: ${e.message}`));
+
+  if (fs.existsSync(worktreePath)) {
+    try {
+      fs.rmSync(worktreePath, { recursive: true, force: true, maxRetries: 3, retryDelay: 250 });
+      errors.push(`${provider} worktree remove left path behind; removed directory with fs.rmSync fallback`);
+    } catch (e) {
+      errors.push(`worktree fs.rm fallback: ${e.message}`);
+    }
+  }
+
+  if (provider === "git") {
+    await execAsync("git", ["worktree", "prune"], { cwd, timeout: 30000 })
+      .catch(e => errors.push(`git worktree prune after fallback: ${e.message}`));
+  }
+
+  return removedByTool || !fs.existsSync(worktreePath);
 }
 
 function getVmConnectCommand(worktreePath) {
@@ -1042,7 +1176,7 @@ setInterval(() => {
 // ── Express app ───────────────────────────────────────────────────────
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "2mb" }));
 app.use((req, res, next) => {
   if (req.path === "/" || req.path === "/index.html" || req.path.startsWith("/v3/")) {
     res.setHeader("Cache-Control", "no-store, max-age=0");
@@ -1154,6 +1288,9 @@ app.post("/api/desktop/jobs/:id/complete", (req, res) => {
   if (job.type === "linear.listAssigned") {
     setDesktopCache("linear.assigned", ok && Array.isArray(result) ? filterLinearBacklogIssues(result) : []);
   }
+  if (job.type === "gh.json" && payload.cacheKey) {
+    setDesktopCache(`gh.${payload.cacheKey}`, ok ? { ok: true, result } : { ok: false, error });
+  }
   broadcast("desktop_job_completed", { id, type: job.type });
   broadcast("tick", { ts: Date.now() });
   res.json({ ok: true });
@@ -1203,7 +1340,7 @@ app.get("/api/overview", async (_req, res) => {
   const enrichedIssues = await Promise.all(issues.map(async (issue) => {
     let prStack = q("SELECT * FROM pr_stack WHERE issue_id = ? ORDER BY position ASC", issue.id)
       .map(pr => ({ ...pr, url: repo && pr.pr_number ? `https://github.com/${repo}/pull/${pr.pr_number}` : null }));
-    if (["WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL", "FIXING", "PUSHING", "REBASING"].includes(issue.state)) {
+    if (["WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL", "FIXING", "AWAITING_FIX_REVIEW", "PUSHING", "REBASING"].includes(issue.state)) {
       prStack = await enrichPrStackStatus(prStack, issue.wt_path);
       if (!issue.pr_approved_at && prStack.some(pr => pr.reviewDecision === "APPROVED")) {
         issue.pr_approved_at = new Date().toISOString();
@@ -1274,6 +1411,7 @@ function stateAttentionText(state) {
     AWAITING_PLAN_APPROVAL: "Needs plan review",
     AWAITING_CODE_REVIEW: "Needs code review",
     AWAITING_FIX_APPROVAL: "Needs fix approval",
+    AWAITING_FIX_REVIEW: "Needs fix review",
     FAILED: "Blocked: failed",
     PAUSED: "Paused",
   }[state] ?? null;
@@ -1348,6 +1486,27 @@ app.get("/api/standup/today", (_req, res) => {
   }
 });
 
+// ── Project map / issue scope ─────────────────────────────────────────
+
+app.get("/api/project-map", (_req, res) => {
+  res.json({ projectMap: readProjectMap() });
+});
+
+app.post("/api/project-map/scan", (req, res) => {
+  try {
+    res.json({ ok: true, projectMap: scanProjectMap(req.body?.persist !== false) });
+  } catch (e) {
+    res.status(500).json({ error: e.message ?? String(e) });
+  }
+});
+
+app.put("/api/project-map", (req, res) => {
+  const projectMap = req.body?.projectMap ?? req.body;
+  run("INSERT OR REPLACE INTO settings (key, value) VALUES ('project_map_json', ?)", JSON.stringify(projectMap, null, 2));
+  broadcast("settings_updated", { key: "project_map_json" });
+  res.json({ ok: true, projectMap });
+});
+
 // ── Issues ────────────────────────────────────────────────────────────
 
 app.get("/api/issues", (_req, res) => {
@@ -1382,7 +1541,7 @@ app.get("/api/issues/:id", async (req, res) => {
   let prStack = q("SELECT * FROM pr_stack WHERE issue_id = ? ORDER BY position ASC", issue.id)
     .map(pr => ({ ...pr, url: repo && pr.pr_number ? `https://github.com/${repo}/pull/${pr.pr_number}` : null }));
   const fast = req.query.fast === "1" || req.query.fast === "true";
-  if (!fast && ["WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL", "FIXING", "PUSHING", "REBASING", "DONE"].includes(issue.state)) {
+  if (!fast && ["WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL", "FIXING", "AWAITING_FIX_REVIEW", "PUSHING", "REBASING", "DONE"].includes(issue.state)) {
     prStack = await enrichPrStackStatus(prStack, issue.wt_path);
   }
   const decisions = q("SELECT * FROM decision_queue WHERE issue_id = ? ORDER BY created_at DESC", issue.id);
@@ -1529,6 +1688,29 @@ app.patch("/api/issues/:id", async (req, res) => {
     case "clear-steer":
       run(`UPDATE issues SET steering_context = NULL, updated_at = datetime('now') WHERE id = ?`, id);
       break;
+    case "set-scope": {
+      const target = inferIssueTarget({
+        title: issue.title,
+        targetKind: req.body.targetKind,
+        targetPaths: req.body.targetPaths,
+        avoidPaths: req.body.avoidPaths,
+        scopeNotes: req.body.scopeNotes,
+      });
+      run(
+        `UPDATE issues
+         SET target_kind = ?, target_paths_json = ?, avoid_paths_json = ?, scope_notes = ?, project_map_snapshot_json = ?, updated_at = datetime('now')
+         WHERE id = ?`,
+        target.target_kind,
+        target.target_paths_json,
+        target.avoid_paths_json,
+        target.scope_notes,
+        target.project_map_snapshot_json,
+        id
+      );
+      run(`INSERT INTO activity_log (issue_id, type, actor, message, metadata) VALUES (?, 'scope_updated', 'user', ?, ?)`,
+        id, `Scope target updated: ${target.target_kind || "unspecified"}`, JSON.stringify(target));
+      break;
+    }
     case "set-auto-fix": {
       const enabled = req.body.enabled ? 1 : 0;
       run(`UPDATE issues SET auto_fix_enabled = ?, updated_at = datetime('now') WHERE id = ?`, enabled, id);
@@ -1579,7 +1761,7 @@ app.patch("/api/issues/:id", async (req, res) => {
       return res.json({ ok: true, state: "REBASING" });
     }
     case "split-pr-stack": {
-      const splitAllowedStates = ["AI_REVIEWING", "AWAITING_CODE_REVIEW", "CREATING_PR", "WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL", "FIXING", "PUSHING", "REBASING"];
+      const splitAllowedStates = ["AI_REVIEWING", "AWAITING_CODE_REVIEW", "CREATING_PR", "WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL", "FIXING", "AWAITING_FIX_REVIEW", "PUSHING", "REBASING"];
       if (!splitAllowedStates.includes(issue.state)) {
         return res.status(409).json({ error: `Issue must have written code before splitting (currently ${issue.state})` });
       }
@@ -1602,7 +1784,7 @@ app.patch("/api/issues/:id", async (req, res) => {
     }
     case "advance": {
       const { nextState } = req.body;
-      const allowed = ["WORKING", "CREATING_PR", "FIXING", "PLANNING", "AI_REVIEWING", "WATCHING_PR", "IN_MERGE_QUEUE", "SPLIT_PLANNING", "SPLITTING", "REBASING", "DONE"];
+      const allowed = ["WORKING", "CREATING_PR", "FIXING", "PUSHING", "PLANNING", "AI_REVIEWING", "WATCHING_PR", "IN_MERGE_QUEUE", "SPLIT_PLANNING", "SPLITTING", "REBASING", "DONE"];
       if (!allowed.includes(nextState)) return res.status(400).json({ error: `Invalid nextState: ${nextState}` });
       run(`UPDATE issues SET previous_state = state, state = ?, locked_at = NULL, updated_at = datetime('now') WHERE id = ?`, nextState, id);
       run(`INSERT INTO activity_log (issue_id, type, actor, message) VALUES (?, 'advanced', 'user', ?)`,
@@ -1632,6 +1814,7 @@ app.patch("/api/issues/:id", async (req, res) => {
         AI_PLAN_REVIEWING:      "PLANNING",
         AWAITING_CODE_REVIEW:   "CREATING_PR",
         AWAITING_FIX_APPROVAL:  "FIXING",
+        AWAITING_FIX_REVIEW:    "PUSHING",
         AWAITING_SPLIT_APPROVAL:"SPLITTING",
       };
 
@@ -1647,6 +1830,7 @@ app.patch("/api/issues/:id", async (req, res) => {
       const awaitingDecisionTypes = {
         AWAITING_CODE_REVIEW: "CODE_REVIEW",
         AWAITING_FIX_APPROVAL: "FIX_APPROVAL",
+        AWAITING_FIX_REVIEW: "FIX_REVIEW",
         AWAITING_SPLIT_APPROVAL: "SPLIT_APPROVAL",
       };
       const keepPendingDecisionType = awaitingDecisionTypes[retryState] ?? null;
@@ -1709,7 +1893,22 @@ app.patch("/api/issues/:id", async (req, res) => {
       } catch (e) {
         errors.push(`Worktree removal: ${e.message}`);
       }
-      await deleteLocalBranches(branchesToDelete, cwd, errors);
+      const failedBranchDeletes = await deleteLocalBranches(branchesToDelete, cwd, errors);
+
+      // A full reset must not silently continue if stale worktrees/checked-out
+      // branches remain. Otherwise setup can reuse dirty PR branches and the
+      // next planner/fixer fails or edits the wrong stack layer.
+      const resetBlockers = [];
+      if (issue.wt_path && fs.existsSync(issue.wt_path)) resetBlockers.push(`worktree still exists: ${issue.wt_path}`);
+      if (failedBranchDeletes.length) resetBlockers.push(`branches still exist: ${failedBranchDeletes.join(", ")}`);
+      if (resetBlockers.length) {
+        run(`INSERT INTO activity_log (issue_id, type, actor, message, metadata)
+             VALUES (?, 'reset_failed', 'user', 'Full reset failed before clearing issue state', ?)`,
+          id,
+          JSON.stringify({ blockers: resetBlockers, branchesAttempted: branchesToDelete, errors })
+        );
+        return res.status(409).json({ error: "Reset failed; stale worktree or branches remain", blockers: resetBlockers, errors });
+      }
 
       // Remove all per-run/project artifacts so the issue behaves like a fresh
       // enqueue. Keep the issue row itself (and activity log) so its id/history
@@ -1791,8 +1990,8 @@ app.post("/api/decisions/:id/resolve", (req, res) => {
 
   // Advance or revert issue state
   const stateMap = {
-    approved: { PLAN_REVIEW: "WORKING", CODE_REVIEW: "CREATING_PR", FIX_APPROVAL: "FIXING", SPLIT_APPROVAL: "SPLITTING" },
-    rejected: { PLAN_REVIEW: "PLANNING", CODE_REVIEW: "WORKING", FIX_APPROVAL: "WATCHING_PR", SPLIT_APPROVAL: "WATCHING_PR" },
+    approved: { PLAN_REVIEW: "WORKING", CODE_REVIEW: "CREATING_PR", FIX_APPROVAL: "FIXING", FIX_REVIEW: "PUSHING", SPLIT_APPROVAL: "SPLITTING" },
+    rejected: { PLAN_REVIEW: "PLANNING", CODE_REVIEW: "WORKING", FIX_APPROVAL: "WATCHING_PR", FIX_REVIEW: "FIXING", SPLIT_APPROVAL: "WATCHING_PR" },
     // FIX_APPROVAL approval from IN_MERGE_QUEUE reverts to WATCHING_PR too
     // (handled below by overriding nextState if current state is IN_MERGE_QUEUE)
   };
@@ -1838,7 +2037,7 @@ app.post("/api/decisions/:id/resolve", (req, res) => {
     const issue = qOne("SELECT * FROM issues WHERE id = ?", decision.issue_id);
     const planPath = issue?.project_file_path;
     if (planPath && fs.existsSync(planPath)) {
-      const typeLabel = { PLAN_REVIEW: "Plan", CODE_REVIEW: "Code review", FIX_APPROVAL: "Fix" }[decision.type] ?? decision.type;
+      const typeLabel = { PLAN_REVIEW: "Plan", CODE_REVIEW: "Code review", FIX_APPROVAL: "Fix", FIX_REVIEW: "Fix review" }[decision.type] ?? decision.type;
       const now = new Date().toISOString();
       const entry = `\n## ${typeLabel} rejected\n*${now}*\n${typeof feedback === "string" ? feedback : JSON.stringify(feedback, null, 2)}\n`;
       try {
@@ -1850,7 +2049,7 @@ app.post("/api/decisions/:id/resolve", (req, res) => {
   }
 
   // Log user action
-  const typeLabel = { PLAN_REVIEW: "Plan", CODE_REVIEW: "Code review", FIX_APPROVAL: "Fix approval" }[decision.type] ?? decision.type;
+  const typeLabel = { PLAN_REVIEW: "Plan", CODE_REVIEW: "Code review", FIX_APPROVAL: "Fix approval", FIX_REVIEW: "Fix review" }[decision.type] ?? decision.type;
   const logMsg = verdict === "approved"
     ? `${typeLabel} approved`
     : `${typeLabel} rejected${feedback ? ` — ${typeof feedback === "string" ? feedback : JSON.stringify(feedback)}` : ""}`;
@@ -2026,6 +2225,101 @@ function logLearningChange({ issueId = null, suggestionId = null, target, change
   `, issueId, suggestionId, target, changeType, changeSummary, reason, actor, metadata ? JSON.stringify(metadata) : null);
 }
 
+/**
+ * Use pi SDK runner to intelligently merge a learning into an agent prompt.
+ * Returns true if successful, false if it should fall back to naive append.
+ */
+function smartMergeLearning(promptPath, currentContent, suggestion, rationale) {
+  const { spawnSync } = require("child_process");
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "forge-merge-"));
+  const systemFile = path.join(tmpDir, "system.md");
+  const promptFile = path.join(tmpDir, "prompt.txt");
+
+  const systemPrompt = [
+    "You are a prompt editor. Your job is to integrate a new learned rule into an agent prompt file.",
+    "",
+    "Rules:",
+    "- If the new rule duplicates or overlaps with an existing rule in the '## Learned rules' section, consolidate them into one stronger rule instead of adding a duplicate.",
+    "- If the new rule contradicts an existing rule, replace the old one with the new one.",
+    "- Keep the '## Learned rules' section as a bullet list. Each bullet should be 1-2 sentences max.",
+    "- Do not modify any other part of the prompt file. Only touch the '## Learned rules' section.",
+    "- If there is no '## Learned rules' section yet, add one at the end of the file.",
+    "- After merging, review the full section for any remaining near-duplicates and consolidate.",
+    "- Output ONLY the complete updated file content. No explanations, no code fences, no preamble.",
+  ].join("\n");
+
+  const userPrompt = [
+    "## Current prompt file content",
+    "",
+    currentContent,
+    "",
+    "## New learning to integrate",
+    "",
+    `Rule: ${suggestion}`,
+    rationale ? `Rationale: ${rationale}` : "",
+    "",
+    "Output the complete updated file with the learning integrated into the ## Learned rules section.",
+  ].join("\n");
+
+  fs.writeFileSync(systemFile, systemPrompt, "utf-8");
+  fs.writeFileSync(promptFile, userPrompt, "utf-8");
+
+  const model = qOne("SELECT value FROM settings WHERE key = 'model'")?.value || "anthropic-vertex/sonnet-4-6";
+
+  try {
+    const result = spawnSync(process.execPath, [
+      path.join(FORGE_DIR, "pi-sdk-runner.mjs"),
+      "--cwd", FORGE_DIR,
+      "--system-prompt", systemFile,
+      "--model", model,
+      "--prompt-file", promptFile,
+    ], {
+      encoding: "utf-8",
+      timeout: 60000,
+      maxBuffer: 1024 * 1024 * 4,
+      env: { ...process.env, FORGE_DIR },
+    });
+
+    if (result.error) throw result.error;
+    if (result.status !== 0) throw new Error(`pi SDK runner exited ${result.status}`);
+
+    // Extract text from JSONL output
+    let text = "";
+    for (const line of String(result.stdout || "").split("\n")) {
+      if (!line.trim()) continue;
+      try {
+        const event = JSON.parse(line);
+        if (event.type === "text_delta" && typeof event.delta === "string") text += event.delta;
+        else if (event.type === "assistant" && event.message?.content) {
+          for (const block of event.message.content) if (block.type === "text") text += block.text;
+        }
+      } catch { /* not JSON */ }
+    }
+
+    text = text.trim();
+    // Strip code fences if the model wrapped output
+    text = text.replace(/^```(?:markdown|md)?\n?/i, "").replace(/\n?```$/i, "").trim();
+
+    if (!text || text.length < currentContent.length * 0.5) {
+      console.warn("[forge:learnings] Smart merge output too short; rejecting");
+      return false;
+    }
+
+    // Sanity check: the merged output should still contain key sections from the original
+    const hasOriginalStructure = currentContent.includes("# Forge") ? text.includes("# Forge") : true;
+    if (!hasOriginalStructure) {
+      console.warn("[forge:learnings] Smart merge output missing original structure; rejecting");
+      return false;
+    }
+
+    fs.writeFileSync(promptPath, text, "utf-8");
+    console.log(`[forge:learnings] Smart-merged learning into ${path.basename(promptPath)}`);
+    return true;
+  } finally {
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+  }
+}
+
 function promptPathForLearningTarget(target) {
   const match = String(target ?? "").match(/^agents\/([a-z-]+)\.md$/);
   if (!match) return null;
@@ -2075,17 +2369,29 @@ app.patch("/api/learnings/:id", (req, res) => {
     const promptPath = promptPathForLearningTarget(suggestion.target);
     if (promptPath) {
       const before = fs.existsSync(promptPath) ? fs.readFileSync(promptPath, "utf-8") : "";
-      const appendix = [
-        "",
-        `## Learned change (suggestion #${id}, ${new Date().toISOString().split("T")[0]})`,
-        "",
-        `- ${suggestion.suggestion}`,
-        suggestion.rationale ? `  - Why: ${suggestion.rationale}` : "",
-      ].filter(Boolean).join("\n");
-      fs.writeFileSync(promptPath, `${before.replace(/\s*$/, "")}\n${appendix}\n`, "utf-8");
-      changeSummary = `Appended learning suggestion #${id} to ${suggestion.target}`;
+      // Try smart merge via pi SDK; fall back to bullet append on failure
+      let merged = false;
+      try {
+        merged = smartMergeLearning(promptPath, before, suggestion.suggestion, suggestion.rationale);
+      } catch (e) {
+        console.warn(`[forge:learnings] Smart merge failed, falling back to append: ${e.message}`);
+      }
+      if (!merged) {
+        // Fallback: naive bullet append
+        const sectionHeader = "## Learned rules";
+        const bulletLine = `- ${suggestion.suggestion}`;
+        let updated;
+        if (before.includes(sectionHeader)) {
+          updated = before.replace(sectionHeader, `${sectionHeader}\n${bulletLine}`);
+        } else {
+          updated = `${before.replace(/\s*$/, "")}\n\n${sectionHeader}\n\n${bulletLine}\n`;
+        }
+        fs.writeFileSync(promptPath, updated, "utf-8");
+      }
+      changeSummary = `${merged ? "Smart-merged" : "Appended"} learning suggestion #${id} to ${suggestion.target}`;
       metadata.beforeLength = before.length;
       metadata.afterLength = fs.readFileSync(promptPath, "utf-8").length;
+      metadata.smartMerge = merged;
     } else {
       changeSummary = `Marked suggestion #${id} applied; target '${suggestion.target}' requires manual/tooling follow-up`;
     }
@@ -2118,7 +2424,7 @@ app.patch("/api/learnings/:id", (req, res) => {
 app.post("/api/issues/:id/feedback", (req, res) => {
   const issue = qOne("SELECT * FROM issues WHERE id = ?", req.params.id);
   if (!issue) return res.status(404).json({ error: "Not found" });
-  if (!["WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL"].includes(issue.state)) return res.status(409).json({ error: `Issue must be in WATCHING_PR, IN_MERGE_QUEUE, or AWAITING_FIX_APPROVAL state (currently ${issue.state})` });
+  if (!["WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL", "AWAITING_FIX_REVIEW"].includes(issue.state)) return res.status(409).json({ error: `Issue must be in WATCHING_PR, IN_MERGE_QUEUE, AWAITING_FIX_APPROVAL, or AWAITING_FIX_REVIEW state (currently ${issue.state})` });
 
   const { body, prNumber } = req.body;
   if (!body?.trim()) return res.status(400).json({ error: "body is required" });
@@ -2603,7 +2909,7 @@ app.get("/api/agents/:type/prompt/default", (req, res) => {
   // Return the git-tracked original by reading directly from the agents/ dir
   // (same file, but user can reset if they've saved changes)
   const type = req.params.type;
-  const allowed = ["planner", "plan-reviewer", "coder", "reviewer", "git-agent", "fixer", "split-planner", "splitter", "rebaser"];
+  const allowed = ["planner", "plan-reviewer", "coder", "reviewer", "git-agent", "fixer", "split-planner", "splitter", "rebaser", "reflector"];
   if (!allowed.includes(type)) return res.status(400).json({ error: "Unknown agent type" });
   const promptPath = path.join(FORGE_DIR, "agents", `${type}.md`);
   if (!fs.existsSync(promptPath)) return res.status(404).json({ error: "Not found" });
@@ -2612,7 +2918,7 @@ app.get("/api/agents/:type/prompt/default", (req, res) => {
 
 app.put("/api/agents/:type/prompt", (req, res) => {
   const type = req.params.type;
-  const allowed = ["planner", "plan-reviewer", "coder", "reviewer", "git-agent", "fixer", "split-planner", "splitter", "rebaser"];
+  const allowed = ["planner", "plan-reviewer", "coder", "reviewer", "git-agent", "fixer", "split-planner", "splitter", "rebaser", "reflector"];
   if (!allowed.includes(type)) return res.status(400).json({ error: "Unknown agent type" });
 
   const { content } = req.body;
@@ -2748,7 +3054,7 @@ app.get("/api/linear/issues", async (_req, res) => {
 });
 
 app.post("/api/linear/enqueue", async (req, res) => {
-  const { linearId, planningGuidance } = req.body;
+  const { linearId, planningGuidance, targetKind, targetPaths, avoidPaths, scopeNotes } = req.body;
   if (!linearId) return res.status(400).json({ error: "linearId required" });
 
   const existing = qOne("SELECT id FROM issues WHERE linear_id = ?", linearId);
@@ -2772,9 +3078,21 @@ app.post("/api/linear/enqueue", async (req, res) => {
       ? `Planning guidance supplied at enqueue:\n\n${trimmedGuidance}`
       : null;
 
+    const target = inferIssueTarget({
+      title: data.title ?? linearId,
+      description: data.description ?? "",
+      planningGuidance: trimmedGuidance,
+      targetKind,
+      targetPaths,
+      avoidPaths,
+      scopeNotes,
+    });
     const result = run(
-      "INSERT INTO issues (source, linear_id, title, priority, steering_context) VALUES ('linear', ?, ?, ?, ?)",
-      linearId, data.title ?? linearId, data.priority ?? 0, steeringContext
+      `INSERT INTO issues
+       (source, linear_id, title, priority, steering_context, target_kind, target_paths_json, avoid_paths_json, scope_notes, project_map_snapshot_json)
+       VALUES ('linear', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      linearId, data.title ?? linearId, data.priority ?? 0, steeringContext,
+      target.target_kind, target.target_paths_json, target.avoid_paths_json, target.scope_notes, target.project_map_snapshot_json
     );
     const newIssueId = result.lastInsertRowid;
     if (steeringContext) {
@@ -2795,12 +3113,16 @@ app.post("/api/linear/enqueue", async (req, res) => {
 });
 
 app.post("/api/issues", (req, res) => {
-  const { title, description } = req.body;
+  const { title, description, targetKind, targetPaths, avoidPaths, scopeNotes } = req.body;
   if (!title) return res.status(400).json({ error: "title required" });
 
   // Create project file for manual issues
+  const target = inferIssueTarget({ title, description, targetKind, targetPaths, avoidPaths, scopeNotes });
   const result = run(
-    "INSERT INTO issues (source, title) VALUES ('manual', ?)", title
+    `INSERT INTO issues
+     (source, title, target_kind, target_paths_json, avoid_paths_json, scope_notes, project_map_snapshot_json)
+     VALUES ('manual', ?, ?, ?, ?, ?, ?)`,
+    title, target.target_kind, target.target_paths_json, target.avoid_paths_json, target.scope_notes, target.project_map_snapshot_json
   );
   const issueId = result.lastInsertRowid;
 
@@ -2814,6 +3136,11 @@ app.post("/api/issues", (req, res) => {
       "linear-id:",
       "pr-url:",
       "base-branch: main",
+      `target-kind: ${target.target_kind ?? ""}`,
+      `target-paths: ${target.target_paths_json ?? "[]"}`,
+      `avoid-paths: ${target.avoid_paths_json ?? "[]"}`,
+      "scope-notes: |",
+      ...String(target.scope_notes ?? "").split("\n").map(line => `  ${line}`),
       "app:",
       "layer:",
       `started: ${now}`,
