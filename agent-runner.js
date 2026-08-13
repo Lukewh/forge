@@ -232,7 +232,10 @@ function gitOutput(cwd, args, timeout = 10000) {
 }
 
 function worktreeStatusPorcelain(cwd) {
-  return gitOutput(cwd, ["status", "--porcelain"]);
+  return gitOutput(cwd, ["status", "--porcelain"])
+    .split("\n")
+    .filter(line => line.trim() && !/^\?\? (.+\/)?node_modules\/?$/.test(line))
+    .join("\n");
 }
 
 function worktreeCurrentBranch(cwd) {

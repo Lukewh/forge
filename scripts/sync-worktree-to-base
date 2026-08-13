@@ -33,7 +33,10 @@ function git(args, options = {}) {
 }
 
 function isClean() {
-  return git(["status", "--porcelain"]).trim() === "";
+  return git(["status", "--porcelain"])
+    .split("\n")
+    .filter(line => line.trim() && !/^\?\? (.+\/)?node_modules\/?$/.test(line))
+    .join("\n") === "";
 }
 
 function remoteOnlyCommitsArePatchEquivalent(remoteRef) {
