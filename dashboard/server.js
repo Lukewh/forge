@@ -37,6 +37,9 @@ const execAsync = (cmd, args, opts = {}) => new Promise((resolve, reject) => {
   });
 });
 
+const PR_STATUS_CACHE_TTL_MS = 5 * 60 * 1000;
+const prStatusCache = new Map();
+
 async function fetchMergeQueueStatus(prNumber, repo, cwd) {
   const [owner, name] = String(repo || "").split("/");
   if (!owner || !name) return null;
@@ -53,6 +56,9 @@ async function enrichPrStackStatus(prStack, cwd) {
   const repo = db.prepare("SELECT value FROM settings WHERE key = 'github_repo'").get()?.value ?? "";
   return Promise.all(prStack.map(async (pr) => {
     if (!pr.pr_number) return pr;
+    const cacheKey = `${repo}:${pr.pr_number}`;
+    const cached = prStatusCache.get(cacheKey);
+    if (cached && Date.now() - cached.fetchedAt < PR_STATUS_CACHE_TTL_MS) return { ...pr, ...cached.data };
     try {
       const raw = await execAsync("gh", ["pr", "view", String(pr.pr_number), "--repo", repo, "--json", "reviewDecision,statusCheckRollup,mergeable,state,mergedAt"], { ...(cwd && fs.existsSync(cwd) ? { cwd } : {}), timeout: 10000 });
       const data = JSON.parse(raw || "{}");
@@ -62,8 +68,7 @@ async function enrichPrStackStatus(prStack, cwd) {
       const pendingChecks = checks.filter(c => !c.conclusion || ["ACTION_REQUIRED", "STARTUP_FAILURE", "STALE", "SKIPPED", "NEUTRAL"].includes(c.conclusion) === false && c.status !== "COMPLETED");
       const isMerged = Boolean(data.mergedAt || data.state === "MERGED");
       const isInMergeQueue = !isMerged && Boolean(mergeQueue?.isInMergeQueue || mergeQueue?.mergeQueueEntry);
-      return {
-        ...pr,
+      const liveData = {
         status: isMerged ? "merged" : pr.status,
         reviewDecision: data.reviewDecision ?? null,
         mergeable: data.mergeable ?? null,
@@ -75,6 +80,8 @@ async function enrichPrStackStatus(prStack, cwd) {
         checksPending: pendingChecks.length,
         liveState: isMerged ? "MERGED" : isInMergeQueue ? "MERGE_QUEUE" : data.state,
       };
+      prStatusCache.set(cacheKey, { fetchedAt: Date.now(), data: liveData });
+      return { ...pr, ...liveData };
     } catch {
       return pr;
     }
@@ -1337,18 +1344,11 @@ app.get("/api/overview", async (_req, res) => {
   const learningSuggestionsCount = qOne("SELECT COUNT(*) as count FROM learning_suggestions WHERE status = 'pending'")?.count ?? 0;
   const repo = settingsMap.github_repo ?? "";
 
-  const enrichedIssues = await Promise.all(issues.map(async (issue) => {
-    let prStack = q("SELECT * FROM pr_stack WHERE issue_id = ? ORDER BY position ASC", issue.id)
+  const enrichedIssues = issues.map((issue) => {
+    const prStack = q("SELECT * FROM pr_stack WHERE issue_id = ? ORDER BY position ASC", issue.id)
       .map(pr => ({ ...pr, url: repo && pr.pr_number ? `https://github.com/${repo}/pull/${pr.pr_number}` : null }));
-    if (["WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL", "FIXING", "AWAITING_FIX_REVIEW", "PUSHING", "REBASING"].includes(issue.state)) {
-      prStack = await enrichPrStackStatus(prStack, issue.wt_path);
-      if (!issue.pr_approved_at && prStack.some(pr => pr.reviewDecision === "APPROVED")) {
-        issue.pr_approved_at = new Date().toISOString();
-        run("UPDATE issues SET pr_approved_at = datetime('now'), updated_at = datetime('now') WHERE id = ?", issue.id);
-      }
-    }
     return { ...issue, prStack };
-  }));
+  });
 
   // Enrich decisions with issue titles
   const enrichedDecisions = decisions.map(d => ({
@@ -2450,6 +2450,7 @@ app.post("/api/issues/:id/feedback", (req, res) => {
     try { artRef = JSON.parse(existing.artifact_ref); } catch {}
     artRef.comments = [...(artRef.comments ?? []), newComment];
     run(`UPDATE decision_queue SET artifact_ref = ? WHERE id = ?`, JSON.stringify(artRef), existing.id);
+    run(`UPDATE issues SET updated_at = datetime('now') WHERE id = ?`, issue.id);
   } else {
     const artifactRef = JSON.stringify({ comments: [newComment] });
     run(`INSERT INTO decision_queue (issue_id, type, artifact_ref) VALUES (?, 'FIX_APPROVAL', ?)`, issue.id, artifactRef);

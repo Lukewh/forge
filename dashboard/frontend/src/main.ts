@@ -120,6 +120,7 @@ type Decision = {
   type?: string | null;
   issueTitle?: string | null;
   artifact_ref?: string | null;
+  created_at?: string | null;
   verdict?: DecisionVerdict | string | null;
   resolved_at?: string | null;
 };
@@ -3389,7 +3390,11 @@ function DashboardShell() {
   const issueDetailSignature = (data: Overview, issueId: number | null) => {
     if (!issueId) return "";
     const issue = data.issues.find((entry) => entry.id === issueId);
-    const decisions = data.decisions.filter((decision) => decision.issue_id === issueId).map((decision) => `${decision.id}:${decision.type}`).sort().join(",");
+    const decisions = data.decisions
+      .filter((decision) => decision.issue_id === issueId)
+      .map((decision) => [decision.id, decision.type, decision.created_at, decision.resolved_at, decision.artifact_ref].join(":"))
+      .sort()
+      .join(",");
     return `${issue?.state ?? ""}|${issue?.updated_at ?? ""}|${decisions}`;
   };
 

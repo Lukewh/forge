@@ -1822,10 +1822,10 @@ function _i({ issues: e, decisions: n, linearBacklog: a, selectedIssueId: r, add
     try {
       const E = window.localStorage.getItem("forge.v3.queuePrefs");
       if (!E) return { filter: "all", sort: "priority" };
-      const F = JSON.parse(E);
+      const V = JSON.parse(E);
       return {
-        filter: ["all", "needs-me", "running", "failed", "watching-pr", "paused"].includes(F.filter) ? F.filter : "all",
-        sort: ["priority", "newest", "oldest", "recently-updated"].includes(F.sort) ? F.sort : "priority"
+        filter: ["all", "needs-me", "running", "failed", "watching-pr", "paused"].includes(V.filter) ? V.filter : "all",
+        sort: ["priority", "newest", "oldest", "recently-updated"].includes(V.sort) ? V.sort : "priority"
       };
     } catch {
       return { filter: "all", sort: "priority" };
@@ -1837,15 +1837,15 @@ function _i({ issues: e, decisions: n, linearBacklog: a, selectedIssueId: r, add
     } catch {
     }
   }, [P, W]);
-  const [Y, X] = w("linear"), [J, te] = w(""), [$, A] = w(""), [C, O] = w(""), [G, ne] = w(""), [pe, le] = w(""), [Ee, Ne] = w(""), [ke, ge] = w(""), [He, ae] = w(""), ce = vt(() => jo(
+  const [Y, X] = w("linear"), [J, te] = w(""), [$, A] = w(""), [C, F] = w(""), [G, ne] = w(""), [pe, le] = w(""), [Ee, Ne] = w(""), [ke, ge] = w(""), [He, ae] = w(""), ce = vt(() => jo(
     e.filter((E) => to(E) && qo(E, v) && Bo(E, P)),
     W
   ), [e, v, P, W]), ve = vt(() => {
     const E = /* @__PURE__ */ new Map();
-    return pn.forEach((F) => E.set(F.key, [])), ce.forEach((F) => {
+    return pn.forEach((V) => E.set(V.key, [])), ce.forEach((V) => {
       var oe;
-      return (oe = E.get(ze(F))) == null ? void 0 : oe.push(F);
-    }), E.forEach((F, oe) => E.set(oe, Xo(F, oe))), E;
+      return (oe = E.get(ze(V))) == null ? void 0 : oe.push(V);
+    }), E.forEach((V, oe) => E.set(oe, Xo(V, oe))), E;
   }, [ce]), qe = vt(() => a.filter((E) => Vo(E, v)).slice(0, 12), [a, v]), Be = Je(), Ie = () => ({ targetKind: pe.trim(), targetPaths: Ee.trim(), avoidPaths: ke.trim(), scopeNotes: He.trim() }), _e = () => {
     le(""), Ne(""), ge(""), ae("");
   }, Re = () => {
@@ -1853,7 +1853,7 @@ function _i({ issues: e, decisions: n, linearBacklog: a, selectedIssueId: r, add
     E && (k(E, $.trim(), Ie()), te(""), A(""), _e(), b());
   }, me = () => {
     const E = C.trim();
-    E && (p(E, G.trim(), Ie()), O(""), ne(""), _e(), b());
+    E && (p(E, G.trim(), Ie()), F(""), ne(""), _e(), b());
   };
   return t(At, { view: "queue", className: `forge-v3-queue-shell ${r ? "forge-v3-has-detail" : ""}` }, [
     Be ? t("div", { class: "forge-v3-mock-state-banner" }, t("strong", null, "Mock state fixtures enabled"), t("span", null, "Review every Forge state without touching real issues."), t("button", { type: "button", onClick: ro }, "Exit mock data")) : null,
@@ -1903,7 +1903,7 @@ function _i({ issues: e, decisions: n, linearBacklog: a, selectedIssueId: r, add
           "div",
           { class: "forge-v3-add-issue-body" },
           Y === "linear" ? [
-            t("label", null, "Linear ID", t("input", { type: "text", placeholder: "TEAM-1234", value: C, onInput: (E) => O(E.target.value) })),
+            t("label", null, "Linear ID", t("input", { type: "text", placeholder: "TEAM-1234", value: C, onInput: (E) => F(E.target.value) })),
             t("label", null, "Planning guidance", t("textarea", { rows: 5, placeholder: "Optional notes for the planner…", value: G, onInput: (E) => ne(E.target.value) }))
           ] : [
             t("label", null, "Title", t("input", { type: "text", placeholder: "Manual issue title", value: J, onInput: (E) => te(E.target.value) })),
@@ -1933,7 +1933,7 @@ function _i({ issues: e, decisions: n, linearBacklog: a, selectedIssueId: r, add
         "section",
         { id: "pipeline-wrapper", class: "forge-v3-pipeline", "aria-label": "Issue pipeline" },
         pn.map((E) => {
-          const F = ve.get(E.key) ?? [], oe = E.key === "available" ? F.length + qe.length : F.length;
+          const V = ve.get(E.key) ?? [], oe = E.key === "available" ? V.length + qe.length : V.length;
           return t(
             "section",
             { key: E.key, class: "forge-v3-pipeline-column", "data-stage": E.key },
@@ -1957,9 +1957,9 @@ function _i({ issues: e, decisions: n, linearBacklog: a, selectedIssueId: r, add
                 t(
                   "div",
                   { class: "forge-v3-available-queued" },
-                  F.length ? F.map((Z) => t(ka, { key: Z.id, issue: Z, selected: r === Z.id, onOpenIssue: l, onIssueAction: c, onReviewIssue: d })) : t("p", { class: "forge-v3-empty" }, v || P !== "all" ? "No queued issues match" : "No queued issues")
+                  V.length ? V.map((Z) => t(ka, { key: Z.id, issue: Z, selected: r === Z.id, onOpenIssue: l, onIssueAction: c, onReviewIssue: d })) : t("p", { class: "forge-v3-empty" }, v || P !== "all" ? "No queued issues match" : "No queued issues")
                 )
-              ] : F.length === 0 ? t("p", { class: "forge-v3-empty" }, v || P !== "all" ? "No issues match the active filters" : "No issues") : F.map((Z) => t(ka, { key: Z.id, issue: Z, selected: r === Z.id, onOpenIssue: l, onIssueAction: c, onReviewIssue: d }))
+              ] : V.length === 0 ? t("p", { class: "forge-v3-empty" }, v || P !== "all" ? "No issues match the active filters" : "No issues") : V.map((Z) => t(ka, { key: Z.id, issue: Z, selected: r === Z.id, onOpenIssue: l, onIssueAction: c, onReviewIssue: d }))
             )
           );
         })
@@ -2015,7 +2015,7 @@ function bi() {
     };
   }, []);
   const T = (A, C) => {
-    r((O) => ({ ...O, [A]: _n(A, C) })), k((O) => O.filter((G) => !G.includes(vn(A))));
+    r((F) => ({ ...F, [A]: _n(A, C) })), k((F) => F.filter((G) => !G.includes(vn(A))));
   }, P = () => {
     d("Saving backend…"), fetch("/api/desktop-backend", {
       method: "POST",
@@ -2039,19 +2039,19 @@ function bi() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(C)
-    }).then((O) => O.json().then((G) => O.ok ? G : Promise.reject(new Error((G == null ? void 0 : G.error) ?? "Unable to save settings")))).then((O) => {
-      const G = O.settings ?? { ...e, ...C };
+    }).then((F) => F.json().then((G) => F.ok ? G : Promise.reject(new Error((G == null ? void 0 : G.error) ?? "Unable to save settings")))).then((F) => {
+      const G = F.settings ?? { ...e, ...C };
       n(G), r(G), k([]), b("Settings saved");
-    }).catch((O) => b(O.message || "Unable to save settings"));
+    }).catch((F) => b(F.message || "Unable to save settings"));
   }, W = () => {
     r(e), k([]), b("Reset changes");
   }, j = Object.entries(a).filter(([A]) => !yn.has(A)).map(([A, C]) => ({ key: A, value: C ?? "" })), Y = ya(e, a, p), X = Object.keys(Y).length, J = [...Xt, { label: "Other", keys: [] }], te = (A, C = !1) => {
     if (A.key.includes("context") || A.key.includes("prompt") || A.key.includes("command"))
       return t("textarea", { class: "forge-v3-setting-control", value: A.value, rows: A.key === "project_prompt_overlay" ? 8 : 3, placeholder: da[A.key], disabled: C, readOnly: C, onInput: (G) => T(A.key, G.target.value) });
-    const O = Bt(A.key);
-    return t("input", { class: "forge-v3-setting-control", type: Bt(A.key), checked: O === "checkbox" ? A.value === "true" : void 0, value: O === "checkbox" ? void 0 : A.value, placeholder: da[A.key], disabled: C, readOnly: C, min: O === "number" ? "0" : void 0, onInput: (G) => {
+    const F = Bt(A.key);
+    return t("input", { class: "forge-v3-setting-control", type: Bt(A.key), checked: F === "checkbox" ? A.value === "true" : void 0, value: F === "checkbox" ? void 0 : A.value, placeholder: da[A.key], disabled: C, readOnly: C, min: F === "number" ? "0" : void 0, onInput: (G) => {
       const ne = G.target;
-      T(A.key, O === "checkbox" ? String(ne.checked) : ne.value);
+      T(A.key, F === "checkbox" ? String(ne.checked) : ne.value);
     } });
   }, $ = () => t(
     "div",
@@ -2080,7 +2080,7 @@ function bi() {
       "section",
       { class: "forge-v3-settings-grid", "aria-label": "Settings groups" },
       J.map((A) => {
-        const C = A.label === "Other" ? j : mi(a, A), O = [
+        const C = A.label === "Other" ? j : mi(a, A), F = [
           ...A.label === "Dashboard Backend" ? [$()] : [],
           ...C.map((G) => {
             const ne = A.label === "Other", pe = Xr.has(G.key);
@@ -2100,9 +2100,9 @@ function bi() {
             "header",
             null,
             t("div", null, t("h2", null, A.label), t("p", null, Hr[A.label])),
-            A.label === "Other" ? t("label", { class: "forge-v3-other-unlock" }, t("input", { type: "checkbox", checked: p, onInput: (G) => v(G.target.checked) }), " Edit unknown") : t("span", null, String(O.length))
+            A.label === "Other" ? t("label", { class: "forge-v3-other-unlock" }, t("input", { type: "checkbox", checked: p, onInput: (G) => v(G.target.checked) }), " Edit unknown") : t("span", null, String(F.length))
           ),
-          O.length === 0 ? t("p", { class: "forge-v3-empty" }, "No settings in this group.") : O
+          F.length === 0 ? t("p", { class: "forge-v3-empty" }, "No settings in this group.") : F
         );
       })
     ),
@@ -2402,7 +2402,7 @@ function Pi() {
 }
 function Ei({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onClose: s, onPanelResizeStart: l, onIssueAction: c, onRemoveIssue: g, onLaunchRuntime: u, onStopVm: d, onSyncPrs: h, onSubmitFeedback: b, onResolveDecision: f }) {
   var Wn, Dn, On, Fn, Vn, Un, Mn, Hn;
-  const [k, p] = w(() => Ht().detailTab), [v, I] = w(null), [T, P] = w(!1), [L, W] = w(!1), [j, Y] = w(""), [X, J] = w(""), te = Ue(0), [$, A] = w(""), [C, O] = w(!1), [G, ne] = w(null), [pe, le] = w(""), [Ee, Ne] = w([]), [ke, ge] = w([]), [He, ae] = w(""), [ce, ve] = w([]), [qe, Be] = w([]), [Ie, _e] = w(!1), [Re, me] = w(!1), [E, F] = w("idle"), [oe, Z] = w([]), [lt, wt] = w(""), [ct, et] = w(""), [Pt, tt] = w(!1), [nt, at] = w(""), [dt, m] = w([]), [N, R] = w(""), [D, V] = w(""), q = Ue(null);
+  const [k, p] = w(() => Ht().detailTab), [v, I] = w(null), [T, P] = w(!1), [L, W] = w(!1), [j, Y] = w(""), [X, J] = w(""), te = Ue(0), [$, A] = w(""), [C, F] = w(!1), [G, ne] = w(null), [pe, le] = w(""), [Ee, Ne] = w([]), [ke, ge] = w([]), [He, ae] = w(""), [ce, ve] = w([]), [qe, Be] = w([]), [Ie, _e] = w(!1), [Re, me] = w(!1), [E, V] = w("idle"), [oe, Z] = w([]), [lt, wt] = w(""), [ct, et] = w(""), [Pt, tt] = w(!1), [nt, at] = w(""), [dt, m] = w([]), [N, R] = w(""), [O, D] = w(""), q = Ue(null);
   if (K(() => {
     var _;
     if (!e) {
@@ -2411,7 +2411,7 @@ function Ei({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
     }
     I(n ? { issue: n } : null);
     const i = Ht();
-    p(i.detailTab), P(i.panel === "plan"), W(i.panel === "diff" || i.panel === "review"), me(i.panel === "listen"), _e(i.panel === "jump"), Z([]), F("idle"), Y(""), J(i.panel === "diff" || i.panel === "review" ? "Loading diff…" : ""), A(i.diffPath), O(i.panel === "review"), ne(null), le(""), Ne([]), ge([]), ae(""), ve([]), Be([]), wt(""), et(""), tt(!1), at(""), m([]), R(""), V(""), (_ = q.current) == null || _.abort(), q.current = null;
+    p(i.detailTab), P(i.panel === "plan"), W(i.panel === "diff" || i.panel === "review"), me(i.panel === "listen"), _e(i.panel === "jump"), Z([]), V("idle"), Y(""), J(i.panel === "diff" || i.panel === "review" ? "Loading diff…" : ""), A(i.diffPath), F(i.panel === "review"), ne(null), le(""), Ne([]), ge([]), ae(""), ve([]), Be([]), wt(""), et(""), tt(!1), at(""), m([]), R(""), D(""), (_ = q.current) == null || _.abort(), q.current = null;
   }, [e]), K(() => {
     if (!e) return;
     let i = !1;
@@ -2435,14 +2435,14 @@ function Ei({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
   }, [(Wn = v == null ? void 0 : v.issue) == null ? void 0 : Wn.auto_fix_enabled]), K(() => {
     if (!Re || !e) return;
     if (Je()) {
-      F("mock live"), Z([{ kind: "text", text: "Mock live agent stream — real issues connect to /api/issues/:id/listen." }]);
+      V("mock live"), Z([{ kind: "text", text: "Mock live agent stream — real issues connect to /api/issues/:id/listen." }]);
       return;
     }
-    F("connecting…"), Z([]);
+    V("connecting…"), Z([]);
     const i = new EventSource(`/api/issues/${e}/listen`);
     return i.addEventListener("meta", (_) => {
       const y = JSON.parse(_.data);
-      F(y.agentType ? `live · ${y.agentType}` : "live");
+      V(y.agentType ? `live · ${y.agentType}` : "live");
     }), i.addEventListener("message", (_) => {
       const y = JSON.parse(_.data), S = y.kind ?? "text", M = (y.text ?? "").replace(/\x1b\[[\d;]*[A-Za-z]|\x1b[^\[]/g, "");
       if (!M) return;
@@ -2453,10 +2453,10 @@ function Ei({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
       });
     }), i.addEventListener("done", (_) => {
       const y = JSON.parse(_.data);
-      F(y.exitCode === 0 ? "done" : `failed (${y.exitCode ?? "unknown"})`), i.close();
-    }), i.addEventListener("error", () => F("no active agent")), i.onerror = () => F("disconnected"), () => i.close();
+      V(y.exitCode === 0 ? "done" : `failed (${y.exitCode ?? "unknown"})`), i.close();
+    }), i.addEventListener("error", () => V("no active agent")), i.onerror = () => V("disconnected"), () => i.close();
   }, [Re, e]), K(() => {
-    !e || r <= 0 || (O(!0), W(!0), J("Loading diff…"));
+    !e || r <= 0 || (F(!0), W(!0), J("Loading diff…"));
   }, [r, e]), K(() => {
     if (!e || !L || X !== "Loading diff…") return;
     const i = ++te.current;
@@ -2535,7 +2535,7 @@ function Ei({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
       ne(y), le(y.tour ? "" : "AI tour is generating…");
     }).catch(() => le("Unable to start AI tour generation"));
   }, Jt = (i = "diff") => {
-    o != null && o.id && (te.current += 1, O(i === "review"), ne(null), le(i === "review" ? "Loading AI tour…" : ""), Y(""), A(""), W(!0), J("Loading diff…"));
+    o != null && o.id && (te.current += 1, F(i === "review"), ne(null), le(i === "review" ? "Loading AI tour…" : ""), Y(""), A(""), W(!0), J("Loading diff…"));
   }, Nt = sn(j), de = Nt.find((i) => i.path === $) ?? Nt[0], We = H.find((i) => i.type === "PLAN_REVIEW") ?? (ee === "plan" ? H[0] : void 0), ut = H.find((i) => i.type === "CODE_REVIEW") ?? (ee === "code" ? H[0] : void 0), Se = H.find((i) => i.type === "FIX_APPROVAL") ?? (ee === "fix" ? H[0] : void 0), Rt = H.find((i) => i.type === "FIX_REVIEW") ?? (ee === "fix-review" ? H[0] : void 0), Te = H.find((i) => i.type === "SPLIT_APPROVAL") ?? (ee === "split" ? H[0] : void 0), ft = Wt(Se).comments ?? [], kr = Wt(Te), St = _o(Te, kr, v), Rn = St.stack, Sn = Io(o == null ? void 0 : o.state), Tn = Sn ? H.filter((i) => i.type && i.type !== Sn) : H.filter((i) => i.type), zt = async (i, _) => {
     var S;
     const y = (S = await Pe({ title: "Add review comment", message: _ === null ? `Comment on ${i}` : `Comment on ${i}:${_}`, label: "Comment", confirmText: "Add comment" })) == null ? void 0 : S.trim();
@@ -2573,7 +2573,7 @@ function Ei({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
   }, $n = () => {
     if (!(o != null && o.id) || !nt.trim() || N === "thinking") return;
     const i = nt.trim();
-    at(""), R("thinking"), V("Gathering issue context…"), m((y) => [...y, { role: "user", text: i }, { role: "assistant", text: "" }]);
+    at(""), R("thinking"), D("Gathering issue context…"), m((y) => [...y, { role: "user", text: i }, { role: "assistant", text: "" }]);
     const _ = new AbortController();
     q.current = _, fetch(`/api/issues/${o.id}/ask`, {
       method: "POST",
@@ -2587,14 +2587,14 @@ function Ei({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
       const ue = (Ce) => m((Le) => {
         const Oe = [...Le].map((Ge) => Ge.role).lastIndexOf("assistant");
         return Oe < 0 ? [...Le, { role: "assistant", text: Ce }] : Le.map((Ge, we) => we === Oe ? { ...Ge, text: Ge.text + Ce } : Ge);
-      }), De = (Ce) => V(Ce), yr = (Ce) => {
+      }), De = (Ce) => D(Ce), yr = (Ce) => {
         const Le = Ce.split(`
 `).find((Zt) => Zt.startsWith("event:")), Oe = Ce.split(`
 `).find((Zt) => Zt.startsWith("data:"));
         if (!Oe) return;
         const Ge = (Le == null ? void 0 : Le.replace(/^event:\s*/, "")) ?? "message", we = JSON.parse(Oe.replace(/^data:\s*/, ""));
         if (Ge === "done") {
-          R(""), V("");
+          R(""), D("");
           return;
         }
         if (Ge === "meta") {
@@ -2612,9 +2612,9 @@ function Ei({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
 `);
         U = Oe.pop() ?? "", Oe.forEach(yr);
       }
-      R(""), V("");
+      R(""), D("");
     }).catch((y) => {
-      _.signal.aborted || (R(""), V(y.message));
+      _.signal.aborted || (R(""), D(y.message));
     });
   };
   return t(
@@ -2864,7 +2864,7 @@ function Ei({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
           { class: "forge-v3-ask-thread", ref: (i) => {
             i && (i.scrollTop = i.scrollHeight);
           } },
-          dt.length || N === "thinking" || D ? [
+          dt.length || N === "thinking" || O ? [
             ...dt.filter((i) => i.role === "user" || i.text.trim()).map((i, _) => t(
               "div",
               { key: `${_}-${i.role}`, class: `forge-v3-ask-msg ${i.role}` },
@@ -2872,7 +2872,7 @@ function Ei({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
               t("pre", null, i.text)
             )),
             N === "thinking" ? t("div", { class: "forge-v3-ask-thinking", role: "status" }, t("span", { class: "forge-v3-spinner", "aria-hidden": "true" }), t("span", null, "Thinking"), t("i", null, "."), t("i", null, "."), t("i", null, ".")) : null,
-            D ? t("div", { class: "forge-v3-ask-current-status" }, D) : null
+            O ? t("div", { class: "forge-v3-ask-current-status" }, O) : null
           ] : t("p", { class: "forge-v3-empty forge-v3-compact-empty" }, "No questions yet.")
         ),
         t(
@@ -2887,7 +2887,7 @@ function Ei({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
             t("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !nt.trim() || N === "thinking", onClick: $n }, N === "thinking" ? "Asking…" : "Ask"),
             N === "thinking" ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => {
               var i;
-              (i = q.current) == null || i.abort(), R(""), V("");
+              (i = q.current) == null || i.abort(), R(""), D("");
             } }, "Stop") : null,
             t("span", { class: "forge-v3-ask-hint" }, "⌘/Ctrl + Enter")
           )
@@ -3130,25 +3130,25 @@ function Si() {
 }
 function Ti() {
   var dt;
-  const e = Ht(), [n, a] = w(ua), [r, s] = w({ issues: [], decisions: [], runningAgents: [] }), [l, c] = w([]), [g, u] = w(e.view === "queue" ? e.issueId : null), [d, h] = w(0), [b, f] = w(e.view), [k, p] = w(!1), [v, I] = w(""), [T, P] = w(null), L = Ue(/* @__PURE__ */ new Map()), [W, j] = w(0), [Y, X] = w(e.addIssue), [J, te] = w(Si), [$, A] = w("connecting"), [C, O] = w(!1), [G, ne] = w(() => li()), pe = Ue(!1), le = Ue(/* @__PURE__ */ new Set()), Ee = Ue(g), Ne = Ue({ issues: [], decisions: [], runningAgents: [] }), ke = (m, N) => {
+  const e = Ht(), [n, a] = w(ua), [r, s] = w({ issues: [], decisions: [], runningAgents: [] }), [l, c] = w([]), [g, u] = w(e.view === "queue" ? e.issueId : null), [d, h] = w(0), [b, f] = w(e.view), [k, p] = w(!1), [v, I] = w(""), [T, P] = w(null), L = Ue(/* @__PURE__ */ new Map()), [W, j] = w(0), [Y, X] = w(e.addIssue), [J, te] = w(Si), [$, A] = w("connecting"), [C, F] = w(!1), [G, ne] = w(() => li()), pe = Ue(!1), le = Ue(/* @__PURE__ */ new Set()), Ee = Ue(g), Ne = Ue({ issues: [], decisions: [], runningAgents: [] }), ke = (m, N) => {
     if (!N) return "";
-    const R = m.issues.find((V) => V.id === N), D = m.decisions.filter((V) => V.issue_id === N).map((V) => `${V.id}:${V.type}`).sort().join(",");
-    return `${(R == null ? void 0 : R.state) ?? ""}|${(R == null ? void 0 : R.updated_at) ?? ""}|${D}`;
+    const R = m.issues.find((D) => D.id === N), O = m.decisions.filter((D) => D.issue_id === N).map((D) => [D.id, D.type, D.created_at, D.resolved_at, D.artifact_ref].join(":")).sort().join(",");
+    return `${(R == null ? void 0 : R.state) ?? ""}|${(R == null ? void 0 : R.updated_at) ?? ""}|${O}`;
   }, ge = (m = !1) => {
     const N = [
       se("/api/overview"),
       se("/api/settings"),
       m ? se("/api/archive").catch(() => []) : Promise.resolve([])
     ];
-    return Promise.all(N).then(([R, D, V]) => {
+    return Promise.all(N).then(([R, O, D]) => {
       const q = Jo(R), o = L.current;
       for (const B of q.issues) {
         const ye = o.get(B.id);
         ye && ye !== "DONE" && B.state === "DONE" && (P(B), setTimeout(() => P(null), 6e3)), o.set(B.id, B.state ?? "");
       }
       Ne.current = q, s(q);
-      const H = m ? V.length : n.archiveCount;
-      return a({ ...di(q, D), archiveCount: H }), q.decisions.forEach((B) => {
+      const H = m ? D.length : n.archiveCount;
+      return a({ ...di(q, O), archiveCount: H }), q.decisions.forEach((B) => {
         le.current.has(B.id) || (le.current.add(B.id), ci(B, q.issues.find((ye) => ye.id === B.issue_id), pe.current).catch(() => {
         }));
       }), q;
@@ -3163,31 +3163,31 @@ function Ti() {
       j((R) => R + 1), I(`${m} complete`);
     }).catch((R) => {
       I(`${m} failed`);
-      const D = R instanceof Error ? R.message : String(R);
-      ui({ title: `${m} failed`, message: D });
+      const O = R instanceof Error ? R.message : String(R);
+      ui({ title: `${m} failed`, message: O });
     });
   }, ce = (m, N, R) => {
-    const D = {
+    const O = {
       approved: { PLAN_REVIEW: "WORKING", CODE_REVIEW: "CREATING_PR", FIX_APPROVAL: "FIXING", SPLIT_APPROVAL: "SPLITTING" },
       rejected: { PLAN_REVIEW: "PLANNING", CODE_REVIEW: "WORKING", FIX_APPROVAL: "WATCHING_PR", SPLIT_APPROVAL: "WATCHING_PR" }
     };
-    s((V) => {
+    s((D) => {
       var H;
-      const q = V.decisions.find((B) => B.id === m), o = q != null && q.type ? (H = D[N]) == null ? void 0 : H[q.type] : void 0;
+      const q = D.decisions.find((B) => B.id === m), o = q != null && q.type ? (H = O[N]) == null ? void 0 : H[q.type] : void 0;
       return {
-        ...V,
-        decisions: V.decisions.filter((B) => B.id !== m),
-        issues: o && q ? V.issues.map((B) => B.id === q.issue_id ? { ...B, state: o } : B) : V.issues
+        ...D,
+        decisions: D.decisions.filter((B) => B.id !== m),
+        issues: o && q ? D.issues.map((B) => B.id === q.issue_id ? { ...B, state: o } : B) : D.issues
       };
     }), ae(
       N === "approved" ? "Decision approved" : "Decision changes requested",
-      () => Yo(m, N, R).catch((V) => {
-        const q = V instanceof Error ? V.message : String(V);
+      () => Yo(m, N, R).catch((D) => {
+        const q = D instanceof Error ? D.message : String(D);
         if (!(q.includes("409") || q.toLowerCase().includes("already resolved")))
           throw s((o) => ({
             ...o,
             decisions: o.decisions.some((H) => H.id === m) ? o.decisions : [...o.decisions, { id: m }]
-          })), V;
+          })), D;
       })
     );
   }, ve = (m, N, R) => ae(`Issue ${N}`, () => Zo(m, N, R)), qe = (m) => ae("Issue removed", () => ei(m).then(() => E())), Be = (m) => ti(m), Ie = async () => {
@@ -3196,20 +3196,20 @@ function Ti() {
     u(m), f("queue"), window.requestAnimationFrame(() => ot("queue", { issueId: m }));
   }, E = () => {
     u(null), ot("queue");
-  }, F = (m, N) => {
+  }, V = (m, N) => {
     u(m), f("queue"), h((R) => R + 1), ot("queue", { issueId: m });
   }, oe = () => {
     const m = Qo(r.decisions, r.issues);
-    m && F(m.issue_id, m.id);
+    m && V(m.issue_id, m.id);
   }, Z = () => {
     f("queue"), X(!0), qt({ view: "queue", add: "issue" }, !1);
   }, lt = () => {
     X(!1), qt({ add: null });
-  }, wt = () => ae("Linear backlog refreshed", () => se("/api/linear/issues").then((m) => c(Array.isArray(m) ? m : []))), ct = (m, N = "", R) => ae("Manual issue created", () => oi(m, N, R).then((D) => {
-    D.issueId && me(D.issueId);
-  })), et = (m, N = "", R) => ae(`Enqueued ${m}`, () => ii(m, N, R).then((D) => {
-    D.issueId && me(D.issueId);
-  }).then(() => se("/api/linear/issues")).then((D) => c(Array.isArray(D) ? D : []))), Pt = () => {
+  }, wt = () => ae("Linear backlog refreshed", () => se("/api/linear/issues").then((m) => c(Array.isArray(m) ? m : []))), ct = (m, N = "", R) => ae("Manual issue created", () => oi(m, N, R).then((O) => {
+    O.issueId && me(O.issueId);
+  })), et = (m, N = "", R) => ae(`Enqueued ${m}`, () => ii(m, N, R).then((O) => {
+    O.issueId && me(O.issueId);
+  }).then(() => se("/api/linear/issues")).then((O) => c(Array.isArray(O) ? O : []))), Pt = () => {
     if (C) {
       I("Sending desktop companion notification…"), Ja("Forge notifications enabled", "Desktop companion notifications are available", "forge-desktop-test").then(() => I("Desktop companion notification sent")).catch(() => I("Desktop companion notification failed"));
       return;
@@ -3223,7 +3223,7 @@ function Ti() {
     f(m), u(null), ot(m);
   }, nt = (m) => {
     m.preventDefault(), document.body.classList.add("forge-v3-resizing-detail");
-    const N = (D) => te(Za(window.innerWidth - D.clientX)), R = () => {
+    const N = (O) => te(Za(window.innerWidth - O.clientX)), R = () => {
       document.body.classList.remove("forge-v3-resizing-detail"), window.removeEventListener("pointermove", N), window.removeEventListener("pointerup", R), window.removeEventListener("pointercancel", R);
     };
     window.addEventListener("pointermove", N), window.addEventListener("pointerup", R), window.addEventListener("pointercancel", R);
@@ -3241,9 +3241,9 @@ function Ti() {
     return si().then((N) => {
       if (m) return;
       const R = !!N.notifications;
-      pe.current = R, O(R);
+      pe.current = R, F(R);
     }).catch(() => {
-      m || (pe.current = !1, O(!1));
+      m || (pe.current = !1, F(!1));
     }), () => {
       m = !0;
     };
@@ -3267,8 +3267,8 @@ function Ti() {
         m || a(ua);
       });
     };
-    N(), se("/api/linear/issues").then((D) => {
-      m || c(Array.isArray(D) ? D : []);
+    N(), se("/api/linear/issues").then((O) => {
+      m || c(Array.isArray(O) ? O : []);
     }).catch(() => {
     });
     const R = window.setInterval(N, $ === "offline" ? 1e4 : 3e4);
@@ -3278,13 +3278,13 @@ function Ti() {
   }, [$]), K(() => {
     if (Je()) return;
     let m = !1;
-    const N = new EventSource("/api/events"), R = (D) => {
-      const V = D.type === "issue_updated" || D.type === "issue_removed", q = Ee.current, o = ke(Ne.current, q);
-      if (D.type === "tick") {
+    const N = new EventSource("/api/events"), R = (O) => {
+      const D = O.type === "issue_updated" || O.type === "issue_removed", q = Ee.current, o = ke(Ne.current, q);
+      if (O.type === "tick") {
         He.current();
         return;
       }
-      ge(V).then((H) => {
+      ge(D).then((H) => {
         q && ke(H, q) !== o && j((B) => B + 1);
       }).catch(() => {
       });
@@ -3293,8 +3293,8 @@ function Ti() {
       m || A("live");
     }, N.onerror = () => {
       m || A("offline");
-    }, ["tick", "issue_added", "issue_removed", "issue_updated", "decision_resolved"].forEach((D) => {
-      N.addEventListener(D, R);
+    }, ["tick", "issue_added", "issue_removed", "issue_updated", "decision_resolved"].forEach((O) => {
+      N.addEventListener(O, R);
     }), () => {
       m = !0, N.close();
     };
@@ -3372,7 +3372,7 @@ function Ti() {
     ),
     v ? t("div", { class: "forge-v3-action-status", role: "status" }, v) : null,
     T ? t("div", { class: "forge-v3-celebration", role: "status" }, t("strong", null, "🎉 ", T.linear_id ?? `Issue #${T.id}`, " completed!"), t("small", null, T.title ?? "Issue merged and archived")) : null,
-    b === "queue" ? t(_i, { issues: r.issues, decisions: r.decisions, linearBacklog: l, selectedIssueId: g, addIssueOpen: Y, onOpenIssue: me, onIssueAction: ve, onResolveDecision: ce, onReviewNext: oe, onReviewIssue: F, onAddIssue: Z, onCloseAddIssue: lt, onRefreshLinear: wt, onCreateManualIssue: ct, onEnqueueLinear: et }) : b === "archive" ? t(Pi, null) : b === "settings" ? t(bi, null) : b === "prompts" ? t(Ii, null) : b === "learnings" ? t(ki, null) : t("main", { class: "forge-v3-main", "data-active-view": b }, t("h1", null, ((dt = bt.find((m) => m.key === b)) == null ? void 0 : dt.label) ?? "Dashboard"), t("p", { class: "forge-v3-empty" }, "This v3 view will migrate in a later phase.")),
+    b === "queue" ? t(_i, { issues: r.issues, decisions: r.decisions, linearBacklog: l, selectedIssueId: g, addIssueOpen: Y, onOpenIssue: me, onIssueAction: ve, onResolveDecision: ce, onReviewNext: oe, onReviewIssue: V, onAddIssue: Z, onCloseAddIssue: lt, onRefreshLinear: wt, onCreateManualIssue: ct, onEnqueueLinear: et }) : b === "archive" ? t(Pi, null) : b === "settings" ? t(bi, null) : b === "prompts" ? t(Ii, null) : b === "learnings" ? t(ki, null) : t("main", { class: "forge-v3-main", "data-active-view": b }, t("h1", null, ((dt = bt.find((m) => m.key === b)) == null ? void 0 : dt.label) ?? "Dashboard"), t("p", { class: "forge-v3-empty" }, "This v3 view will migrate in a later phase.")),
     t(Ei, { issueId: b === "queue" ? g : null, issuePreview: at, reloadKey: W, autoOpenDiffKey: d, onClose: E, onPanelResizeStart: nt, onIssueAction: ve, onRemoveIssue: qe, onLaunchRuntime: Be, onStopVm: Ie, onSyncPrs: _e, onSubmitFeedback: Re, onResolveDecision: ce }),
     t(vi, { open: k, decisions: r.decisions, onClose: () => p(!1), onNavigate: tt, onRefresh: () => ge(), onOpenIssue: me, onReviewNext: oe, onAddIssue: Z, onStopVm: Ie }),
     n.runningAgentsCount > 0 ? t(gi, { status: n, onStopVm: Ie }) : null

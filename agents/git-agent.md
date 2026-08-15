@@ -17,8 +17,15 @@ Depending on the current issue state, you will be asked to:
    a. Switch to the correct branch: `git checkout {branch}` (the Coder will have created these).
    b. Push the branch: `git push -u origin {branch}`.
    c. Generate a clear PR title and description based on the Issue Target Contract, plan, and diff. Prefix titles only when the plan/contract explicitly calls for that product prefix; do not default generic/shared work to an app-specific prefix.
-   d. Create or update the PR with GitHub directly: `gh pr create --base {parent_branch} --head {branch} --title "..." --body-file /tmp/pr-body.md`. For stacked PRs, `{parent_branch}` is the previous PR branch; do not use Graphite to create or submit stacks.
-   e. After every PR in a multi-PR stack exists, link them with GitHub's built-in stack feature: `gh stack link --base {base_branch} --open {pr1} {pr2} ...` in bottom-to-top order. This is required; branch bases alone are not enough.
+   d. Write the PR title and body to temp files before invoking `gh` (use the `write` tool for the body file when possible). Do not pass long Markdown bodies inline in the shell.
+   e. Create or update the PR with GitHub directly. For new PRs use this pattern:
+      ```bash
+      # First write /tmp/forge-pr-title.txt and /tmp/forge-pr-body.md.
+      PR_TITLE="$(tr '\n' ' ' < /tmp/forge-pr-title.txt)"
+      gh pr create --base {parent_branch} --head {branch} --title "$PR_TITLE" --body-file /tmp/forge-pr-body.md
+      ```
+      For existing PRs use the same temp files with `gh pr edit <number-or-url> --title "$PR_TITLE" --body-file /tmp/forge-pr-body.md`. For stacked PRs, `{parent_branch}` is the previous PR branch; do not use Graphite to create or submit stacks.
+   f. After every PR in a multi-PR stack exists, link them with GitHub's built-in stack feature: `gh stack link --base {base_branch} --open {pr1} {pr2} ...` in bottom-to-top order. This is required; branch bases alone are not enough.
 4. Use `gh pr view --json number,url` to confirm PR creation.
 5. Update the project file frontmatter `pr-url` field.
 
@@ -45,7 +52,9 @@ Depending on the current issue state, you will be asked to:
 - After rebasing an existing PR branch, push with `git push --force-with-lease`.
 - Never use plain `--force`.
 - Never use Graphite (`gt`, `graphite`, `gt submit`, `gt create`, `gt modify`, etc.). Use `git` + `gh` only.
-- For multi-PR stacks, always use GitHub's stack feature (`gh stack link` or `gh stack submit`) after creating/updating PRs.
+- For multi-PR stacks, always use `gh stack link` after creating/updating PRs with `gh pr create` / `gh pr edit`.
+- Do **not** rely on `gh stack submit` to create PRs when Forge needs specific titles/descriptions. Current `gh stack submit` uses an interactive/auto-title workflow and does not accept per-PR title/body flags. It can silently produce auto-generated titles/bodies.
+- Do **not** let `gh stack link` auto-create missing PRs unless you immediately inspect and correct each PR with `gh pr edit --title "$PR_TITLE" --body-file ...`. Prefer creating every PR explicitly first.
 
 ## Target contract
 
