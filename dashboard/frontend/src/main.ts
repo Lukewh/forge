@@ -1786,7 +1786,7 @@ function IssueCardInner({ issue, selected, onOpenIssue, onIssueAction, onReviewI
   const prUrl = primaryPrUrl(issue);
   return h(
     "article",
-    { class: `forge-v3-issue-card ${selected ? "selected" : ""} ${isPrApproved(issue) ? "pr-approved" : ""} ${(issue.prStack ?? []).some((pr) => pr.isInMergeQueue) ? "in-merge-queue" : ""} state-${issue.state ?? "unknown"} stage-${stage}`, "data-issue-id": String(issue.id), tabIndex: 0, "aria-label": `Open issue ${issue.linear_id ?? issue.id}`, onPointerDown: (event: PointerEvent) => { if (isInteractiveCardTarget(event)) return; onOpenIssue(issue.id); }, onKeyDown: (event: KeyboardEvent) => { if (isInteractiveCardTarget(event)) return; if (event.key === "Enter" || event.key === " ") onOpenIssue(issue.id); } },
+    { class: `forge-v3-issue-card ${selected ? "selected" : ""} ${isPrApproved(issue) ? "pr-approved" : ""} ${(issue.prStack ?? []).some((pr) => pr.isInMergeQueue) ? "in-merge-queue" : ""} state-${issue.state ?? "unknown"} stage-${stage}`, "data-issue-id": String(issue.id), tabIndex: 0, "aria-label": `Open issue ${issue.linear_id ?? issue.id}`, onClick: (event: MouseEvent) => { if (isInteractiveCardTarget(event)) return; onOpenIssue(issue.id); }, onKeyDown: (event: KeyboardEvent) => { if (isInteractiveCardTarget(event)) return; if (event.key === "Enter" || event.key === " ") onOpenIssue(issue.id); } },
     h("div", { class: "forge-v3-ic-hover", onPointerDown: stopCardEvent },
       isAvailable
         ? h("button", { class: "forge-v3-hact", type: "button", onClick: (event: Event) => { event.stopPropagation(); onIssueAction(issue.id, "ignore"); } }, "Ignore")

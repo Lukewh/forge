@@ -18,15 +18,18 @@ Depending on the current issue state, you will be asked to:
    b. Push the branch: `git push -u origin {branch}`.
    c. Generate a clear PR title and description based on the Issue Target Contract, plan, and diff. Prefix titles only when the plan/contract explicitly calls for that product prefix; do not default generic/shared work to an app-specific prefix.
    d. Write the PR title and body to temp files before invoking `gh` (use the `write` tool for the body file when possible). Do not pass long Markdown bodies inline in the shell.
-   e. Create or update the PR with GitHub directly. For new PRs use this pattern:
+   e. Create or update the PR with Forge's REST-backed helper (not `gh pr create`, `gh pr edit`, or GraphQL metadata mutations). For new or existing PRs use this pattern:
       ```bash
       # First write /tmp/forge-pr-title.txt and /tmp/forge-pr-body.md.
-      PR_TITLE="$(tr '\n' ' ' < /tmp/forge-pr-title.txt)"
-      gh pr create --base {parent_branch} --head {branch} --title "$PR_TITLE" --body-file /tmp/forge-pr-body.md
+      /path/to/forge/scripts/github-pr-upsert \
+        --base {parent_branch} \
+        --head {branch} \
+        --title-file /tmp/forge-pr-title.txt \
+        --body-file /tmp/forge-pr-body.md
       ```
-      For existing PRs use the same temp files with `gh pr edit <number-or-url> --title "$PR_TITLE" --body-file /tmp/forge-pr-body.md`. For stacked PRs, `{parent_branch}` is the previous PR branch; do not use Graphite to create or submit stacks.
+      The helper uses GitHub REST via `gh api` to find an existing open PR for the branch, PATCH its title/body if found, or POST a new PR with explicit `title`, `body`, `base`, and `head`. For stacked PRs, `{parent_branch}` is the previous PR branch; do not use Graphite to create or submit stacks.
    f. After every PR in a multi-PR stack exists, link them with GitHub's built-in stack feature: `gh stack link --base {base_branch} --open {pr1} {pr2} ...` in bottom-to-top order. This is required; branch bases alone are not enough.
-4. Use `gh pr view --json number,url` to confirm PR creation.
+4. Use the JSON returned by `gh api repos/$REPO/pulls` / `gh api repos/$REPO/pulls/<number>` to confirm PR creation; avoid `gh pr view --json` for this metadata path.
 5. Update the project file frontmatter `pr-url` field.
 
 ### PUSHING — Push fixes after code review or after fixer runs
@@ -52,9 +55,9 @@ Depending on the current issue state, you will be asked to:
 - After rebasing an existing PR branch, push with `git push --force-with-lease`.
 - Never use plain `--force`.
 - Never use Graphite (`gt`, `graphite`, `gt submit`, `gt create`, `gt modify`, etc.). Use `git` + `gh` only.
-- For multi-PR stacks, always use `gh stack link` after creating/updating PRs with `gh pr create` / `gh pr edit`.
-- Do **not** rely on `gh stack submit` to create PRs when Forge needs specific titles/descriptions. Current `gh stack submit` uses an interactive/auto-title workflow and does not accept per-PR title/body flags. It can silently produce auto-generated titles/bodies.
-- Do **not** let `gh stack link` auto-create missing PRs unless you immediately inspect and correct each PR with `gh pr edit --title "$PR_TITLE" --body-file ...`. Prefer creating every PR explicitly first.
+- For multi-PR stacks, always use `gh stack link` after creating/updating PRs with GitHub REST (`gh api repos/$REPO/pulls`).
+- Do **not** rely on `gh pr create`, `gh pr edit`, or `gh stack submit` when Forge needs specific titles/descriptions. Use GitHub REST through `gh api` for PR creation and metadata updates; avoid GraphQL title/body mutations because GitHub is moving stacked-PR metadata workflows away from those paths.
+- Do **not** let `gh stack link` auto-create missing PRs unless you immediately inspect and correct each PR with REST PATCH through `gh api`. Prefer creating every PR explicitly first.
 
 ## Target contract
 
@@ -88,8 +91,8 @@ Write PR descriptions in this format:
 After creating or updating PRs, write a `prs.json` file to record the stack so Forge can track it:
 
 ```bash
-# Get the PR numbers from GitHub
-gh pr list --head "$(git branch --show-current)"
+# Get the PR numbers from GitHub REST
+# gh api "repos/$REPO/pulls?head=$OWNER:<branch>&state=open"
 ```
 
 Write to `{project_file_path_dir}/prs.json` (same directory as the plan.md):
@@ -101,7 +104,7 @@ Write to `{project_file_path_dir}/prs.json` (same directory as the plan.md):
 ]
 ```
 
-Use `gh pr view --json number` to get the PR number for each branch if needed.
+Use `gh api "repos/$REPO/pulls?head=$OWNER:<branch>&state=open"` to get the PR number for each branch if needed.
 
 The system will automatically transition the issue to the next state when you exit.
 Do not manually update the issue state.

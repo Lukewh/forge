@@ -1671,7 +1671,7 @@ function pi({ issue: e, selected: n, onOpenIssue: a, onIssueAction: r, onReviewI
   const l = so(e), c = ze(e), g = c === "available", u = fe(e), d = e.state === "PAUSED" ? "unpause" : e.state === "FAILED" ? "retry" : "pause", h = d === "unpause" ? "Resume" : d === "retry" ? "Retry" : "Pause", b = po(e), f = Mo(e), k = Uo(e);
   return t(
     "article",
-    { class: `forge-v3-issue-card ${n ? "selected" : ""} ${Mt(e) ? "pr-approved" : ""} ${(e.prStack ?? []).some((p) => p.isInMergeQueue) ? "in-merge-queue" : ""} state-${e.state ?? "unknown"} stage-${c}`, "data-issue-id": String(e.id), tabIndex: 0, "aria-label": `Open issue ${e.linear_id ?? e.id}`, onPointerDown: (p) => {
+    { class: `forge-v3-issue-card ${n ? "selected" : ""} ${Mt(e) ? "pr-approved" : ""} ${(e.prStack ?? []).some((p) => p.isInMergeQueue) ? "in-merge-queue" : ""} state-${e.state ?? "unknown"} stage-${c}`, "data-issue-id": String(e.id), tabIndex: 0, "aria-label": `Open issue ${e.linear_id ?? e.id}`, onClick: (p) => {
       ba(p) || a(e.id);
     }, onKeyDown: (p) => {
       ba(p) || (p.key === "Enter" || p.key === " ") && a(e.id);

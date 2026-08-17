@@ -20,9 +20,9 @@ The `# Split Plan` section must be human-reviewable and include:
 - Files and/or commits included in each PR.
 - Rationale for the split.
 - Risks and manual notes.
-- Explicit execution notes for the splitter, including that new PRs must be created with `gh pr create --base <parent-branch> --head <part-branch> --title "$PR_TITLE" --body-file /tmp/forge-pr-body.md`, then linked with `gh stack link --base <base-branch> --open <pr1> <pr2> ...`, before old PRs are closed/deleted, and that Graphite must not be used.
+- Explicit execution notes for the splitter, including that new PRs must be created with GitHub REST through `gh api -X POST repos/$REPO/pulls --input <json>` using explicit `title`, `body`, `base`, and `head` fields, then linked with `gh stack link --base <base-branch> --open <pr1> <pr2> ...`, before old PRs are closed/deleted, and that Graphite must not be used.
 - Tell the splitter to write each PR title/body to temp files first. Do not pass Markdown bodies inline in shell commands.
-- Tell the splitter not to rely on `gh stack submit` for PR creation, because current `gh stack submit` uses an interactive/auto-title workflow and does not accept per-PR title/body flags.
+- Tell the splitter not to rely on `gh pr create`, `gh pr edit`, or `gh stack submit` for PR title/body work. Use GitHub REST through `gh api`; avoid GraphQL metadata mutations because GitHub is moving stacked-PR metadata workflows away from those paths.
 
 Safety rules:
 - Assume the split requires human approval after you write the plan.

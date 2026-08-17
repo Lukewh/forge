@@ -1,0 +1,35 @@
+#!/usr/bin/env node
+"use strict";
+
+const fs = require("fs");
+const { upsertPullRequestRest } = require("../lib/deterministic-agents.js");
+
+function arg(name) {
+  const i = process.argv.indexOf(name);
+  return i === -1 ? null : process.argv[i + 1];
+}
+
+const base = arg("--base");
+const branch = arg("--head") || arg("--branch");
+const titleFile = arg("--title-file");
+const bodyFile = arg("--body-file");
+
+if (!base || !branch || !titleFile || !bodyFile) {
+  console.error("Usage: scripts/github-pr-upsert --base <base-branch> --head <branch> --title-file <file> --body-file <file>");
+  process.exit(2);
+}
+
+const title = fs.readFileSync(titleFile, "utf-8").replace(/\s+/g, " ").trim();
+const body = fs.readFileSync(bodyFile, "utf-8");
+if (!title) {
+  console.error("PR title is empty");
+  process.exit(2);
+}
+
+try {
+  const pr = upsertPullRequestRest(process.cwd(), { base, branch, title, body });
+  console.log(JSON.stringify({ number: pr.number, url: pr.html_url, title: pr.title }, null, 2));
+} catch (error) {
+  console.error(`[forge:github-pr-upsert] ${error.message}`);
+  process.exit(1);
+}

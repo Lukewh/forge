@@ -34,7 +34,7 @@ test("makeRebasePlan rebases stack branches onto base then parent branches", () 
   ]);
 });
 
-test("makeGitAgentPlan creates PR commands for missing PR numbers", () => {
+test("makeGitAgentPlan upserts PR metadata through REST during PR creation", () => {
   const plan = makeGitAgentPlan({
     state: "CREATING_PR",
     issue: { title: "Add audit filters", linear_id: "BAND-123", project_file_path: "/tmp/plan.md" },
@@ -51,16 +51,16 @@ test("makeGitAgentPlan creates PR commands for missing PR numbers", () => {
     "pull-branch",
     "rebase",
     "push",
-    "create-pr",
+    "upsert-pr",
     "checkout",
     "pull-branch",
     "rebase",
     "push",
-    "create-pr",
+    "upsert-pr",
     "write-prs-json",
   ]);
-  assert.equal(plan.steps.find(step => step.kind === "create-pr").base, "main");
-  assert.equal(plan.steps.filter(step => step.kind === "create-pr")[1].base, "user/issue-part-1");
+  assert.equal(plan.steps.find(step => step.kind === "upsert-pr").base, "main");
+  assert.equal(plan.steps.filter(step => step.kind === "upsert-pr")[1].base, "user/issue-part-1");
 });
 
 test("makeGitAgentPlan push mode force-pushes rebased existing PR branches", () => {
