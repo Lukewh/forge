@@ -178,6 +178,8 @@ type DetailTab = {
   label: "Overview" | "Activity" | "Ask";
 };
 
+type AskMessage = { role: "user" | "assistant"; text: string };
+
 type ReviewFile = {
   path: string;
   additions: number;
@@ -596,6 +598,35 @@ function disableMockStatesForSession(): void {
 
 function mockTimestamp(minutesAgo: number): string {
   return new Date(Date.now() - minutesAgo * 60_000).toISOString();
+}
+
+const ASK_CONVERSATION_STORAGE_KEY = "forge.v3.askConversations";
+const ASK_CONVERSATION_LIMIT = 40;
+
+type StoredAskConversation = { messages?: AskMessage[]; input?: string };
+
+function readAskConversations(): Record<string, StoredAskConversation> {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(ASK_CONVERSATION_STORAGE_KEY) || "{}");
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, StoredAskConversation> : {};
+  } catch {
+    return {};
+  }
+}
+
+function loadAskConversation(issueId: number): StoredAskConversation {
+  return readAskConversations()[String(issueId)] ?? { messages: [], input: "" };
+}
+
+function saveAskConversation(issueId: number, conversation: StoredAskConversation): void {
+  try {
+    const all = readAskConversations();
+    const messages = (conversation.messages ?? [])
+      .filter((message) => (message.role === "user" || message.role === "assistant") && typeof message.text === "string")
+      .slice(-ASK_CONVERSATION_LIMIT);
+    all[String(issueId)] = { messages, input: conversation.input ?? "" };
+    window.localStorage.setItem(ASK_CONVERSATION_STORAGE_KEY, JSON.stringify(all));
+  } catch {}
 }
 
 function mockDecisionForIssue(issue: Issue): Decision | null {
@@ -2586,7 +2617,7 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
   const [adminStatus, setAdminStatus] = useState("");
   const [autoFixEnabled, setAutoFixEnabled] = useState(false);
   const [askInput, setAskInput] = useState("");
-  const [askMessages, setAskMessages] = useState<Array<{ role: "user" | "assistant"; text: string }>>([]);
+  const [askMessages, setAskMessages] = useState<AskMessage[]>([]);
   const [askStatus, setAskStatus] = useState("");
   const [askCurrentStatus, setAskCurrentStatus] = useState("");
   const askAbortRef = useRef<AbortController | null>(null);
@@ -2623,8 +2654,9 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
     setPlanFeedback("");
     setAdminStatus("");
     setAutoFixEnabled(false);
-    setAskInput("");
-    setAskMessages([]);
+    const storedAsk = loadAskConversation(issueId);
+    setAskInput(storedAsk.input ?? "");
+    setAskMessages(storedAsk.messages ?? []);
     setAskStatus("");
     setAskCurrentStatus("");
     askAbortRef.current?.abort();
@@ -2947,26 +2979,39 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
     });
     setReviewFeedback("");
   };
+  const updateAskMessages = (updater: (messages: AskMessage[]) => AskMessage[], inputOverride?: string) => {
+    const id = issue?.id;
+    setAskMessages((messages) => {
+      const nextMessages = updater(messages).slice(-ASK_CONVERSATION_LIMIT);
+      if (id) saveAskConversation(id, { messages: nextMessages, input: inputOverride ?? askInput });
+      return nextMessages;
+    });
+  };
+  const updateAskInput = (value: string) => {
+    setAskInput(value);
+    if (issue?.id) saveAskConversation(issue.id, { messages: askMessages, input: value });
+  };
   const askIssue = () => {
     if (!issue?.id || !askInput.trim() || askStatus === "thinking") return;
     const question = askInput.trim();
-    setAskInput("");
+    const history = askMessages.filter((message) => message.text.trim()).slice(-12);
+    updateAskInput("");
     setAskStatus("thinking");
     setAskCurrentStatus("Gathering issue context…");
-    setAskMessages((messages) => [...messages, { role: "user", text: question }, { role: "assistant", text: "" }]);
+    updateAskMessages((messages) => [...messages, { role: "user", text: question }, { role: "assistant", text: "" }], "");
     const controller = new AbortController();
     askAbortRef.current = controller;
     fetch(`/api/issues/${issue.id}/ask`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question }),
+      body: JSON.stringify({ question, history }),
       signal: controller.signal,
     }).then(async (response) => {
       if (!response.ok || !response.body) throw new Error(`Ask failed (${response.status})`);
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
-      const appendAssistant = (text: string) => setAskMessages((messages) => {
+      const appendAssistant = (text: string) => updateAskMessages((messages) => {
         const assistantIndex = [...messages].map((message) => message.role).lastIndexOf("assistant");
         if (assistantIndex < 0) return [...messages, { role: "assistant", text }];
         return messages.map((message, index) => index === assistantIndex ? { ...message, text: message.text + text } : message);
@@ -3180,7 +3225,7 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
         h("section", { class: "forge-v3-ds forge-v3-ask-intro" },
           h("div", { class: "forge-v3-ds-label" }, "Ask Forge"),
           h("p", null, "Ask about this issue's branch, changed files, plan, handoff, PR stack, and recent agent history. Forge can inspect the worktree if it needs code details."),
-          h("div", { class: "forge-v3-ask-prompts" }, ["Summarize changes vs plan", "What should I review first?", "What risks or tests matter?"].map((prompt) => h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => setAskInput(prompt) }, prompt)))
+          h("div", { class: "forge-v3-ask-prompts" }, ["Summarize changes vs plan", "What should I review first?", "What risks or tests matter?"].map((prompt) => h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => updateAskInput(prompt) }, prompt)))
         ),
         h("section", { class: "forge-v3-ask-thread", ref: (el: HTMLElement | null) => { if (el) el.scrollTop = el.scrollHeight; } },
           askMessages.length || askStatus === "thinking" || askCurrentStatus ? [
@@ -3193,7 +3238,7 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
           ] : h("p", { class: "forge-v3-empty forge-v3-compact-empty" }, "No questions yet.")
         ),
         h("section", { class: "forge-v3-ask-compose" },
-          h("textarea", { rows: 3, placeholder: "Ask about this issue…", value: askInput, onInput: (event: Event) => setAskInput((event.target as HTMLTextAreaElement).value), onKeyDown: (event: KeyboardEvent) => { if ((event.metaKey || event.ctrlKey) && event.key === "Enter") askIssue(); } }),
+          h("textarea", { rows: 3, placeholder: "Ask about this issue…", value: askInput, onInput: (event: Event) => updateAskInput((event.target as HTMLTextAreaElement).value), onKeyDown: (event: KeyboardEvent) => { if ((event.metaKey || event.ctrlKey) && event.key === "Enter") askIssue(); } }),
           h("div", { class: "forge-v3-dp-actions" },
             h("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !askInput.trim() || askStatus === "thinking", onClick: askIssue }, askStatus === "thinking" ? "Asking…" : "Ask"),
             askStatus === "thinking" ? h("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => { askAbortRef.current?.abort(); setAskStatus(""); setAskCurrentStatus(""); } }, "Stop") : null,

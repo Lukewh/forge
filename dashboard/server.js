@@ -2615,7 +2615,7 @@ function changedFileStats(issue) {
   return { wtPath, files, stats };
 }
 
-function buildIssueAskPrompt(issue, question) {
+function buildIssueAskPrompt(issue, question, history = []) {
   const prStack = q("SELECT * FROM pr_stack WHERE issue_id = ? ORDER BY position ASC", issue.id);
   const activity = q("SELECT type, actor, message, created_at FROM activity_log WHERE issue_id = ? ORDER BY created_at DESC LIMIT 30", issue.id);
   const runs = q("SELECT agent_type, started_at, exited_at, exit_code FROM agent_runs WHERE issue_id = ? ORDER BY started_at DESC LIMIT 12", issue.id);
@@ -2640,7 +2640,14 @@ function buildIssueAskPrompt(issue, question) {
     runs.length ? `\n# Recent agent runs\n${runs.map(r => `- ${r.agent_type}: exit=${r.exit_code ?? "running"} started=${r.started_at ?? ""} ended=${r.exited_at ?? ""}`).join("\n")}` : "",
   ].filter(Boolean).join("\n");
 
-  return `${context}\n\n# User question\n${question}\n\nAnswer the user's question. If code inspection is needed, inspect the worktree read-only, starting with the changed files above.`;
+  const historyText = Array.isArray(history) && history.length
+    ? history.slice(-12).map((message) => {
+      const role = message?.role === "assistant" ? "Assistant" : "User";
+      return `## ${role}\n${truncateForPrompt(String(message?.text ?? ""), 4000)}`;
+    }).join("\n\n")
+    : "";
+
+  return `${context}${historyText ? `\n\n# Previous conversation\n${historyText}` : ""}\n\n# User question\n${question}\n\nAnswer the user's question. If code inspection is needed, inspect the worktree read-only, starting with the changed files above. Use the previous conversation only as context for follow-up questions.`;
 }
 
 app.post("/api/issues/:id/ask", (req, res) => {
@@ -2651,7 +2658,8 @@ app.post("/api/issues/:id/ask", (req, res) => {
 
   const changed = changedFileStats(issue);
   const cwd = changed.wtPath && fs.existsSync(changed.wtPath) ? changed.wtPath : FORGE_DIR;
-  const prompt = buildIssueAskPrompt(issue, question);
+  const history = Array.isArray(req.body?.history) ? req.body.history : [];
+  const prompt = buildIssueAskPrompt(issue, question, history);
   const model = qOne("SELECT value FROM settings WHERE key = 'model'")?.value || undefined;
   const promptDir = path.join(FORGE_DIR, "projects", String(issue.id));
   fs.mkdirSync(promptDir, { recursive: true });

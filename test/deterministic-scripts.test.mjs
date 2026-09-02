@@ -61,6 +61,7 @@ test("makeGitAgentPlan upserts PR metadata through REST during PR creation", () 
   ]);
   assert.equal(plan.steps.find(step => step.kind === "upsert-pr").base, "main");
   assert.equal(plan.steps.filter(step => step.kind === "upsert-pr")[1].base, "user/issue-part-1");
+  assert.equal(plan.steps.find(step => step.kind === "upsert-pr").title, "BAND-123: Add audit filters (1/2)");
 });
 
 test("makeGitAgentPlan push mode force-pushes rebased existing PR branches", () => {
@@ -73,8 +74,9 @@ test("makeGitAgentPlan push mode force-pushes rebased existing PR branches", () 
     ],
   });
 
-  assert.deepEqual(plan.steps.map(step => step.kind), ["fetch-base", "checkout", "pull-branch", "rebase", "push", "write-prs-json"]);
+  assert.deepEqual(plan.steps.map(step => step.kind), ["fetch-base", "checkout", "pull-branch", "rebase", "push", "upsert-pr", "write-prs-json"]);
   assert.equal(plan.steps.find(step => step.kind === "push").forceWithLease, true);
+  assert.equal(plan.steps.find(step => step.kind === "upsert-pr").title, "BAND-123: Add audit filters");
 });
 
 test("sync-worktree-to-base can continue when PR branch divergence is patch-equivalent", () => {
