@@ -16,7 +16,7 @@ Depending on the current issue state, you will be asked to:
 3. For each PR in the stack (in order):
    a. Switch to the correct branch: `git checkout {branch}` (the Coder will have created these).
    b. Push the branch: `git push -u origin {branch}`.
-   c. Generate a clear PR title and description based on the Issue Target Contract, plan, and diff. Prefix titles only when the plan/contract explicitly calls for that product prefix; do not default generic/shared work to an app-specific prefix.
+   c. Generate a clear conventional-commit PR title and description based on the Issue Target Contract, plan, and diff. For Market Pricing work, titles must start with `[MP] ` followed by a conventional commit prefix, e.g. `[MP] fix: concise subject`. Prefix titles only when the plan/contract explicitly calls for that product prefix; do not default generic/shared work to an app-specific prefix.
    d. Write the PR title and body to temp files before invoking `gh` (use the `write` tool for the body file when possible). Do not pass long Markdown bodies inline in the shell.
    e. Create or update the PR with Forge's REST-backed helper (not `gh pr create`, `gh pr edit`, or GraphQL metadata mutations). For new or existing PRs use this pattern:
       ```bash
@@ -66,6 +66,7 @@ The context may include an **Issue Target Contract**. It is authoritative for PR
 - Describe generic/shared backend work as generic/shared, not as pricing/app-specific.
 - Do not mention avoided apps/packages as targets.
 - Base title/body on actual changed files and the final plan, not on prompt examples.
+- Market Pricing PR titles must be conventional commits prefixed with `[MP] `, for example `[MP] fix: persist saved view filters`.
 - If changed files conflict with `avoid_paths`, stop and report scope drift instead of creating/updating PRs.
 
 ## PR description format

@@ -50,6 +50,8 @@ type Issue = {
   steering_context?: string | null;
   pr_approved_at?: string | null;
   auto_fix_enabled?: number | boolean | null;
+  externally_managed?: number | boolean | null;
+  awaiting_review?: number | boolean | null;
   target_kind?: string | null;
   target_paths_json?: string | null;
   avoid_paths_json?: string | null;
@@ -234,6 +236,7 @@ type JumpStateOption = {
   label: string;
   hint: string;
   risky?: boolean;
+  destructive?: boolean;
 };
 
 type LearningTabKey = "suggestions" | "changes" | "reflections";
@@ -276,7 +279,7 @@ type LearningsPayload = {
   changes: LearningChange[];
 };
 
-type IssueAction = "pause" | "unpause" | "retry" | "ignore" | "unignore" | "split-pr-stack" | "rebase" | "steer" | "clear-steer" | "advance" | "reset" | "set-auto-fix";
+type IssueAction = "pause" | "unpause" | "retry" | "ignore" | "unignore" | "split-pr-stack" | "rebase" | "steer" | "clear-steer" | "advance" | "reset" | "return-to-linear" | "set-auto-fix" | "mark-external" | "unmark-external" | "mark-awaiting-review" | "unmark-awaiting-review";
 type DecisionVerdict = "approved" | "rejected";
 type CommandItem = { label: string; action: () => void; disabled?: boolean };
 
@@ -466,6 +469,7 @@ const JUMP_STATE_OPTIONS: JumpStateOption[] = [
   { state: "SPLITTING", label: "✂️ Split Stack", hint: "Execute the approved stacked PR split", risky: true },
   { state: "IN_MERGE_QUEUE", label: "🔀 Merge Queue", hint: "Mark PRs as entered into merge queue", risky: true },
   { state: "DONE", label: "✅ Mark Done", hint: "Archive this issue as complete", risky: true },
+  { state: "RETURN_TO_LINEAR", label: "↩ Return to Linear", hint: "Fully reset and remove from Forge tracking; it will appear in the Linear list again", risky: true, destructive: true },
 ];
 
 const STATE_PROCESS_ORDER: Record<string, number> = {
@@ -858,6 +862,8 @@ function isIssueMergedPendingArchive(issue: Issue): boolean {
 
 function issueRuntimeBadges(issue: Issue): Array<{ className: string; label: string }> {
   const badges: Array<{ className: string; label: string }> = [];
+  if (issue.externally_managed) badges.push({ className: "forge-v3-external-badge", label: "👤 External" });
+  if (issue.awaiting_review) badges.push({ className: "forge-v3-awaiting-review-badge", label: "👀 Awaiting review" });
   if (isRunningIssue(issue)) badges.push({ className: "forge-v3-live-badge", label: "Live" });
   if (issue.updated_at) badges.push({ className: `forge-v3-elapsed-badge${isIssueStuck(issue) ? " long" : ""}`, label: isIssueStuck(issue) ? "24h+" : timeAgoShort(issue.updated_at) });
   if (isIssueStuck(issue)) badges.push({ className: "forge-v3-stuck-indicator", label: "⚠ long" });
@@ -1895,7 +1901,7 @@ function RuntimeDock({ status, onStopVm }: { status: ShellStatus; onStopVm: () =
   );
 }
 
-function CommandPalette({ open, decisions, onClose, onNavigate, onRefresh, onOpenIssue, onReviewNext, onAddIssue, onStopVm }: { open: boolean; decisions: Decision[]; onClose: () => void; onNavigate: (view: NavKey) => void; onRefresh: () => void; onOpenIssue: (issueId: number) => void; onReviewNext: () => void; onAddIssue: () => void; onStopVm: () => void }) {
+function CommandPalette({ open, decisions, onClose, onNavigate, onRefresh, onOpenIssue, onReviewNext, onAddIssue, onStopVm, onHandoverReport }: { open: boolean; decisions: Decision[]; onClose: () => void; onNavigate: (view: NavKey) => void; onRefresh: () => void; onOpenIssue: (issueId: number) => void; onReviewNext: () => void; onAddIssue: () => void; onStopVm: () => void; onHandoverReport: () => void }) {
   if (!open) return null;
   const decisionCommands: CommandItem[] = decisions.map((decision) => ({ label: `Decision: ${decision.type ?? "Review"} #${decision.id}`, action: () => { onNavigate("queue"); onOpenIssue(decision.issue_id); } }));
   const commands: CommandItem[] = [
@@ -1910,6 +1916,7 @@ function CommandPalette({ open, decisions, onClose, onNavigate, onRefresh, onOpe
     { label: "Stop VM runtime", action: onStopVm },
     { label: "Sync Linear backlog", action: () => onNavigate("queue") },
     { label: "Add issue", action: onAddIssue },
+    { label: "Handover report", action: onHandoverReport },
     { label: "Pause scheduler (use /forge stop)", action: () => onNavigate("settings"), disabled: true },
   ];
 
@@ -2523,11 +2530,68 @@ function ArchiveIssueSidecar({ issue, onClose }: { issue: ArchiveIssue; onClose:
   );
 }
 
+function HandoverReportModal({ onClose }: { onClose: () => void }) {
+  const [reportText, setReportText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const today = new Date();
+  const weekAgo = new Date(today.getTime() - 7 * 86400000);
+  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  const [since, setSince] = useState(fmt(weekAgo));
+  const [until, setUntil] = useState(fmt(today));
+
+  const generate = async () => {
+    setLoading(true);
+    setCopied(false);
+    try {
+      const params = new URLSearchParams();
+      if (since) params.set("since", since);
+      if (until) params.set("until", until);
+      const resp = await fetch(`/api/archive/report?${params}`);
+      setReportText(await resp.text());
+    } catch (e) {
+      setReportText(`Error generating report: ${(e as Error).message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(reportText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  };
+
+  useEffect(() => { generate(); }, []);
+
+  return h("div", { class: "forge-v3-modal-overlay", onClick: (e: MouseEvent) => { if ((e.target as HTMLElement).classList.contains("forge-v3-modal-overlay")) onClose(); } },
+    h("div", { class: "forge-v3-handover-modal" },
+      h("div", { class: "forge-v3-handover-modal-header" },
+        h("h2", null, "📋 Handover Report"),
+        h("button", { type: "button", class: "forge-v3-close-button", onClick: onClose, "aria-label": "Close" }, "×")
+      ),
+      h("div", { class: "forge-v3-handover-controls" },
+        h("span", { class: "forge-v3-handover-hint" }, "Completed issues date range (in-flight issues always included):"),
+        h("label", null, "From ", h("input", { type: "date", value: since, onInput: (e: Event) => setSince((e.target as HTMLInputElement).value) })),
+        h("label", null, " To ", h("input", { type: "date", value: until, onInput: (e: Event) => setUntil((e.target as HTMLInputElement).value) })),
+        h("button", { type: "button", class: "forge-v3-btn forge-v3-btn-primary", onClick: generate, disabled: loading }, loading ? "Generating…" : "Generate"),
+        h("button", { type: "button", class: "forge-v3-btn", onClick: copyToClipboard, disabled: !reportText }, copied ? "✓ Copied" : "Copy")
+      ),
+      h("div", { class: "forge-v3-handover-body" },
+        h("pre", { class: "forge-v3-handover-report" }, reportText || (loading ? "Loading…" : "Configure date range and click Generate."))
+      )
+    )
+  );
+}
+
 function ArchiveView() {
   const [archiveIssues, setArchiveIssues] = useState<ArchiveIssue[] | null>(null);
   const [archiveError, setArchiveError] = useState<string | null>(null);
   const [archiveSearch, setArchiveSearch] = useState("");
   const [selectedArchiveId, setSelectedArchiveId] = useState<number | null>(null);
+  const [showHandoverReport, setShowHandoverReport] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -2561,7 +2625,7 @@ function ArchiveView() {
   })();
 
   return h(PageFrame, { view: "archive", className: `forge-v3-archive-wrap ${selectedArchiveIssue ? "forge-v3-has-archive-detail" : ""}` }, [
-    h(PageHeader, { icon: "🗃️", title: "Archive", subtitle: `${totalCompleted} completed issues${normalizedSearch ? ` matching "${archiveSearch.trim()}"` : ""} — all PRs merged`, actions: h("input", { class: "forge-v3-toolbar-search", type: "search", placeholder: "Search archive…", "aria-label": "Search archive", value: archiveSearch, onInput: (event: Event) => setArchiveSearch((event.target as HTMLInputElement).value) }) }),
+    h(PageHeader, { icon: "🗃️", title: "Archive", subtitle: `${totalCompleted} completed issues${normalizedSearch ? ` matching "${archiveSearch.trim()}"` : ""} — all PRs merged`, actions: h("div", { class: "forge-v3-toolbar-actions" }, h("button", { type: "button", class: "forge-v3-btn", onClick: () => setShowHandoverReport(true), title: "Generate on-call handover report" }, "📋 Handover Report"), h("input", { class: "forge-v3-toolbar-search", type: "search", placeholder: "Search archive…", "aria-label": "Search archive", value: archiveSearch, onInput: (event: Event) => setArchiveSearch((event.target as HTMLInputElement).value) })) }),
     h("section", { class: "forge-v3-archive-stats forge-v3-stats-strip", "aria-label": "Archive stats" },
       h("article", null, h("span", null, "Total completed"), h("strong", null, String(totalCompleted))),
       h("article", null, h("span", null, "Completed this week"), h("strong", null, String(completedThisWeek))),
@@ -2588,7 +2652,8 @@ function ArchiveView() {
                   h("div", { class: "forge-v3-archive-meta" }, "Summary", ": ", issue.summaryContent || issue.hasSummary ? "available" : "not generated")
                 ))
               ),
-    selectedArchiveIssue ? h(ArchiveIssueSidecar, { issue: selectedArchiveIssue, onClose: () => setSelectedArchiveId(null) }) : null
+    selectedArchiveIssue ? h(ArchiveIssueSidecar, { issue: selectedArchiveIssue, onClose: () => setSelectedArchiveId(null) }) : null,
+    showHandoverReport ? h(HandoverReportModal, { onClose: () => setShowHandoverReport(false) }) : null
   ]);
 }
 
@@ -2616,6 +2681,8 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
   const [planFeedback, setPlanFeedback] = useState("");
   const [adminStatus, setAdminStatus] = useState("");
   const [autoFixEnabled, setAutoFixEnabled] = useState(false);
+  const [externallyManaged, setExternallyManaged] = useState(false);
+  const [awaitingReview, setAwaitingReview] = useState(false);
   const [askInput, setAskInput] = useState("");
   const [askMessages, setAskMessages] = useState<AskMessage[]>([]);
   const [askStatus, setAskStatus] = useState("");
@@ -2654,6 +2721,8 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
     setPlanFeedback("");
     setAdminStatus("");
     setAutoFixEnabled(false);
+    setExternallyManaged(false);
+    setAwaitingReview(false);
     const storedAsk = loadAskConversation(issueId);
     setAskInput(storedAsk.input ?? "");
     setAskMessages(storedAsk.messages ?? []);
@@ -2688,7 +2757,9 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
 
   useEffect(() => {
     setAutoFixEnabled(Boolean(detail?.issue?.auto_fix_enabled));
-  }, [detail?.issue?.auto_fix_enabled]);
+    setExternallyManaged(Boolean(detail?.issue?.externally_managed));
+    setAwaitingReview(Boolean(detail?.issue?.awaiting_review));
+  }, [detail?.issue?.auto_fix_enabled, detail?.issue?.externally_managed, detail?.issue?.awaiting_review]);
 
   useEffect(() => {
     if (!listenOpen || !issueId) return;
@@ -2832,6 +2903,14 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
   const jumpToState = async (option: JumpStateOption) => {
     if (!issue?.id) return;
     const label = issue.linear_id ?? `issue #${issue.id}`;
+    if (option.state === "RETURN_TO_LINEAR") {
+      const typed = await showForgePrompt({ title: "Return issue to Linear", message: `This fully resets ${label}, removes worktree/project artifacts/branches, deletes Forge tracking, and leaves the Linear issue visible in the Linear list.`, label: "Type RETURN to confirm", confirmText: "Return to Linear", danger: true, requiredText: "RETURN" });
+      if (typed !== "RETURN") return;
+      setJumpModalOpen(false);
+      onIssueAction(issue.id, "return-to-linear");
+      onClose();
+      return;
+    }
     const warning = option.risky ? " This is a risky recovery action and may clear or bypass pending workflow gates." : "";
     const confirmed = await showForgeConfirm({ title: "Jump workflow state?", message: `Move ${label} to ${option.state}?${warning}`, confirmText: "Jump state", danger: option.risky });
     if (!confirmed) return;
@@ -2876,6 +2955,16 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
     window.setTimeout(() => {
       if (!mockStatesEnabled() && detail?.issue?.auto_fix_enabled === previous) setAutoFixEnabled(previous);
     }, 2000);
+  };
+  const toggleExternallyManaged = (enabled: boolean) => {
+    if (!issue?.id) return;
+    setExternallyManaged(enabled);
+    onIssueAction(issue.id, enabled ? "mark-external" : "unmark-external");
+  };
+  const toggleAwaitingReview = (enabled: boolean) => {
+    if (!issue?.id) return;
+    setAwaitingReview(enabled);
+    onIssueAction(issue.id, enabled ? "mark-awaiting-review" : "unmark-awaiting-review");
   };
   const addPrFeedback = async () => {
     if (!issue?.id) return;
@@ -3218,7 +3307,11 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
             }) : h("p", { class: "forge-v3-empty forge-v3-compact-empty" }, "No PRs yet — will be created after code review")
           )
         ),
-        h("section", { class: "forge-v3-ds" }, h("div", { class: "forge-v3-auto-fix-row" }, h("div", null, h("h4", null, "Auto-fix"), h("p", null, "Automatically send new PR comments and CI failures to the fixer agent.")), h("label", { class: "forge-v3-switch" }, h("input", { type: "checkbox", checked: autoFixEnabled, disabled: !issue?.id, onChange: (event: Event) => toggleAutoFix((event.target as HTMLInputElement).checked) }), h("span", null))))
+        h("section", { class: "forge-v3-ds" },
+        h("div", { class: "forge-v3-auto-fix-row" }, h("div", null, h("h4", null, "Auto-fix"), h("p", null, "Automatically send new PR comments and CI failures to the fixer agent.")), h("label", { class: "forge-v3-switch" }, h("input", { type: "checkbox", checked: autoFixEnabled, disabled: !issue?.id, onChange: (event: Event) => toggleAutoFix((event.target as HTMLInputElement).checked) }), h("span", null))),
+        h("div", { class: "forge-v3-auto-fix-row" }, h("div", null, h("h4", null, "👤 Externally managed"), h("p", null, "Mark this issue as managed outside Forge (e.g. Cursor). Forge will not schedule agents for it while this is enabled.")), h("label", { class: "forge-v3-switch" }, h("input", { type: "checkbox", checked: externallyManaged, disabled: !issue?.id, onChange: (event: Event) => toggleExternallyManaged((event.target as HTMLInputElement).checked) }), h("span", null))),
+        h("div", { class: "forge-v3-auto-fix-row" }, h("div", null, h("h4", null, "👀 Awaiting review"), h("p", null, "Flag this issue as waiting for a reviewer. Auto-set by Forge when CI passes, all comments are addressed, and no approvals exist yet.")), h("label", { class: "forge-v3-switch" }, h("input", { type: "checkbox", checked: awaitingReview, disabled: !issue?.id, onChange: (event: Event) => toggleAwaitingReview((event.target as HTMLInputElement).checked) }), h("span", null)))
+      )
       ),
       activeTab === "activity" && renderActivityFeed(detail, safeIssue),
       activeTab === "ask" && h("div", { class: "forge-v3-ask-panel" },
@@ -3361,9 +3454,9 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
           h("button", { type: "button", onClick: () => setJumpModalOpen(false), "aria-label": "Close jump to state" }, "×")
         ),
         h("div", { class: "forge-v3-plan-modal-body" },
-          h("p", { class: "forge-v3-jump-state-copy" }, "Move this issue to a selected workflow phase. History is preserved; Forge continues from that phase on the next scheduler tick."),
+          h("p", { class: "forge-v3-jump-state-copy" }, "Move this issue to a selected workflow phase, or return it to Linear by fully clearing Forge tracking."),
           h("div", { class: "forge-v3-jump-state-list" },
-            jumpStateOptions.map((option) => h("button", { key: option.state, type: "button", class: `forge-v3-jump-state-option ${option.risky ? "risky" : ""}`, onClick: () => jumpToState(option) },
+            jumpStateOptions.map((option) => h("button", { key: option.state, type: "button", class: `forge-v3-jump-state-option ${option.risky ? "risky" : ""} ${option.destructive ? "destructive" : ""}`, onClick: () => jumpToState(option) },
               h("strong", null, option.label),
               h("code", null, option.state),
               h("span", null, option.hint),
@@ -3423,6 +3516,7 @@ function DashboardShell() {
   const previousIssueStatesRef = useRef<Map<number, string>>(new Map());
   const [detailReloadKey, setDetailReloadKey] = useState(0);
   const [addIssueOpen, setAddIssueOpen] = useState(initialRoute.addIssue);
+  const [showHandoverReport, setShowHandoverReport] = useState(false);
   const [detailPanelWidth, setDetailPanelWidth] = useState(storedDetailPanelWidth);
   const [eventStreamStatus, setEventStreamStatus] = useState<"connecting" | "live" | "offline">("connecting");
   const [desktopNotificationsAvailable, setDesktopNotificationsAvailable] = useState(false);
@@ -3749,6 +3843,7 @@ function DashboardShell() {
         ),
         h("div", { class: "forge-v3-nav-section" }, "TOOLS"),
         h("button", { type: "button", class: "forge-v3-nav-item", onClick: () => setCommandPaletteOpen(true) }, h("span", { class: "forge-v3-nav-icon" }, "⌘"), h("span", { class: "forge-v3-nav-label" }, "Command palette"), h("kbd", null, "⌘K")),
+        h("button", { type: "button", class: "forge-v3-nav-item", onClick: () => setShowHandoverReport(true) }, h("span", { class: "forge-v3-nav-icon" }, "📋"), h("span", { class: "forge-v3-nav-label" }, "Handover report")),
         NAV_ITEMS.slice(2).map((item) =>
           h("button", { key: item.key, type: "button", class: `forge-v3-nav-item ${activeView === item.key ? "active" : ""}`, "data-view": item.key, onClick: () => { setActiveView(item.key); setSelectedIssueId(null); syncDashboardRoute(item.key); } },
             h("span", { class: "forge-v3-nav-icon", "aria-hidden": "true" }, item.icon),
@@ -3792,7 +3887,8 @@ function DashboardShell() {
               ? h(LearningsView, null)
               : h("main", { class: "forge-v3-main", "data-active-view": activeView }, h("h1", null, NAV_ITEMS.find((item) => item.key === activeView)?.label ?? "Dashboard"), h("p", { class: "forge-v3-empty" }, "This v3 view will migrate in a later phase.")),
     h(IssueDetailPanel, { issueId: activeView === "queue" ? selectedIssueId : null, issuePreview: selectedIssuePreview, reloadKey: detailReloadKey, autoOpenDiffKey: detailAutoOpenDiffKey, onClose: closeIssue, onPanelResizeStart: startDetailPanelResize, onIssueAction: handleIssueAction, onRemoveIssue: handleRemoveIssue, onLaunchRuntime: handleLaunchRuntime, onStopVm: handleStopVm, onSyncPrs: handleSyncPrs, onSubmitFeedback: handleSubmitFeedback, onResolveDecision: handleResolveDecision }),
-    h(CommandPalette, { open: commandPaletteOpen, decisions: overview.decisions, onClose: () => setCommandPaletteOpen(false), onNavigate: navigateToView, onRefresh: () => refreshDashboard(), onOpenIssue: openIssue, onReviewNext: openReviewNext, onAddIssue: openAddIssue, onStopVm: handleStopVm }),
+    h(CommandPalette, { open: commandPaletteOpen, decisions: overview.decisions, onClose: () => setCommandPaletteOpen(false), onNavigate: navigateToView, onRefresh: () => refreshDashboard(), onOpenIssue: openIssue, onReviewNext: openReviewNext, onAddIssue: openAddIssue, onStopVm: handleStopVm, onHandoverReport: () => setShowHandoverReport(true) }),
+    showHandoverReport ? h(HandoverReportModal, { onClose: () => setShowHandoverReport(false) }) : null,
     status.runningAgentsCount > 0 ? h(RuntimeDock, { status, onStopVm: handleStopVm }) : null
   );
 }

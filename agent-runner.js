@@ -22,6 +22,7 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const { buildRuntimeEnvironmentContext, sanitizeHistoricalRuntimeNoise } = require("./lib/runtime-context.js");
+const { installWorktreeSafety, removeTrackedRootNodeModulesSymlinkCommit, removeUntrackedRootNodeModulesSymlink } = require("./lib/worktree-safety.js");
 
 // ── Parse args ──────────────────────────────────────────────────────
 
@@ -234,7 +235,7 @@ function gitOutput(cwd, args, timeout = 10000) {
 function worktreeStatusPorcelain(cwd) {
   return gitOutput(cwd, ["status", "--porcelain"])
     .split("\n")
-    .filter(line => line.trim() && !/^\?\? (.+\/)?node_modules\/?$/.test(line))
+    .filter(line => line.trim() && !/^\?\? (.+\/)?node_modules\/?$/.test(line) && !/^\?\? \.husky\/_\/?$/.test(line))
     .join("\n");
 }
 
@@ -358,10 +359,10 @@ function fixDecisionComments(issueRow) {
 function fixerTargetPr(issueRow) {
   const prStack = db.prepare("SELECT * FROM pr_stack WHERE issue_id = ? ORDER BY position ASC").all(issueRow.id);
   const openStack = prStack.filter(pr => pr.gt_branch && pr.status !== "merged" && pr.status !== "closed");
-  const comments = fixDecisionComments(issueRow);
-  const commentPrNumbers = new Set(comments.map(c => Number(c.prNumber)).filter(Number.isFinite));
-  const commentedPr = openStack.find(pr => pr.pr_number && commentPrNumbers.has(Number(pr.pr_number)));
-  return commentedPr ?? openStack[0] ?? null;
+  // Always target the lowest-position open PR first. This prevents rebasing the
+  // stack repeatedly and avoids conflicts caused by fixing a later PR before its
+  // base is finalised. Later PRs' comments are handled in subsequent fixer runs.
+  return openStack[0] ?? null;
 }
 
 function buildContextBundle(issueRow, linearData, assetMap) {
@@ -479,7 +480,7 @@ function buildContextBundle(issueRow, linearData, assetMap) {
     if (targetPr) {
       lines.push("## Deterministic fixer target");
       lines.push(`Target exactly one PR in this run: position ${targetPr.position}, PR #${targetPr.pr_number ?? "unknown"}, branch ${targetPr.gt_branch}.`);
-      lines.push("Start with the lowest stack PR that has surfaced review comments. Do not edit later PR branches in this fixer run except to rebase/resolve mechanical conflicts after the target branch has been committed and pushed.");
+      lines.push("This is the lowest-position open PR in the stack and must be fixed first. Do not skip to a later PR even if it has more comments — strict order prevents conflicts and repeated rebasing. Do not edit later PR branches in this fixer run except to rebase/resolve mechanical conflicts after the target branch has been committed.");
       lines.push("Required order: checkout target branch → make target PR fixes → commit on target branch → rebase/update later stack branches onto their parents → stop. The Git Agent will push the target branch and updated later branches. Later PR review comments are handled by later fixer runs.");
       const targetComments = fixComments.filter(c => targetPr.pr_number && Number(c.prNumber) === Number(targetPr.pr_number));
       const laterComments = fixComments.filter(c => !targetPr.pr_number || Number(c.prNumber) !== Number(targetPr.pr_number));
@@ -1358,6 +1359,13 @@ async function main() {
     : WT_ROOT;
 
   if (!cleanupMode && ["planner", "plan-reviewer", "coder", "reviewer", "fixer", "git-agent"].includes(agentType) && cwd && fs.existsSync(cwd)) {
+    try {
+      const removed = removeUntrackedRootNodeModulesSymlink(cwd);
+      installWorktreeSafety(cwd);
+      if (removed) log("Removed untracked root node_modules symlink before agent run; Forge worktrees must not vendor or symlink dependencies.");
+    } catch (e) {
+      log(`WARN: Could not install worktree safety hooks: ${e.message}`);
+    }
     let skipBaseSync = false;
     if (agentType === "coder") {
       if (isRebaseInProgress(cwd)) {
@@ -1399,14 +1407,31 @@ async function main() {
 
       const dirtyStatus = worktreeStatusPorcelain(cwd).trim();
       if (dirtyStatus) {
-        log("ERROR: Dirty worktree detected before fixer preflight; refusing to run fixer so review fixes cannot land on the wrong stack branch.");
-        logActivity("agent_failed", "Fixer refused dirty worktree before deterministic stack fixing", { branch: worktreeCurrentBranch(cwd), status: dirtyStatus.split("\n") });
-        finishRun(1);
-        transition("FAILED");
-        unlock();
-        db.close();
-        logStream.end();
-        process.exit(1);
+        // Only untracked files (all lines start with '??') are safe to ignore — they
+        // cannot affect the commit. Tracked modifications must be committed first so
+        // they land on the correct branch before the fixer checks out the target branch.
+        const lines = dirtyStatus.split("\n").filter(Boolean);
+        const onlyUntracked = lines.every(l => l.startsWith("??"));
+        if (onlyUntracked) {
+          log(`Dirty worktree has only untracked files before fixer preflight; ignoring and continuing.`);
+        } else {
+          log(`Dirty worktree detected before fixer preflight — auto-committing tracked changes on current branch before target checkout.`);
+          try {
+            execFileSync("git", ["add", "-u"], { cwd, timeout: 30000, stdio: "pipe" }); // only tracked files
+            execFileSync("git", ["commit", "-m", "chore: commit outstanding changes from previous agent run"], { cwd, timeout: 30000, stdio: "pipe" });
+            log("Auto-committed tracked changes successfully.");
+            logActivity("worktree_safety_cleanup", "Fixer auto-committed tracked changes before target branch checkout", { branch: worktreeCurrentBranch(cwd), status: lines });
+          } catch (commitErr) {
+            log(`ERROR: Auto-commit of dirty worktree failed: ${commitErr.message}`);
+            logActivity("agent_failed", "Fixer refused dirty worktree before deterministic stack fixing", { branch: worktreeCurrentBranch(cwd), status: lines });
+            finishRun(1);
+            transition("FAILED");
+            unlock();
+            db.close();
+            logStream.end();
+            process.exit(1);
+          }
+        }
       }
 
       const targetPr = fixerTargetPr(issueRow);
@@ -1426,6 +1451,21 @@ async function main() {
         }
       }
     }
+    // Git-agent preflight: auto-commit any uncommitted changes left by the fixer before PUSHING
+    if (agentType === "git-agent" && ["PUSHING", "CREATING_PR"].includes(issueRow.state)) {
+      const dirtyStatus = worktreeStatusPorcelain(cwd).trim();
+      if (dirtyStatus) {
+        log(`Git-agent preflight found uncommitted changes (likely left by fixer/coder); auto-committing before sync…`);
+        try {
+          execFileSync("git", ["add", "-A"], { cwd, timeout: 30000, stdio: "pipe" });
+          execFileSync("git", ["commit", "-m", "chore: commit outstanding changes from previous agent run"], { cwd, timeout: 30000, stdio: "pipe" });
+          log("Auto-committed outstanding changes successfully.");
+          logActivity("worktree_safety_cleanup", "Git-agent auto-committed uncommitted changes before push", { status: dirtyStatus.split("\n") });
+        } catch (commitErr) {
+          log(`WARNING: Auto-commit of outstanding changes failed: ${commitErr.message}; continuing anyway.`);
+        }
+      }
+    }
     if (!skipBaseSync) {
       const baseBranch = getIssueBaseBranch(issueRow);
       log(`Pulling current branch and rebasing worktree onto origin/${baseBranch} before ${agentType}…`);
@@ -1435,6 +1475,28 @@ async function main() {
         execFileSync(path.join(FORGE_DIR, "scripts", "sync-worktree-to-base"), syncArgs, { cwd, timeout: 180000, stdio: "pipe" });
         log(`Worktree pulled and rebased with origin/${baseBranch}`);
       } catch (e) {
+        const isRebaseConflict = /could not apply|Resolve all conflicts|CONFLICT|rebase.*failed/i.test(e.message);
+        if (isRebaseConflict && ["git-agent", "fixer"].includes(agentType)) {
+          log(`Rebase conflict detected during base sync before ${agentType}; routing to REBASING for conflict resolution.`);
+          const plan = branchRebasePlan(issueRow);
+          const context = [
+            "Pre-push rebase onto origin/main hit a conflict. The sync script aborted the rebase.",
+            "Re-run the rebase onto origin/main, resolve the conflicts, then push all affected branches.",
+            "",
+            `Worktree: ${cwd}`,
+            `Base branch: ${baseBranch}`,
+            plan.length ? "Branch rebase plan:" : "Branch rebase plan: unavailable; inspect current PR stack and git history.",
+            ...plan.map(item => `- ${item.branch} onto ${item.base}`),
+          ].join("\n");
+          db.prepare("UPDATE issues SET steering_context = ?, updated_at = datetime('now') WHERE id = ?").run(context, issueId);
+          finishRun(1);
+          logActivity("rebase_requested", `Pre-push rebase conflict on origin/${baseBranch}; routing to rebaser`, { error: e.message });
+          transition("REBASING");
+          unlock();
+          db.close();
+          logStream.end();
+          process.exit(1);
+        }
         log(`ERROR: Could not pull/rebase worktree with origin/${baseBranch}: ${e.message}`);
         finishRun(1);
         logActivity("agent_failed", `Failed to pull/rebase worktree with origin/${baseBranch} before ${agentType}`, { error: e.message });
@@ -1559,6 +1621,26 @@ async function main() {
     db.close();
     logStream.end();
     process.exit(exitCode);
+  }
+
+  if (["coder", "fixer"].includes(agentType) && cwd && fs.existsSync(cwd)) {
+    try {
+      if (removeTrackedRootNodeModulesSymlinkCommit(cwd)) {
+        log("Removed committed root node_modules symlink in a safety cleanup commit.");
+        logActivity("worktree_safety_cleanup", "Removed committed root node_modules symlink after agent run");
+      }
+      if (removeUntrackedRootNodeModulesSymlink(cwd)) {
+        log("Removed untracked root node_modules symlink after agent run.");
+      }
+    } catch (e) {
+      log(`ERROR: Worktree safety cleanup failed: ${e.message}`);
+      logActivity("agent_failed", `Worktree safety cleanup failed: ${e.message}`);
+      transition("FAILED");
+      unlock();
+      db.close();
+      logStream.end();
+      process.exit(1);
+    }
   }
 
   // Successful exit — reset retry counter

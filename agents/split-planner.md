@@ -14,7 +14,7 @@ Your responsibilities:
 5. Do NOT create branches, push, close PRs, delete branches, or modify the PR stack database.
 
 The `# Split Plan` section must be human-reviewable and include:
-- Proposed PR titles.
+- Proposed PR titles. Titles must be conventional commits; Market Pricing titles must start with `[MP] `, for example `[MP] fix: concise subject`.
 - Proposed branch names using the existing branch name/prefix with `-part-1`, `-part-2`, etc.
 - Base branch for each PR using GitHub-native stacking. The first PR should target the original base branch; each later PR should target the previous part branch/PR.
 - Files and/or commits included in each PR.

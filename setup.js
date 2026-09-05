@@ -14,6 +14,7 @@ const { execFileSync } = require("child_process");
 const path  = require("path");
 const os    = require("os");
 const fs    = require("fs");
+const { installWorktreeSafety, removeUntrackedRootNodeModulesSymlink } = require("./lib/worktree-safety.js");
 
 // ── Args ─────────────────────────────────────────────────────────────
 
@@ -208,6 +209,13 @@ function main() {
 
   if (issue.wt_path && fs.existsSync(issue.wt_path)) {
     log(`Worktree already exists: ${issue.wt_path}`);
+    try {
+      const removed = removeUntrackedRootNodeModulesSymlink(issue.wt_path);
+      installWorktreeSafety(issue.wt_path);
+      if (removed) log("Removed untracked root node_modules symlink from existing worktree");
+    } catch (e) {
+      log(`WARN: Could not install worktree safety hooks: ${e.message}`);
+    }
     transition("PLANNING");
     unlock();
     finishRun(0);
@@ -264,6 +272,13 @@ function main() {
   }
 
   log(`wt_path: ${wtPath}`);
+  try {
+    const removed = removeUntrackedRootNodeModulesSymlink(wtPath);
+    installWorktreeSafety(wtPath);
+    if (removed) log("Removed untracked root node_modules symlink from worktree");
+  } catch (e) {
+    log(`WARN: Could not install worktree safety hooks: ${e.message}`);
+  }
   db.prepare(`UPDATE issues SET wt_path = ?, updated_at = datetime('now') WHERE id = ?`).run(wtPath, issueId);
 
   // ── 7. Create project file from template ─────────────────────────

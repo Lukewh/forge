@@ -35,7 +35,7 @@ function git(args, options = {}) {
 function isClean() {
   return git(["status", "--porcelain"])
     .split("\n")
-    .filter(line => line.trim() && !/^\?\? (.+\/)?node_modules\/?$/.test(line))
+    .filter(line => line.trim() && !/^\?\? (.+\/)?node_modules\/?$/.test(line) && !/^\?\? \.husky\/_\/?$/.test(line))
     .join("\n") === "";
 }
 
@@ -43,6 +43,28 @@ function remoteOnlyCommitsArePatchEquivalent(remoteRef) {
   const output = git(["cherry", "HEAD", remoteRef]).trim();
   if (!output) return true;
   return output.split("\n").every(line => line.startsWith("- "));
+}
+
+function fetchWithRetry(fetchArgs, options = {}, maxRetries = 5) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      git(fetchArgs, options);
+      return;
+    } catch (error) {
+      const isRefLock = /cannot lock ref|unable to update local ref/i.test(error.message);
+      if (isRefLock && attempt < maxRetries) {
+        // Jitter: base delay + random offset so concurrent worktrees don't retry in sync
+        const base = attempt * 2000;
+        const jitter = Math.floor(Math.random() * 2000);
+        const delay = base + jitter;
+        console.log(`[forge:sync-base] Ref lock conflict on attempt ${attempt}/${maxRetries}; retrying in ${delay}ms…`);
+        const start = Date.now();
+        while (Date.now() - start < delay) {}
+        continue;
+      }
+      throw error;
+    }
+  }
 }
 
 try {
@@ -60,7 +82,7 @@ if (!isClean()) {
 const remoteRef = `refs/remotes/origin/${baseBranch}`;
 try {
   console.log(`[forge:sync-base] Fetching origin/${baseBranch}…`);
-  git(["fetch", "--prune", "origin", `+refs/heads/${baseBranch}:${remoteRef}`], { timeout: 120000, stdio: "inherit" });
+  fetchWithRetry(["fetch", "--prune", "origin", `+refs/heads/${baseBranch}:${remoteRef}`], { timeout: 120000, stdio: "inherit" });
 } catch (error) {
   console.error(`[forge:sync-base] git fetch failed: ${error.message}`);
   process.exit(2);
@@ -82,7 +104,7 @@ if (currentBranch) {
   const currentRemoteRef = `refs/remotes/origin/${currentBranch}`;
   try {
     console.log(`[forge:sync-base] Fetching origin/${currentBranch}…`);
-    git(["fetch", "--prune", "origin", `+refs/heads/${currentBranch}:${currentRemoteRef}`], { timeout: 120000, stdio: "inherit" });
+    fetchWithRetry(["fetch", "--prune", "origin", `+refs/heads/${currentBranch}:${currentRemoteRef}`], { timeout: 120000, stdio: "inherit" });
 
     try {
       execFileSync("git", ["merge-base", "--is-ancestor", "HEAD", currentRemoteRef], { cwd, stdio: "ignore" });

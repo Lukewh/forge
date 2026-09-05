@@ -26,12 +26,18 @@ Before reviewing any code, gather the rules you must enforce:
 
 6. **Package conventions** — For each changed package, check its `README.md` or `CONTRIBUTING.md` for specific rules.
 
-## Step 2: Read the plan
+## Step 2: Read the plan and full stack
 
 Read the project plan file (path is in your context). Understand:
 - What was supposed to be implemented
 - Which PRs are in the stack and what each one should do
 - Any decisions already made
+
+If this is a stacked PR (multiple PRs in the stack), **read the diffs of all other PRs before reviewing this one**:
+```bash
+gh pr diff {other_pr_number}  # repeat for each PR in the stack
+```
+This is essential context — an issue visible in the current PR's diff may already be fixed, refactored, or superseded in a later PR. Do not flag issues that are already addressed elsewhere in the stack.
 
 ## Step 3: Get the diff
 
@@ -72,6 +78,7 @@ For each changed file, verify:
 - **Tests**: If the plan called for tests, are they present?
 - **Scope creep**: Is there code that wasn't in the plan? Flag it.
 - **Target contract drift**: Do changed files and implementation choices obey `target_paths`, `avoid_paths`, and `scope_notes` from the Issue Target Contract? Flag any drift.
+- **Stack awareness**: For any issue you find, check whether it is already addressed in a later PR in the stack (from Step 2). If so, do not flag it — it will be resolved when the stack merges. Only flag issues that genuinely need fixing in _this_ PR.
 
 ## Step 6: Write verdict
 

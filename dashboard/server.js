@@ -398,6 +398,8 @@ addCol('issues', 'avoid_paths_json', 'TEXT');
 addCol('issues', 'scope_notes', 'TEXT');
 addCol('issues', 'project_map_snapshot_json', 'TEXT');
 addCol('issues', 'pi_sessions_json', 'TEXT');
+addCol('issues', 'externally_managed', 'INTEGER NOT NULL DEFAULT 0');
+addCol('issues', 'awaiting_review', 'INTEGER NOT NULL DEFAULT 0');
 
 if (DASHBOARD_FIRST_RUN) db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('setup_completed', 'false')").run();
 db.prepare("UPDATE settings SET value = replace(value, 'IS_' || 'DEV' || 'CONTAINER=1 ', '') WHERE key LIKE 'vm_%_command'").run();
@@ -1711,6 +1713,26 @@ app.patch("/api/issues/:id", async (req, res) => {
         id, `Scope target updated: ${target.target_kind || "unspecified"}`, JSON.stringify(target));
       break;
     }
+    case "mark-awaiting-review": {
+      run(`UPDATE issues SET awaiting_review = 1, updated_at = datetime('now') WHERE id = ?`, id);
+      run(`INSERT INTO activity_log (issue_id, type, actor, message) VALUES (?, 'awaiting_review_set', 'user', 'Marked as awaiting review')`, id);
+      break;
+    }
+    case "unmark-awaiting-review": {
+      run(`UPDATE issues SET awaiting_review = 0, updated_at = datetime('now') WHERE id = ?`, id);
+      run(`INSERT INTO activity_log (issue_id, type, actor, message) VALUES (?, 'awaiting_review_cleared', 'user', 'Awaiting-review flag cleared')`, id);
+      break;
+    }
+    case "mark-external": {
+      run(`UPDATE issues SET externally_managed = 1, updated_at = datetime('now') WHERE id = ?`, id);
+      run(`INSERT INTO activity_log (issue_id, type, actor, message, metadata) VALUES (?, 'externally_managed', 'user', 'Marked as externally managed', NULL)`, id);
+      break;
+    }
+    case "unmark-external": {
+      run(`UPDATE issues SET externally_managed = 0, updated_at = datetime('now') WHERE id = ?`, id);
+      run(`INSERT INTO activity_log (issue_id, type, actor, message, metadata) VALUES (?, 'externally_managed', 'user', 'Removed externally managed flag', NULL)`, id);
+      break;
+    }
     case "set-auto-fix": {
       const enabled = req.body.enabled ? 1 : 0;
       run(`UPDATE issues SET auto_fix_enabled = ?, updated_at = datetime('now') WHERE id = ?`, enabled, id);
@@ -1874,6 +1896,50 @@ app.patch("/api/issues/:id", async (req, res) => {
         JSON.stringify({ retryState })
       );
       break;
+    }
+    case "return-to-linear": {
+      // Kill any running agent
+      if (issue.agent_pid) {
+        try { process.kill(issue.agent_pid, "SIGTERM"); } catch {}
+      }
+
+      const errors = [];
+      const prStack = q("SELECT * FROM pr_stack WHERE issue_id = ? ORDER BY position ASC", id);
+      const branchesToDelete = branchCandidatesForIssue(issue, prStack);
+      const cwd = getRepoCommandCwd();
+
+      try {
+        await removeIssueWorktree(issue.wt_path, errors);
+      } catch (e) {
+        errors.push(`Worktree removal: ${e.message}`);
+      }
+      const failedBranchDeletes = await deleteLocalBranches(branchesToDelete, cwd, errors);
+
+      const blockers = [];
+      if (issue.wt_path && fs.existsSync(issue.wt_path)) blockers.push(`worktree still exists: ${issue.wt_path}`);
+      if (failedBranchDeletes.length) blockers.push(`branches still exist: ${failedBranchDeletes.join(", ")}`);
+      if (blockers.length) {
+        run(`INSERT INTO activity_log (issue_id, type, actor, message, metadata)
+             VALUES (?, 'return_to_linear_failed', 'user', 'Return to Linear failed before clearing Forge tracking', ?)`,
+          id,
+          JSON.stringify({ blockers, branchesAttempted: branchesToDelete, errors })
+        );
+        return res.status(409).json({ error: "Return to Linear failed; stale worktree or branches remain", blockers, errors });
+      }
+
+      const projectDir = path.join(FORGE_DIR, "projects", String(id));
+      if (fs.existsSync(projectDir)) {
+        try { fs.rmSync(projectDir, { recursive: true, force: true }); }
+        catch (e) { errors.push(`Project files: ${e.message}`); }
+      }
+
+      // Delete the issue row last. Related Forge-only state cascades via FK.
+      // Linear is intentionally untouched; once the row is gone, /api/linear/issues
+      // will stop filtering this Linear ID out of the assignable list.
+      db.prepare("DELETE FROM issues WHERE id = ?").run(id);
+
+      broadcast("issue_removed", { issueId: id, returnedToLinear: true });
+      return res.json({ ok: true, returnedToLinear: true, errors: errors.length ? errors : undefined });
     }
     case "reset": {
       // Kill any running agent
@@ -2090,6 +2156,132 @@ app.get("/api/archive", (_req, res) => {
   });
 
   res.json(enriched);
+});
+
+// ── Handover report ──────────────────────────────────────────────────────
+
+app.get("/api/archive/report", (req, res) => {
+  const since = req.query.since || null; // YYYY-MM-DD
+  const until = req.query.until || null; // YYYY-MM-DD
+  const format = req.query.format || "markdown"; // markdown | json
+
+  const allIssues = q(`
+    SELECT i.*,
+      (SELECT COUNT(*) FROM agent_runs WHERE issue_id = i.id) as run_count,
+      (SELECT COUNT(*) FROM pr_stack WHERE issue_id = i.id) as pr_count
+    FROM issues i
+    WHERE i.state NOT IN ('IGNORED')
+    ORDER BY i.updated_at DESC
+  `);
+  const repo = qOne("SELECT value FROM settings WHERE key = 'github_repo'")?.value;
+
+  function enrichIssue(issue) {
+    const prStack = q("SELECT * FROM pr_stack WHERE issue_id = ? ORDER BY position ASC", issue.id);
+    const summaryPath = path.join(FORGE_DIR, "projects", String(issue.id), "summary.md");
+    let summaryContent = null;
+    if (fs.existsSync(summaryPath)) summaryContent = fs.readFileSync(summaryPath, "utf-8");
+
+    let shortSummary = "";
+    if (summaryContent) {
+      const match = summaryContent.match(/## Summary\n([\s\S]*?)(?=\n## |$)/);
+      shortSummary = match?.[1]?.trim() ?? "";
+    } else if (issue.project_file_path && fs.existsSync(issue.project_file_path)) {
+      const plan = fs.readFileSync(issue.project_file_path, "utf-8");
+      const match = plan.match(/---\n[\s\S]*?---\n([\s\S]*?)(?=\n#|\s*$)/);
+      shortSummary = match?.[1]?.trim() ?? "";
+    }
+
+    const prLinks = prStack
+      .filter(pr => pr.pr_number)
+      .map(pr => {
+        const url = repo ? `https://github.com/${repo}/pull/${pr.pr_number}` : null;
+        return { number: pr.pr_number, status: pr.status, branch: pr.gt_branch, url };
+      });
+
+    // Determine human-readable phase
+    const PHASE_MAP = {
+      PENDING: "Queued", SETTING_UP: "Setting up", PLANNING: "Planning", AI_PLAN_REVIEWING: "Plan under AI review",
+      AWAITING_PLAN_APPROVAL: "Awaiting plan approval", WORKING: "Implementation in progress",
+      AI_REVIEWING: "Code under AI review", AWAITING_CODE_REVIEW: "Awaiting code review",
+      CREATING_PR: "Creating PR", WATCHING_PR: "PR open — awaiting merge",
+      IN_MERGE_QUEUE: "In merge queue", AWAITING_FIX_APPROVAL: "Awaiting fix approval",
+      FIXING: "Applying fixes", PUSHING: "Pushing changes", REBASING: "Rebasing",
+      SPLIT_PLANNING: "Split planning", AWAITING_SPLIT_APPROVAL: "Awaiting split approval",
+      SPLITTING: "Splitting", PAUSED: "Paused", FAILED: "Failed", DONE: "Completed",
+    };
+
+    return {
+      id: issue.id,
+      linearId: issue.linear_id,
+      title: issue.title,
+      state: issue.state,
+      phase: PHASE_MAP[issue.state] || issue.state,
+      summary: shortSummary,
+      updatedAt: issue.updated_at,
+      createdAt: issue.created_at,
+      prs: prLinks,
+    };
+  }
+
+  // Separate into groups
+  const needsAttention = []; // awaiting human action or failed
+  const inFlight = [];       // actively being worked by agents
+  const completed = [];      // done in period
+
+  const NEEDS_ATTENTION_STATES = new Set(["AWAITING_PLAN_APPROVAL", "AWAITING_CODE_REVIEW", "AWAITING_FIX_APPROVAL", "AWAITING_SPLIT_APPROVAL", "FAILED", "PAUSED"]);
+  const DONE_STATES = new Set(["DONE"]);
+
+  for (const issue of allIssues) {
+    if (DONE_STATES.has(issue.state)) {
+      // Apply date filter only to completed issues
+      if (since && issue.updated_at < since) continue;
+      if (until && issue.updated_at > until + " 23:59:59") continue;
+      completed.push(enrichIssue(issue));
+    } else if (NEEDS_ATTENTION_STATES.has(issue.state)) {
+      needsAttention.push(enrichIssue(issue));
+    } else {
+      inFlight.push(enrichIssue(issue));
+    }
+  }
+
+  if (format === "json") return res.json({ since, until, needsAttention, inFlight, completed });
+
+  // Build markdown
+  const rangeLabel = since && until ? `${since} \u2192 ${until}` : since ? `since ${since}` : until ? `until ${until}` : "all time";
+  const lines = [
+    `# On-Call Handover Report`,
+    ``,
+    `**Generated:** ${new Date().toISOString()}  `,
+    `**Needs attention:** ${needsAttention.length} · **In flight:** ${inFlight.length} · **Completed (${rangeLabel}):** ${completed.length}`,
+    ``,
+  ];
+
+  function renderSection(heading, emoji, entries, showState) {
+    if (!entries.length) return;
+    lines.push(`---`, ``, `## ${emoji} ${heading}`, ``);
+    for (const entry of entries) {
+      const idLabel = entry.linearId ?? `#${entry.id}`;
+      const stateTag = showState ? ` \u2014 _${entry.phase}_` : "";
+      lines.push(`### ${idLabel}: ${entry.title}${stateTag}`);
+      lines.push(``);
+      if (entry.summary) { lines.push(entry.summary); lines.push(``); }
+      if (entry.prs.length) {
+        lines.push(`**PRs:** ${entry.prs.map(pr => pr.url ? `[#${pr.number}](${pr.url})` : `#${pr.number}`).join(", ")}`);
+      }
+      lines.push(`**Updated:** ${entry.updatedAt ?? "unknown"}`);
+      lines.push(``);
+    }
+  }
+
+  renderSection("Needs Attention", "\u26a0\ufe0f", needsAttention, true);
+  renderSection("In Flight", "\ud83d\udee9", inFlight, true);
+  renderSection("Completed", "\u2705", completed, false);
+
+  if (!needsAttention.length && !inFlight.length && !completed.length) {
+    lines.push(``, `_No issues to report._`, ``);
+  }
+
+  res.type("text/markdown").send(lines.join("\n"));
 });
 
 // ── Runtime launcher ─────────────────────────────────────────────────────

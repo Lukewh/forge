@@ -409,7 +409,7 @@ function getMergeQueueEntries(prNumbers, cwd) {
 function main() {
   log(`Watching PRs for issue #${issueId}`);
 
-  const issue   = db.prepare("SELECT wt_path, state, pr_approved_at, auto_fix_enabled FROM issues WHERE id = ?").get(issueId);
+  const issue   = db.prepare("SELECT wt_path, state, pr_approved_at, auto_fix_enabled, awaiting_review FROM issues WHERE id = ?").get(issueId);
   const wtPath     = issue?.wt_path;
   const currentState = issue?.state;
 
@@ -473,6 +473,7 @@ function main() {
   let anyApproved = false;
   let fetchedPrStatuses = 0;
   let newActionableComments = [];  // comments not yet seen by the user
+  let allCiPassing = true;        // false if any PR has failing/pending checks
 
   const seenIds = getSeenCommentIds();
 
@@ -528,6 +529,8 @@ function main() {
     const ciFailureComments = [];
     const checks = status.statusCheckRollup ?? [];
     const failedChecks = checks.filter(c => c.conclusion === "FAILURE" || c.conclusion === "TIMED_OUT");
+    const pendingChecks = checks.filter(c => !c.conclusion || c.conclusion === "PENDING" || c.conclusion === "QUEUED" || c.conclusion === "IN_PROGRESS");
+    if (failedChecks.length > 0 || pendingChecks.length > 0 || checks.length === 0) allCiPassing = false;
     if (failedChecks.length > 0) {
       const checkSummary = failedChecks.map(c => `- ${c.name}: ${c.conclusion}`).join("\n");
       const ciId = `ci-failures-${pr.pr_number}-${failedChecks.map(c => c.name).join(",").replace(/\s+/g, "_")}`;
@@ -578,6 +581,21 @@ function main() {
     log("PR review decision no longer approved — notification flag cleared");
   } else if (fetchedPrStatuses === 0 && issue.pr_approved_at) {
     log("WARN: Could not fetch any PR statuses — preserving existing approval flag");
+  }
+
+  // ── Awaiting-review auto-detection ─────────────────────────────────────
+  // Heuristic: CI passing + no unresolved/new comments + no approval yet
+  if (fetchedPrStatuses > 0) {
+    const shouldBeAwaitingReview = allCiPassing && !anyApproved && newActionableComments.length === 0;
+    if (shouldBeAwaitingReview && !issue.awaiting_review) {
+      db.prepare("UPDATE issues SET awaiting_review = 1, updated_at = datetime('now') WHERE id = ?").run(issueId);
+      db.prepare("INSERT INTO activity_log (issue_id, type, actor, message) VALUES (?, 'awaiting_review_set', 'watcher', 'PR is ready for review: CI passing, no open comments, no approvals yet')").run(issueId);
+      log("Awaiting review: CI passing, no open comments, no approval — flag set");
+    } else if (!shouldBeAwaitingReview && issue.awaiting_review) {
+      db.prepare("UPDATE issues SET awaiting_review = 0, updated_at = datetime('now') WHERE id = ?").run(issueId);
+      db.prepare("INSERT INTO activity_log (issue_id, type, actor, message) VALUES (?, 'awaiting_review_cleared', 'watcher', 'Awaiting-review flag cleared')").run(issueId);
+      log("Awaiting review flag cleared");
+    }
   }
 
   // ── Merge queue detection ──────────────────────────────────────────

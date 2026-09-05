@@ -20,7 +20,7 @@ Execution outline:
 2. Inspect current PR stack from the context and verify no tracked PR is merged before destructive cleanup.
 3. Build the replacement stack on the same worktree using branches ending in `-part-1`, `-part-2`, etc.
 4. Push the replacement branches.
-5. Create or update the replacement PRs with `/path/to/forge/scripts/github-pr-upsert --base <parent-branch> --head <part-branch> --title-file <title-file> --body-file <body-file>`. This helper uses GitHub REST with explicit title/body/base/head fields. Write titles/bodies to temp files first; do not pass Markdown bodies inline. Then run `gh stack link --base <base-branch> --open <pr1> <pr2> ...` in bottom-to-top order so GitHub recognizes the built-in stack. Do not use Graphite.
+5. Create or update the replacement PRs with `/path/to/forge/scripts/github-pr-upsert --base <parent-branch> --head <part-branch> --title-file <title-file> --body-file <body-file>`. This helper uses GitHub REST with explicit title/body/base/head fields. Write conventional-commit titles to temp files first; Market Pricing titles must start with `[MP] `, e.g. `[MP] fix: concise subject`. Do not pass Markdown bodies inline. Then run `gh stack link --base <base-branch> --open <pr1> <pr2> ...` in bottom-to-top order so GitHub recognizes the built-in stack. Do not use Graphite.
 6. Write a `prs.json` file next to plan.md containing the new stack, e.g.:
    [
      { "position": 1, "branch": "user/ISSUE-title-part-1", "pr_number": 123 },

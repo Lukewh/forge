@@ -61,7 +61,35 @@ test("makeGitAgentPlan upserts PR metadata through REST during PR creation", () 
   ]);
   assert.equal(plan.steps.find(step => step.kind === "upsert-pr").base, "main");
   assert.equal(plan.steps.filter(step => step.kind === "upsert-pr")[1].base, "user/issue-part-1");
-  assert.equal(plan.steps.find(step => step.kind === "upsert-pr").title, "BAND-123: Add audit filters (1/2)");
+  assert.equal(plan.steps.find(step => step.kind === "upsert-pr").title, "feat: add audit filters (1/2)");
+});
+
+test("makeGitAgentPlan uses MP conventional PR titles from plan stack", () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "forge-pr-title-"));
+  try {
+    const planPath = join(tempDir, "plan.md");
+    writeFileSync(planPath, `---
+app: pricing
+target-paths:
+  - functions/src/modules/marketPricing/pricing/services/example.ts
+---
+Fix the customer-facing Market Pricing bug.
+
+# PR Stack
+
+## PR 1 — Backend: Diff-based band-pay-type data rule updates + chunking
+**Scope:** Optimize data rule saves.
+`);
+    const plan = makeGitAgentPlan({
+      state: "CREATING_PR",
+      issue: { title: "[Anduril] Data rule save and regenerate hangs", linear_id: "BAND-5863", project_file_path: planPath },
+      baseBranch: "main",
+      prStack: [{ id: 10, gt_branch: "user/issue", position: 1, base_pr_id: null, pr_number: null, status: "open" }],
+    });
+    assert.equal(plan.steps.find(step => step.kind === "upsert-pr").title, "[MP] fix: diff-based band-pay-type data rule updates + chunking");
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
 });
 
 test("makeGitAgentPlan push mode force-pushes rebased existing PR branches", () => {
@@ -76,7 +104,7 @@ test("makeGitAgentPlan push mode force-pushes rebased existing PR branches", () 
 
   assert.deepEqual(plan.steps.map(step => step.kind), ["fetch-base", "checkout", "pull-branch", "rebase", "push", "upsert-pr", "write-prs-json"]);
   assert.equal(plan.steps.find(step => step.kind === "push").forceWithLease, true);
-  assert.equal(plan.steps.find(step => step.kind === "upsert-pr").title, "BAND-123: Add audit filters");
+  assert.equal(plan.steps.find(step => step.kind === "upsert-pr").title, "feat: add audit filters");
 });
 
 test("sync-worktree-to-base can continue when PR branch divergence is patch-equivalent", () => {

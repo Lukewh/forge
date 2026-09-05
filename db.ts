@@ -70,6 +70,8 @@ export interface IssueRow {
   wt_path: string | null;
   pr_approved_at: string | null;
   auto_fix_enabled: number;
+  externally_managed: number;  // 1 = managed outside Forge (e.g. Cursor); scheduler skips this issue
+  awaiting_review: number;      // 1 = PR is open, CI passing, no unresolved comments, no approvals yet
   focus_rank: number | null;
   target_kind: string | null;
   target_paths_json: string | null;
@@ -393,6 +395,8 @@ export class ForgeDB {
     addColumn("issues", "avoid_paths_json", "TEXT");
     addColumn("issues", "scope_notes", "TEXT");
     addColumn("issues", "project_map_snapshot_json", "TEXT");
+    addColumn("issues", "externally_managed", "INTEGER NOT NULL DEFAULT 0");
+    addColumn("issues", "awaiting_review", "INTEGER NOT NULL DEFAULT 0");
     addColumn("issues", "pi_sessions_json", "TEXT");
 
     this.db.prepare("UPDATE settings SET value = replace(value, 'IS_' || 'DEV' || 'CONTAINER=1 ', '') WHERE key LIKE 'vm_%_command'").run();
@@ -559,6 +563,7 @@ export class ForgeDB {
       SELECT * FROM issues
       WHERE state IN ('PENDING','SETTING_UP','PLANNING','AI_PLAN_REVIEWING','WORKING','AI_REVIEWING','CREATING_PR','FIXING','PUSHING','REBASING','WATCHING_PR','IN_MERGE_QUEUE','SPLIT_PLANNING','SPLITTING')
         AND locked_at IS NULL
+        AND externally_managed = 0
       ORDER BY
         CASE state
           WHEN 'FIXING'       THEN 1
