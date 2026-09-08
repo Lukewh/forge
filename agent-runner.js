@@ -486,6 +486,27 @@ function buildContextBundle(issueRow, linearData, assetMap) {
       const laterComments = fixComments.filter(c => !targetPr.pr_number || Number(c.prNumber) !== Number(targetPr.pr_number));
       if (targetComments.length) lines.push(`Target PR comments in this batch: ${targetComments.length}.`);
       if (laterComments.length) lines.push(`Comments for other PRs are present (${laterComments.length}); do not apply those requested changes in this run unless the same code must move into the target PR to satisfy the target PR review.`);
+
+      // Inject recent branch commit log so the fixer understands deliberate history
+      const cwd = issueRow.wt_path;
+      if (cwd && fs.existsSync(cwd) && targetPr.gt_branch) {
+        try {
+          const baseBranch = getIssueBaseBranch(issueRow);
+          const branchLog = execFileSync(
+            "git", ["log", "--oneline", `origin/${baseBranch}..${targetPr.gt_branch}`],
+            { cwd, encoding: "utf-8", timeout: 15000, stdio: ["ignore", "pipe", "pipe"] }
+          ).trim();
+          if (branchLog) {
+            lines.push("");
+            lines.push("## Target branch commit history (read before applying any fix)");
+            lines.push("These are the commits already on the target branch. Read `git log --patch origin/main..HEAD` to understand the intent behind each one. Do NOT apply a reviewer comment that reverts a deliberate decision made in this history without first replying to the comment to clarify.");
+            lines.push("```");
+            lines.push(branchLog);
+            lines.push("```");
+          }
+        } catch { /* non-fatal */ }
+      }
+
       lines.push("");
     }
   }
@@ -1471,7 +1492,7 @@ async function main() {
       log(`Pulling current branch and rebasing worktree onto origin/${baseBranch} before ${agentType}…`);
       try {
         const syncArgs = [cwd, baseBranch];
-        if (agentType === "git-agent") syncArgs.push("--allow-diverged-current");
+        if (agentType === "git-agent" || agentType === "fixer") syncArgs.push("--allow-diverged-current");
         execFileSync(path.join(FORGE_DIR, "scripts", "sync-worktree-to-base"), syncArgs, { cwd, timeout: 180000, stdio: "pipe" });
         log(`Worktree pulled and rebased with origin/${baseBranch}`);
       } catch (e) {

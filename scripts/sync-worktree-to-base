@@ -3,6 +3,35 @@
 
 const { execFileSync } = require("child_process");
 const fs = require("fs");
+
+// Serialise git fetches across concurrent Forge worktrees via a shared lockfile.
+// Without this, simultaneous fetches update the same refs/remotes/origin/main
+// ref and the loser gets "cannot lock ref" even after retries.
+function withFetchLock(fn) {
+  const os = require("os");
+  const lockFile = require("path").join(os.tmpdir(), "forge-git-fetch.lock");
+  const timeout = 60000;
+  const poll = 200;
+  const deadline = Date.now() + timeout;
+  // Spin-wait to acquire lock
+  for (;;) {
+    try {
+      fs.writeFileSync(lockFile, String(process.pid), { flag: "wx" });
+      break; // acquired
+    } catch (e) {
+      if (e.code !== "EEXIST") throw e;
+      if (Date.now() > deadline) {
+        // Stale lock — take it over
+        try { fs.unlinkSync(lockFile); } catch {}
+        continue;
+      }
+      const start = Date.now();
+      while (Date.now() - start < poll) {}
+    }
+  }
+  try { return fn(); }
+  finally { try { fs.unlinkSync(lockFile); } catch {} }
+}
 const path = require("path");
 
 function usage() {
@@ -82,7 +111,7 @@ if (!isClean()) {
 const remoteRef = `refs/remotes/origin/${baseBranch}`;
 try {
   console.log(`[forge:sync-base] Fetching origin/${baseBranch}…`);
-  fetchWithRetry(["fetch", "--prune", "origin", `+refs/heads/${baseBranch}:${remoteRef}`], { timeout: 120000, stdio: "inherit" });
+  withFetchLock(() => fetchWithRetry(["fetch", "--prune", "origin", `+refs/heads/${baseBranch}:${remoteRef}`], { timeout: 120000, stdio: "inherit" }));
 } catch (error) {
   console.error(`[forge:sync-base] git fetch failed: ${error.message}`);
   process.exit(2);
@@ -104,7 +133,7 @@ if (currentBranch) {
   const currentRemoteRef = `refs/remotes/origin/${currentBranch}`;
   try {
     console.log(`[forge:sync-base] Fetching origin/${currentBranch}…`);
-    fetchWithRetry(["fetch", "--prune", "origin", `+refs/heads/${currentBranch}:${currentRemoteRef}`], { timeout: 120000, stdio: "inherit" });
+    withFetchLock(() => fetchWithRetry(["fetch", "--prune", "origin", `+refs/heads/${currentBranch}:${currentRemoteRef}`], { timeout: 120000, stdio: "inherit" }));
 
     try {
       execFileSync("git", ["merge-base", "--is-ancestor", "HEAD", currentRemoteRef], { cwd, stdio: "ignore" });

@@ -87,6 +87,8 @@ Write PR descriptions in this format:
 {How to verify this works}
 ```
 
+The `github-pr-upsert` helper automatically appends a `<!-- forge-end -->` sentinel to the body. **Do not remove or move this sentinel.** Anything the PR author adds after the sentinel (screenshots, Loom links, notes) is preserved across Forge updates.
+
 ## After you finish
 
 After creating or updating PRs, write a `prs.json` file to record the stack so Forge can track it:

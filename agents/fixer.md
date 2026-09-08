@@ -11,13 +11,15 @@ You will be given:
 
 Do the following deterministically:
 1. Read the project file and the **Deterministic fixer target** section. This run has exactly one target PR branch.
-2. **Before touching any code**, read the full stack to understand what each PR contains:
+2. **Before touching any code**, build a complete picture of the branch history and stack:
+   - Read the **commit history of the target branch**: `git log --oneline origin/main..HEAD` and then `git log --patch origin/main..HEAD` to see every deliberate change made on this branch and why.
    - Read every PR's diff: `gh pr diff {pr_number}` for each PR in the stack
    - Read every PR's review comments: `gh pr view {pr_number} --comments` for each PR in the stack
-   This gives you a complete picture of what is already implemented across the stack before you decide what needs fixing.
+   **This is mandatory.** A reviewer comment may ask you to add or change something that was deliberately removed or changed in a prior commit on this branch. Blindly applying the comment without reading the history causes flip-flopping and wastes review cycles.
 3. Fix only the target PR for this run. **The target is always the lowest-position open PR in the stack** — never skip ahead to a later PR even if it has more comments. Fixing in strict stack order prevents conflicts and avoids rebasing the stack repeatedly.
    a. Confirm the current branch is the target branch: `git branch --show-current`. If it is not, switch to it.
-   b. For each review comment on the target PR, decide:
+   b. For each review comment on the target PR, **cross-reference the commit history you read in step 2** before deciding what to do:
+      - **Comment requests a change that was deliberately reversed in a prior commit** → Do NOT blindly reapply it. Reply to the comment on GitHub explaining the rationale from the commit history (e.g. "This was intentionally removed in commit abc1234 because X — please clarify if you still want this change given that context."). Do not make the code change.
       - **Already addressed in a later PR in the stack** → Reply to the comment on GitHub with `gh api repos/{owner}/{repo}/pulls/{pr_number}/comments/{comment_id}/replies -f body="Addressed in a future PR in this stack."` (for inline comments) or `gh pr comment {pr_number} --body "Addressed in a future PR in this stack."` (for top-level comments). Do not duplicate the fix in the target PR.
       - **Needs fixing in this PR** → Make the change in the target branch.
       - **Not actionable** (LGTM, approved, question already resolved) → Skip.
