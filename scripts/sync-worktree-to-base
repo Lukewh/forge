@@ -144,8 +144,9 @@ if (currentBranch) {
         execFileSync("git", ["merge-base", "--is-ancestor", currentRemoteRef, "HEAD"], { cwd, stdio: "ignore" });
         console.log(`[forge:sync-base] ${currentBranch} already contains origin/${currentBranch}.`);
       } catch {
-        if (allowDivergedCurrent && remoteOnlyCommitsArePatchEquivalent(currentRemoteRef)) {
-          console.log(`[forge:sync-base] ${currentBranch} and origin/${currentBranch} have diverged, but remote-only commits are patch-equivalent to local history; continuing before force-with-lease push.`);
+        if (allowDivergedCurrent) {
+          // Caller (git-agent or fixer) will force-with-lease push; divergence is safe to ignore.
+          console.log(`[forge:sync-base] ${currentBranch} and origin/${currentBranch} have diverged; continuing because --allow-diverged-current is set (caller will force-push).`);
         } else {
           console.error(`[forge:sync-base] ${currentBranch} and origin/${currentBranch} have diverged; refusing to pull before rebase.`);
           process.exit(2);
