@@ -304,7 +304,7 @@ const DETAIL_TABS: DetailTab[] = [
 ];
 
 const SETTING_GROUPS: SettingGroup[] = [
-  { label: "Automation", keys: ["concurrency_limit", "scheduler_interval_seconds", "ai_review_max_rounds", "auto_retry_max", "forge_reuse_pi_sessions"] },
+  { label: "Automation", keys: ["concurrency_limit", "scheduler_interval_seconds", "ai_review_max_rounds", "auto_retry_max", "agent_max_runtime_minutes", "forge_reuse_pi_sessions"] },
   { label: "External Services", keys: ["linear_enabled", "linear_team", "github_repo", "github_use_desktop", "linear_poll_interval_seconds"] },
   { label: "Code Workspace", keys: ["worktree_provider", "repo_root", "wt_root", "worktree_root", "branch_prefix", "default_branch"] },
   { label: "Command Runtime", keys: ["runtime_mode", "vm_ssh_target", "host_path_prefix", "vm_path_prefix", "vm_frontend_staging_backend_command", "vm_frontend_local_backend_command", "vm_backend_staging_command", "vm_backend_local_command", "vm_database_command", "vm_command", "terminal_command"] },
@@ -327,6 +327,7 @@ const SETTING_LABELS: Record<string, { label: string; hint: string }> = {
   scheduler_interval_seconds: { label: "Scheduler check interval", hint: "How many seconds Forge waits between queue checks." },
   ai_review_max_rounds: { label: "AI review loop limit", hint: "Maximum coder ↔ AI reviewer loops before Forge escalates to you." },
   auto_retry_max: { label: "Automatic retry limit", hint: "Maximum automatic retries for transient git-agent and fixer failures." },
+  agent_max_runtime_minutes: { label: "Agent max runtime (minutes)", hint: "Maximum time any agent (coder, fixer, etc.) can run before being killed. Default: 45." },
   forge_reuse_pi_sessions: { label: "Reuse Pi conversations", hint: "Reuse one Pi session for the same issue and agent type to preserve agent context." },
   model: { label: "Default agent model", hint: "Model used by every agent unless that agent has an override below." },
   default_model: { label: "Legacy default model", hint: "Older setting name kept for compatibility. Prefer Default agent model." },

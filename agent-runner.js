@@ -604,10 +604,10 @@ function loadSystemPrompt(type) {
 // Max runtime — prevents runaway agents eating resources.
 // Large planning/coding/fixing runs can legitimately need more than
 // 20 minutes; keep the cap high enough to avoid killing productive agents.
-const DEFAULT_MAX_RUNTIME_MS = 45 * 60 * 1000;
-const AGENT_MAX_RUNTIME_MS = { fixer: 45 * 60 * 1000, rebaser: 45 * 60 * 1000 };
 function maxRuntimeMsForAgent(type) {
-  return AGENT_MAX_RUNTIME_MS[type] ?? DEFAULT_MAX_RUNTIME_MS;
+  const minutes = parseInt(db.prepare("SELECT value FROM settings WHERE key = 'agent_max_runtime_minutes'").get()?.value ?? "45", 10);
+  const ms = (Number.isFinite(minutes) && minutes > 0 ? minutes : 45) * 60 * 1000;
+  return ms;
 }
 
 // ── Pi spawner ───────────────────────────────────────────────────────

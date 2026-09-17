@@ -365,6 +365,7 @@ db.exec(`
     ('model_rebaser',''),
     ('forge_reuse_pi_sessions','false'),
     ('ai_review_max_rounds','5'),
+    ('agent_max_runtime_minutes','45'),
     ('github_repo',''),
     ('worktree_provider','git'),
     ('wt_root',''),

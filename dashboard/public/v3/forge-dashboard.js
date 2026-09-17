@@ -1,4 +1,4 @@
-var Qt, $, xa, He, Zn, $a, Wa, sn, $t, yt, Da, An, vn, _n, Ut = {}, Mt = [], Fr = /acit|ex(?:s|g|n|p|$)|rph|grid|ows|mnc|ntw|ine[ch]|zoo|^ord|itera/i, wt = Array.isArray;
+var Qt, $, xa, He, Zn, $a, Wa, sn, $t, yt, Da, An, vn, _n, Mt = {}, Ut = [], Fr = /acit|ex(?:s|g|n|p|$)|rph|grid|ows|mnc|ntw|ine[ch]|zoo|^ord|itera/i, wt = Array.isArray;
 function Ce(e, n) {
   for (var a in n) e[a] = n[a];
   return e;
@@ -27,7 +27,7 @@ function it(e, n) {
   for (var a; n < e.__k.length; n++) if ((a = e.__k[n]) != null && a.__e != null) return a.__e;
   return typeof e.type == "function" ? it(e) : null;
 }
-function Ur(e) {
+function Mr(e) {
   if (e.__P && e.__d) {
     var n = e.__v, a = n.__e, r = [], s = [], l = Ce({}, n);
     l.__v = n.__v + 1, $.vnode && $.vnode(l), En(e.__P, l, n, e.__n, e.__P.namespaceURI, 32 & n.__u ? [a] : null, r, a ?? it(n), !!(32 & n.__u), s), l.__v = n.__v, l.__.__k[l.__i] = l, Va(r, l, s), n.__e = n.__ = null, l.__e != a && Oa(l);
@@ -43,26 +43,26 @@ function ea(e) {
 }
 function Vt() {
   try {
-    for (var e, n = 1; He.length; ) He.length > n && He.sort(Wa), e = He.shift(), n = He.length, Ur(e);
+    for (var e, n = 1; He.length; ) He.length > n && He.sort(Wa), e = He.shift(), n = He.length, Mr(e);
   } finally {
     He.length = Vt.__r = 0;
   }
 }
 function Fa(e, n, a, r, s, l, c, g, f, d, h) {
-  var b, u, y, p, v, P, L, k = r && r.__k || Mt, G = n.length;
-  for (f = Mr(a, n, k, f, G), b = 0; b < G; b++) (y = a.__k[b]) != null && (u = y.__i != -1 && k[y.__i] || Ut, y.__i = b, P = En(e, y, u, s, l, c, g, f, d, h), p = y.__e, y.ref && u.ref != y.ref && (u.ref && Pn(u.ref, null, y), h.push(y.ref, y.__c || p, y)), v == null && p != null && (v = p), (L = !!(4 & y.__u)) || u.__k === y.__k ? (f = Ua(y, f, e, L), L && u.__e && (u.__e = null)) : typeof y.type == "function" && P !== void 0 ? f = P : p && (f = p.nextSibling), y.__u &= -7);
+  var b, u, y, p, v, P, L, k = r && r.__k || Ut, G = n.length;
+  for (f = Ur(a, n, k, f, G), b = 0; b < G; b++) (y = a.__k[b]) != null && (u = y.__i != -1 && k[y.__i] || Mt, y.__i = b, P = En(e, y, u, s, l, c, g, f, d, h), p = y.__e, y.ref && u.ref != y.ref && (u.ref && Pn(u.ref, null, y), h.push(y.ref, y.__c || p, y)), v == null && p != null && (v = p), (L = !!(4 & y.__u)) || u.__k === y.__k ? (f = Ma(y, f, e, L), L && u.__e && (u.__e = null)) : typeof y.type == "function" && P !== void 0 ? f = P : p && (f = p.nextSibling), y.__u &= -7);
   return a.__e = v, f;
 }
-function Mr(e, n, a, r, s) {
+function Ur(e, n, a, r, s) {
   var l, c, g, f, d, h = a.length, b = h, u = 0;
   for (e.__k = new Array(s), l = 0; l < s; l++) (c = n[l]) != null && typeof c != "boolean" && typeof c != "function" ? (typeof c == "string" || typeof c == "number" || typeof c == "bigint" || c.constructor == String ? c = e.__k[l] = Wt(null, c, null, null, null) : wt(c) ? c = e.__k[l] = Wt(ot, { children: c }, null, null, null) : c.constructor === void 0 && c.__b > 0 ? c = e.__k[l] = Wt(c.type, c.props, c.key, c.ref ? c.ref : null, c.__v) : e.__k[l] = c, f = l + u, c.__ = e, c.__b = e.__b + 1, g = null, (d = c.__i = Vr(c, a, f, b)) != -1 && (b--, (g = a[d]) && (g.__u |= 2)), g == null || g.__v == null ? (d == -1 && (s > h ? u-- : s < h && u++), typeof c.type != "function" && (c.__u |= 4)) : d != f && (d == f - 1 ? u-- : d == f + 1 ? u++ : (d > f ? u-- : u++, c.__u |= 4))) : e.__k[l] = null;
   if (b) for (l = 0; l < h; l++) (g = a[l]) != null && (2 & g.__u) == 0 && (g.__e == r && (r = it(g)), qa(g, g));
   return r;
 }
-function Ua(e, n, a, r) {
+function Ma(e, n, a, r) {
   var s, l;
   if (typeof e.type == "function") {
-    for (s = e.__k, l = 0; s && l < s.length; l++) s[l] && (s[l].__ = e, n = Ua(s[l], n, a, r));
+    for (s = e.__k, l = 0; s && l < s.length; l++) s[l] && (s[l].__ = e, n = Ma(s[l], n, a, r));
     return n;
   }
   e.__e != n && (r && (n && e.type && !n.parentNode && (n = it(e)), a.insertBefore(e.__e, n || null)), n = e.__e);
@@ -127,14 +127,14 @@ function En(e, n, a, r, s, l, c, g, f, d) {
         if (G && F.getDerivedStateFromProps == null && k !== p && u.componentWillReceiveProps != null && u.componentWillReceiveProps(k, D), n.__v == a.__v || !u.__e && u.shouldComponentUpdate != null && u.shouldComponentUpdate(k, u.__s, D) === !1) {
           n.__v != a.__v && (u.props = k, u.state = u.__s, u.__d = !1), n.__e = a.__e, n.__k = a.__k, n.__k.some(function(w) {
             w && (w.__ = n);
-          }), Mt.push.apply(u.__h, u._sb), u._sb = [], u.__h.length && c.push(u);
+          }), Ut.push.apply(u.__h, u._sb), u._sb = [], u.__h.length && c.push(u);
           break e;
         }
         u.componentWillUpdate != null && u.componentWillUpdate(k, u.__s, D), G && u.componentDidUpdate != null && u.__h.push(function() {
           u.componentDidUpdate(p, v, P);
         });
       }
-      if (u.context = D, u.props = k, u.__P = e, u.__e = !1, H = $.__r, q = 0, G) u.state = u.__s, u.__d = !1, H && H(n), h = u.render(u.props, u.state, u.context), Mt.push.apply(u.__h, u._sb), u._sb = [];
+      if (u.context = D, u.props = k, u.__P = e, u.__e = !1, H = $.__r, q = 0, G) u.state = u.__s, u.__d = !1, H && H(n), h = u.render(u.props, u.state, u.context), Ut.push.apply(u.__h, u._sb), u._sb = [];
       else do
         u.__d = !1, H && H(n), h = u.render(u.props, u.state, u.context), u.state = u.__s;
       while (u.__d && ++q < 25);
@@ -146,13 +146,13 @@ function En(e, n, a, r, s, l, c, g, f, d) {
           l != null && (l[l.indexOf(g)] = null), n.__e = g;
         } else if (l != null) for (Y = l.length; Y--; ) wn(l[Y]);
       } else n.__e = a.__e;
-      n.__k == null && (n.__k = a.__k || []), w.then || Ma(n), $.__e(w, n, a);
+      n.__k == null && (n.__k = a.__k || []), w.then || Ua(n), $.__e(w, n, a);
     }
   } else l == null && n.__v == a.__v ? (n.__k = a.__k, n.__e = a.__e) : g = n.__e = Hr(a.__e, n, a, r, s, l, c, f, d);
   return (h = $.diffed) && h(n), 128 & n.__u ? void 0 : g;
 }
-function Ma(e) {
-  e && (e.__c && (e.__c.__e = !0), e.__k && e.__k.some(Ma));
+function Ua(e) {
+  e && (e.__c && (e.__c.__e = !0), e.__k && e.__k.some(Ua));
 }
 function Va(e, n, a) {
   for (var r = 0; r < a.length; r++) Pn(a[r], a[++r], a[++r]);
@@ -170,7 +170,7 @@ function Ha(e) {
   return typeof e != "object" || e == null || e.__b > 0 ? e : wt(e) ? e.map(Ha) : e.constructor !== void 0 ? null : Ce({}, e);
 }
 function Hr(e, n, a, r, s, l, c, g, f) {
-  var d, h, b, u, y, p, v, P = a.props || Ut, L = n.props, k = n.type;
+  var d, h, b, u, y, p, v, P = a.props || Mt, L = n.props, k = n.type;
   if (k == "svg" ? s = "http://www.w3.org/2000/svg" : k == "math" ? s = "http://www.w3.org/1998/Math/MathML" : s || (s = "http://www.w3.org/1999/xhtml"), l != null) {
     for (d = 0; d < l.length; d++) if ((y = l[d]) && "setAttribute" in y == !!k && (k ? y.localName == k : y.nodeType == 3)) {
       e = y, l[d] = null;
@@ -220,9 +220,9 @@ function qr(e, n, a) {
 }
 function Qe(e, n, a) {
   var r, s, l, c;
-  n == document && (n = document.documentElement), $.__ && $.__(e, n), s = (r = !1) ? null : n.__k, l = [], c = [], En(n, e = n.__k = t(ot, null, [e]), s || Ut, Ut, n.namespaceURI, s ? null : n.firstChild ? Qt.call(n.childNodes) : null, l, s ? s.__e : n.firstChild, r, c), Va(l, e, c), e.props.children = null;
+  n == document && (n = document.documentElement), $.__ && $.__(e, n), s = (r = !1) ? null : n.__k, l = [], c = [], En(n, e = n.__k = t(ot, null, [e]), s || Mt, Mt, n.namespaceURI, s ? null : n.firstChild ? Qt.call(n.childNodes) : null, l, s ? s.__e : n.firstChild, r, c), Va(l, e, c), e.props.children = null;
 }
-Qt = Mt.slice, $ = { __e: function(e, n, a, r) {
+Qt = Ut.slice, $ = { __e: function(e, n, a, r) {
   for (var s, l, c; n = n.__; ) if ((s = n.__c) && !s.__) try {
     if ((l = s.constructor) && l.getDerivedStateFromError != null && (s.setState(l.getDerivedStateFromError(e)), c = s.__d), s.componentDidCatch != null && (s.componentDidCatch(e, r || {}), c = s.__d), c) return s.__E = s;
   } catch (g) {
@@ -550,7 +550,7 @@ const kt = [
   { key: "activity", label: "Activity" },
   { key: "ask", label: "Ask" }
 ], Jt = [
-  { label: "Automation", keys: ["concurrency_limit", "scheduler_interval_seconds", "ai_review_max_rounds", "auto_retry_max", "forge_reuse_pi_sessions"] },
+  { label: "Automation", keys: ["concurrency_limit", "scheduler_interval_seconds", "ai_review_max_rounds", "auto_retry_max", "agent_max_runtime_minutes", "forge_reuse_pi_sessions"] },
   { label: "External Services", keys: ["linear_enabled", "linear_team", "github_repo", "github_use_desktop", "linear_poll_interval_seconds"] },
   { label: "Code Workspace", keys: ["worktree_provider", "repo_root", "wt_root", "worktree_root", "branch_prefix", "default_branch"] },
   { label: "Command Runtime", keys: ["runtime_mode", "vm_ssh_target", "host_path_prefix", "vm_path_prefix", "vm_frontend_staging_backend_command", "vm_frontend_local_backend_command", "vm_backend_staging_command", "vm_backend_local_command", "vm_database_command", "vm_command", "terminal_command"] },
@@ -569,6 +569,7 @@ const kt = [
   scheduler_interval_seconds: { label: "Scheduler check interval", hint: "How many seconds Forge waits between queue checks." },
   ai_review_max_rounds: { label: "AI review loop limit", hint: "Maximum coder ↔ AI reviewer loops before Forge escalates to you." },
   auto_retry_max: { label: "Automatic retry limit", hint: "Maximum automatic retries for transient git-agent and fixer failures." },
+  agent_max_runtime_minutes: { label: "Agent max runtime (minutes)", hint: "Maximum time any agent (coder, fixer, etc.) can run before being killed. Default: 45." },
   forge_reuse_pi_sessions: { label: "Reuse Pi conversations", hint: "Reuse one Pi session for the same issue and agent type to preserve agent context." },
   model: { label: "Default agent model", hint: "Model used by every agent unless that agent has an override below." },
   default_model: { label: "Legacy default model", hint: "Older setting name kept for compatibility. Prefer Default agent model." },
@@ -1110,19 +1111,19 @@ function se(e, n, a = `${n}s`) {
 function Ve(e, n) {
   return (e ?? []).filter((a) => a.agent_type === n).length;
 }
-function Uo(e) {
+function Mo(e) {
   return (e ?? []).filter((n) => n.type === "FIX_APPROVAL").reduce((n, a) => {
     var r;
     return n + (((r = Ft(a).comments) == null ? void 0 : r.length) ?? 0);
   }, 0);
 }
-function Mo(e, n) {
+function Uo(e, n) {
   return (e ?? []).filter((a) => a.type === n).length;
 }
 function Vo(e, n) {
   var u, y, p;
-  const a = (n == null ? void 0 : n.agentRuns) ?? [], r = (n == null ? void 0 : n.decisions) ?? [], s = (n == null ? void 0 : n.prStack) ?? ((u = n == null ? void 0 : n.issue) == null ? void 0 : u.prStack) ?? [], l = Ve(a, "planner"), c = Ve(a, "plan-reviewer"), g = Ve(a, "coder"), f = Ve(a, "reviewer"), d = Ve(a, "fixer"), h = Ve(a, "watcher"), b = Uo(r);
-  return e === "Setup" ? { title: "Setup", summary: "Creates the worktree, branch, and project file before agent work starts.", stats: [se(Ve(a, "setup"), "setup run"), (y = n == null ? void 0 : n.issue) != null && y.wt_path ? "Worktree ready" : "Worktree not recorded yet"] } : e === "Plan" ? { title: "Plan", summary: "Planner drafts the project plan, then the AI plan reviewer checks scope and sequencing.", stats: [se(l, "planner pass", "planner passes"), se(c, "AI plan review"), se(Math.max(0, Math.min(l, c) - 1), "planner/reviewer loop")] } : e === "Code" ? { title: "Code", summary: "Coder implements the approved plan and applies requested changes from review loops.", stats: [se(g, "coder pass", "coder passes"), se(Math.max(0, g - 1), "rework loop")] } : e === "Review" ? { title: "Review", summary: "AI reviewer inspects the implementation before handing it to you for code review.", stats: [se(f, "AI code review"), se(Mo(r, "CODE_REVIEW"), "human review gate"), se(Math.max(0, Math.min(g, f) - 1), "code/review loop")] } : e === "PR" ? { title: "PR", summary: "Git agent prepares the branch stack and opens or updates GitHub PRs.", stats: [se(Ve(a, "git-agent"), "git-agent run"), se(s.length, "PR"), se(b, "PR comment/issue")] } : e === "Watch" ? { title: "Watch", summary: "Watcher polls reviews, checks, and merge state. Fixer loops run when PR feedback needs changes.", stats: [se(h, "watch poll"), se(d, "fix loop"), se(b, "comment/issue routed to fixer")] } : { title: "Done", summary: "Issue is complete once Forge observes the PR stack merged and writes the summary.", stats: [((p = n == null ? void 0 : n.issue) == null ? void 0 : p.state) === "DONE" ? "Completed" : "Not completed yet"] };
+  const a = (n == null ? void 0 : n.agentRuns) ?? [], r = (n == null ? void 0 : n.decisions) ?? [], s = (n == null ? void 0 : n.prStack) ?? ((u = n == null ? void 0 : n.issue) == null ? void 0 : u.prStack) ?? [], l = Ve(a, "planner"), c = Ve(a, "plan-reviewer"), g = Ve(a, "coder"), f = Ve(a, "reviewer"), d = Ve(a, "fixer"), h = Ve(a, "watcher"), b = Mo(r);
+  return e === "Setup" ? { title: "Setup", summary: "Creates the worktree, branch, and project file before agent work starts.", stats: [se(Ve(a, "setup"), "setup run"), (y = n == null ? void 0 : n.issue) != null && y.wt_path ? "Worktree ready" : "Worktree not recorded yet"] } : e === "Plan" ? { title: "Plan", summary: "Planner drafts the project plan, then the AI plan reviewer checks scope and sequencing.", stats: [se(l, "planner pass", "planner passes"), se(c, "AI plan review"), se(Math.max(0, Math.min(l, c) - 1), "planner/reviewer loop")] } : e === "Code" ? { title: "Code", summary: "Coder implements the approved plan and applies requested changes from review loops.", stats: [se(g, "coder pass", "coder passes"), se(Math.max(0, g - 1), "rework loop")] } : e === "Review" ? { title: "Review", summary: "AI reviewer inspects the implementation before handing it to you for code review.", stats: [se(f, "AI code review"), se(Uo(r, "CODE_REVIEW"), "human review gate"), se(Math.max(0, Math.min(g, f) - 1), "code/review loop")] } : e === "PR" ? { title: "PR", summary: "Git agent prepares the branch stack and opens or updates GitHub PRs.", stats: [se(Ve(a, "git-agent"), "git-agent run"), se(s.length, "PR"), se(b, "PR comment/issue")] } : e === "Watch" ? { title: "Watch", summary: "Watcher polls reviews, checks, and merge state. Fixer loops run when PR feedback needs changes.", stats: [se(h, "watch poll"), se(d, "fix loop"), se(b, "comment/issue routed to fixer")] } : { title: "Done", summary: "Issue is complete once Forge observes the PR stack merged and writes the summary.", stats: [((p = n == null ? void 0 : n.issue) == null ? void 0 : p.state) === "DONE" ? "Completed" : "Not completed yet"] };
 }
 function Ho(e) {
   return ["PENDING", "SETTING_UP"].includes(e ?? "") ? 0 : ["PLANNING", "AI_PLAN_REVIEWING", "AWAITING_PLAN_APPROVAL", "SPLIT_PLANNING", "AWAITING_SPLIT_APPROVAL"].includes(e ?? "") ? 1 : ["WORKING", "SPLITTING"].includes(e ?? "") ? 2 : ["AI_REVIEWING", "AWAITING_CODE_REVIEW"].includes(e ?? "") ? 3 : ["CREATING_PR"].includes(e ?? "") ? 4 : ["WATCHING_PR", "AWAITING_FIX_APPROVAL", "FIXING", "AWAITING_FIX_REVIEW", "PUSHING", "REBASING", "IN_MERGE_QUEUE"].includes(e ?? "") ? 5 : e === "DONE" ? 6 : 0;
@@ -1843,10 +1844,10 @@ function Gi({ issues: e, decisions: n, linearBacklog: a, selectedIssueId: r, add
     try {
       const E = window.localStorage.getItem("forge.v3.queuePrefs");
       if (!E) return { filter: "all", sort: "priority" };
-      const U = JSON.parse(E);
+      const M = JSON.parse(E);
       return {
-        filter: ["all", "needs-me", "running", "failed", "watching-pr", "paused"].includes(U.filter) ? U.filter : "all",
-        sort: ["priority", "newest", "oldest", "recently-updated"].includes(U.sort) ? U.sort : "priority"
+        filter: ["all", "needs-me", "running", "failed", "watching-pr", "paused"].includes(M.filter) ? M.filter : "all",
+        sort: ["priority", "newest", "oldest", "recently-updated"].includes(M.sort) ? M.sort : "priority"
       };
     } catch {
       return { filter: "all", sort: "priority" };
@@ -1863,10 +1864,10 @@ function Gi({ issues: e, decisions: n, linearBacklog: a, selectedIssueId: r, add
     x
   ), [e, v, k, x]), ee = mt(() => {
     const E = /* @__PURE__ */ new Map();
-    return bn.forEach((U) => E.set(U.key, [])), ge.forEach((U) => {
+    return bn.forEach((M) => E.set(M.key, [])), ge.forEach((M) => {
       var oe;
-      return (oe = E.get(ze(U))) == null ? void 0 : oe.push(U);
-    }), E.forEach((U, oe) => E.set(oe, di(U, oe))), E;
+      return (oe = E.get(ze(M))) == null ? void 0 : oe.push(M);
+    }), E.forEach((M, oe) => E.set(oe, di(M, oe))), E;
   }, [ge]), $e = mt(() => a.filter((E) => ai(E, v)).slice(0, 12), [a, v]), We = Je(), De = () => ({ targetKind: ce.trim(), targetPaths: ke.trim(), avoidPaths: Ie.trim(), scopeNotes: xe.trim() }), ve = () => {
     de(""), Ee(""), Ge(""), pe("");
   }, me = () => {
@@ -1954,7 +1955,7 @@ function Gi({ issues: e, decisions: n, linearBacklog: a, selectedIssueId: r, add
         "section",
         { id: "pipeline-wrapper", class: "forge-v3-pipeline", "aria-label": "Issue pipeline" },
         bn.map((E) => {
-          const U = ee.get(E.key) ?? [], oe = E.key === "available" ? U.length + $e.length : U.length;
+          const M = ee.get(E.key) ?? [], oe = E.key === "available" ? M.length + $e.length : M.length;
           return t(
             "section",
             { key: E.key, class: "forge-v3-pipeline-column", "data-stage": E.key },
@@ -1978,9 +1979,9 @@ function Gi({ issues: e, decisions: n, linearBacklog: a, selectedIssueId: r, add
                 t(
                   "div",
                   { class: "forge-v3-available-queued" },
-                  U.length ? U.map((te) => t(Ta, { key: te.id, issue: te, selected: r === te.id, onOpenIssue: l, onIssueAction: c, onReviewIssue: d })) : t("p", { class: "forge-v3-empty" }, v || k !== "all" ? "No queued issues match" : "No queued issues")
+                  M.length ? M.map((te) => t(Ta, { key: te.id, issue: te, selected: r === te.id, onOpenIssue: l, onIssueAction: c, onReviewIssue: d })) : t("p", { class: "forge-v3-empty" }, v || k !== "all" ? "No queued issues match" : "No queued issues")
                 )
-              ] : U.length === 0 ? t("p", { class: "forge-v3-empty" }, v || k !== "all" ? "No issues match the active filters" : "No issues") : U.map((te) => t(Ta, { key: te.id, issue: te, selected: r === te.id, onOpenIssue: l, onIssueAction: c, onReviewIssue: d }))
+              ] : M.length === 0 ? t("p", { class: "forge-v3-empty" }, v || k !== "all" ? "No issues match the active filters" : "No issues") : M.map((te) => t(Ta, { key: te.id, issue: te, selected: r === te.id, onOpenIssue: l, onIssueAction: c, onReviewIssue: d }))
             )
           );
         })
@@ -2309,11 +2310,11 @@ function Fi(e) {
   const n = Ye(e);
   return Number.isFinite(n) && Date.now() - n <= 10080 * 60 * 1e3;
 }
-function Ui(e) {
+function Mi(e) {
   const n = (e.prStack ?? []).map((a) => [a.pr_number ? `#${a.pr_number}` : "", a.gt_branch, a.branch, a.status].filter(Boolean).join(" ")).join(" ");
   return [e.linear_id, e.title, e.state, e.updated_at, n].filter(Boolean).join(" ").toLowerCase();
 }
-function Mi({ issue: e, onClose: n }) {
+function Ui({ issue: e, onClose: n }) {
   const a = e.prStack ?? [];
   return t(
     "aside",
@@ -2427,7 +2428,7 @@ function Vi() {
       k = !0;
     };
   }, []);
-  const h = e ?? [], b = s.trim().toLowerCase(), u = b ? h.filter((k) => Ui(k).includes(b)) : h, y = c ? h.find((k) => k.id === c) ?? null : null, p = u.length, v = u.filter((k) => Fi(k.merged ?? k.updated_at)).length, P = p ? (u.reduce((k, G) => {
+  const h = e ?? [], b = s.trim().toLowerCase(), u = b ? h.filter((k) => Mi(k).includes(b)) : h, y = c ? h.find((k) => k.id === c) ?? null : null, p = u.length, v = u.filter((k) => Fi(k.merged ?? k.updated_at)).length, P = p ? (u.reduce((k, G) => {
     var x;
     return k + Number(G.pr_count ?? ((x = G.prStack) == null ? void 0 : x.length) ?? 0);
   }, 0) / p).toFixed(1) : "0.0", L = (() => {
@@ -2470,13 +2471,13 @@ function Vi() {
         );
       })
     ),
-    y ? t(Mi, { issue: y, onClose: () => g(null) }) : null,
+    y ? t(Ui, { issue: y, onClose: () => g(null) }) : null,
     f ? t(ur, { onClose: () => d(!1) }) : null
   ]);
 }
 function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onClose: s, onPanelResizeStart: l, onIssueAction: c, onRemoveIssue: g, onLaunchRuntime: f, onStopVm: d, onSyncPrs: h, onSubmitFeedback: b, onResolveDecision: u }) {
   var Hn, qn, Bn, jn, Xn, Kn, Qn, Jn, zn, Yn;
-  const [y, p] = A(() => jt().detailTab), [v, P] = A(null), [L, k] = A(!1), [G, x] = A(!1), [D, H] = A(""), [q, Z] = A(""), Y = qe(0), [F, w] = A(""), [S, V] = A(!1), [T, ae] = A(null), [ce, de] = A(""), [ke, Ee] = A([]), [Ie, Ge] = A([]), [xe, pe] = A(""), [ge, ee] = A([]), [$e, We] = A([]), [De, ve] = A(!1), [me, Oe] = A(!1), [E, U] = A("idle"), [oe, te] = A([]), [et, st] = A(""), [lt, tt] = A(""), [Pt, nt] = A(!1), [Yt, ct] = A(!1), [Zt, dt] = A(!1), [Fe, m] = A(""), [R, C] = A([]), [W, M] = A(""), [j, J] = A(""), ue = qe(null);
+  const [y, p] = A(() => jt().detailTab), [v, P] = A(null), [L, k] = A(!1), [G, x] = A(!1), [D, H] = A(""), [q, Z] = A(""), Y = qe(0), [F, w] = A(""), [S, V] = A(!1), [T, ae] = A(null), [ce, de] = A(""), [ke, Ee] = A([]), [Ie, Ge] = A([]), [xe, pe] = A(""), [ge, ee] = A([]), [$e, We] = A([]), [De, ve] = A(!1), [me, Oe] = A(!1), [E, M] = A("idle"), [oe, te] = A([]), [et, st] = A(""), [lt, tt] = A(""), [Pt, nt] = A(!1), [Yt, ct] = A(!1), [Zt, dt] = A(!1), [Fe, m] = A(""), [R, C] = A([]), [W, U] = A(""), [j, J] = A(""), ue = qe(null);
   if (K(() => {
     var I;
     if (!e) {
@@ -2485,9 +2486,9 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
     }
     P(n ? { issue: n } : null);
     const i = jt();
-    p(i.detailTab), k(i.panel === "plan"), x(i.panel === "diff" || i.panel === "review"), Oe(i.panel === "listen"), ve(i.panel === "jump"), te([]), U("idle"), H(""), Z(i.panel === "diff" || i.panel === "review" ? "Loading diff…" : ""), w(i.diffPath), V(i.panel === "review"), ae(null), de(""), Ee([]), Ge([]), pe(""), ee([]), We([]), st(""), tt(""), nt(!1), ct(!1), dt(!1);
+    p(i.detailTab), k(i.panel === "plan"), x(i.panel === "diff" || i.panel === "review"), Oe(i.panel === "listen"), ve(i.panel === "jump"), te([]), M("idle"), H(""), Z(i.panel === "diff" || i.panel === "review" ? "Loading diff…" : ""), w(i.diffPath), V(i.panel === "review"), ae(null), de(""), Ee([]), Ge([]), pe(""), ee([]), We([]), st(""), tt(""), nt(!1), ct(!1), dt(!1);
     const _ = Io(e);
-    m(_.input ?? ""), C(_.messages ?? []), M(""), J(""), (I = ue.current) == null || I.abort(), ue.current = null;
+    m(_.input ?? ""), C(_.messages ?? []), U(""), J(""), (I = ue.current) == null || I.abort(), ue.current = null;
   }, [e]), K(() => {
     if (!e) return;
     let i = !1;
@@ -2511,14 +2512,14 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
   }, [(Hn = v == null ? void 0 : v.issue) == null ? void 0 : Hn.auto_fix_enabled, (qn = v == null ? void 0 : v.issue) == null ? void 0 : qn.externally_managed, (Bn = v == null ? void 0 : v.issue) == null ? void 0 : Bn.awaiting_review]), K(() => {
     if (!me || !e) return;
     if (Je()) {
-      U("mock live"), te([{ kind: "text", text: "Mock live agent stream — real issues connect to /api/issues/:id/listen." }]);
+      M("mock live"), te([{ kind: "text", text: "Mock live agent stream — real issues connect to /api/issues/:id/listen." }]);
       return;
     }
-    U("connecting…"), te([]);
+    M("connecting…"), te([]);
     const i = new EventSource(`/api/issues/${e}/listen`);
     return i.addEventListener("meta", (_) => {
       const I = JSON.parse(_.data);
-      U(I.agentType ? `live · ${I.agentType}` : "live");
+      M(I.agentType ? `live · ${I.agentType}` : "live");
     }), i.addEventListener("message", (_) => {
       const I = JSON.parse(_.data), N = I.kind ?? "text", O = (I.text ?? "").replace(/\x1b\[[\d;]*[A-Za-z]|\x1b[^\[]/g, "");
       if (!O) return;
@@ -2529,8 +2530,8 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
       });
     }), i.addEventListener("done", (_) => {
       const I = JSON.parse(_.data);
-      U(I.exitCode === 0 ? "done" : `failed (${I.exitCode ?? "unknown"})`), i.close();
-    }), i.addEventListener("error", () => U("no active agent")), i.onerror = () => U("disconnected"), () => i.close();
+      M(I.exitCode === 0 ? "done" : `failed (${I.exitCode ?? "unknown"})`), i.close();
+    }), i.addEventListener("error", () => M("no active agent")), i.onerror = () => M("disconnected"), () => i.close();
   }, [me, e]), K(() => {
     !e || r <= 0 || (V(!0), x(!0), Z("Loading diff…"));
   }, [r, e]), K(() => {
@@ -2622,7 +2623,7 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
     }).catch(() => de("Unable to start AI tour generation"));
   }, tn = (i = "diff") => {
     o != null && o.id && (Y.current += 1, V(i === "review"), ae(null), de(i === "review" ? "Loading AI tour…" : ""), H(""), w(""), x(!0), Z("Loading diff…"));
-  }, St = pn(D), fe = St.find((i) => i.path === F) ?? St[0], Ue = X.find((i) => i.type === "PLAN_REVIEW") ?? (ne === "plan" ? X[0] : void 0), ft = X.find((i) => i.type === "CODE_REVIEW") ?? (ne === "code" ? X[0] : void 0), Pe = X.find((i) => i.type === "FIX_APPROVAL") ?? (ne === "fix" ? X[0] : void 0), Tt = X.find((i) => i.type === "FIX_REVIEW") ?? (ne === "fix-review" ? X[0] : void 0), Ne = X.find((i) => i.type === "SPLIT_APPROVAL") ?? (ne === "split" ? X[0] : void 0), pt = Ft(Pe).comments ?? [], Wr = Ft(Ne), Ct = Go(Ne, Wr, v), xn = Ct.stack, $n = Oo(o == null ? void 0 : o.state), Wn = $n ? X.filter((i) => i.type && i.type !== $n) : X.filter((i) => i.type), nn = async (i, _) => {
+  }, St = pn(D), fe = St.find((i) => i.path === F) ?? St[0], Me = X.find((i) => i.type === "PLAN_REVIEW") ?? (ne === "plan" ? X[0] : void 0), ft = X.find((i) => i.type === "CODE_REVIEW") ?? (ne === "code" ? X[0] : void 0), Pe = X.find((i) => i.type === "FIX_APPROVAL") ?? (ne === "fix" ? X[0] : void 0), Tt = X.find((i) => i.type === "FIX_REVIEW") ?? (ne === "fix-review" ? X[0] : void 0), Ne = X.find((i) => i.type === "SPLIT_APPROVAL") ?? (ne === "split" ? X[0] : void 0), pt = Ft(Pe).comments ?? [], Wr = Ft(Ne), Ct = Go(Ne, Wr, v), xn = Ct.stack, $n = Oo(o == null ? void 0 : o.state), Wn = $n ? X.filter((i) => i.type && i.type !== $n) : X.filter((i) => i.type), nn = async (i, _) => {
     var N;
     const I = (N = await he({ title: "Add review comment", message: _ === null ? `Comment on ${i}` : `Comment on ${i}:${_}`, label: "Comment", confirmText: "Add comment" })) == null ? void 0 : N.trim();
     I && Ge((O) => [...O, { id: `${Date.now()}-${O.length}`, file: i, line: _, body: I }]);
@@ -2630,9 +2631,9 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
     We((N) => N.includes(i) ? N : [...N, i]), u(i, _, I);
   }, On = async () => {
     var _;
-    if (!Ue) return;
+    if (!Me) return;
     const i = (_ = await he({ title: "Approve plan", message: "Optional steering/commentary for the coder agent.", label: "Steering commentary", confirmText: "Approve plan" })) == null ? void 0 : _.trim();
-    Ae(Ue.id, "approved", i ? { steeringComment: i } : void 0);
+    Ae(Me.id, "approved", i ? { steeringComment: i } : void 0);
   }, je = async (i, _) => {
     const I = await he({ title: `Request ${_} changes`, message: "Feedback will be sent to the agent.", label: "Feedback", confirmText: "Request changes", danger: !0 });
     I != null && I.trim() && Ae(i.id, "rejected", { reason: I.trim() });
@@ -2649,14 +2650,14 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
     }
     const I = i.filter((N) => !_.includes(N));
     Ae(Pe.id, "approved", { approvedIds: _, skippedIds: I });
-  }, Un = (i) => {
+  }, Mn = (i) => {
     ft && (Ae(ft.id, i, {
       kind: "code-review",
       summary: xe.trim(),
       reviewedFiles: ke,
       comments: Ie.map(({ file: _, line: I, body: N }) => ({ file: _, line: I, body: N }))
     }), pe(""));
-  }, Mn = (i, _) => {
+  }, Un = (i, _) => {
     const I = o == null ? void 0 : o.id;
     C((N) => {
       const O = i(N).slice(-er);
@@ -2667,7 +2668,7 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
   }, Vn = () => {
     if (!(o != null && o.id) || !Fe.trim() || W === "thinking") return;
     const i = Fe.trim(), _ = R.filter((N) => N.text.trim()).slice(-12);
-    rn(""), M("thinking"), J("Gathering issue context…"), Mn((N) => [...N, { role: "user", text: i }, { role: "assistant", text: "" }], "");
+    rn(""), U("thinking"), J("Gathering issue context…"), Un((N) => [...N, { role: "user", text: i }, { role: "assistant", text: "" }], "");
     const I = new AbortController();
     ue.current = I, fetch(`/api/issues/${o.id}/ask`, {
       method: "POST",
@@ -2678,17 +2679,17 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
       if (!N.ok || !N.body) throw new Error(`Ask failed (${N.status})`);
       const O = N.body.getReader(), B = new TextDecoder();
       let ie = "";
-      const gt = (Re) => Mn((Se) => {
-        const Me = [...Se].map((Te) => Te.role).lastIndexOf("assistant");
-        return Me < 0 ? [...Se, { role: "assistant", text: Re }] : Se.map((Te, we) => we === Me ? { ...Te, text: Te.text + Re } : Te);
+      const gt = (Re) => Un((Se) => {
+        const Ue = [...Se].map((Te) => Te.role).lastIndexOf("assistant");
+        return Ue < 0 ? [...Se, { role: "assistant", text: Re }] : Se.map((Te, we) => we === Ue ? { ...Te, text: Te.text + Re } : Te);
       }), Lt = (Re) => J(Re), Or = (Re) => {
         const Se = Re.split(`
-`).find((on) => on.startsWith("event:")), Me = Re.split(`
+`).find((on) => on.startsWith("event:")), Ue = Re.split(`
 `).find((on) => on.startsWith("data:"));
-        if (!Me) return;
-        const Te = (Se == null ? void 0 : Se.replace(/^event:\s*/, "")) ?? "message", we = JSON.parse(Me.replace(/^data:\s*/, ""));
+        if (!Ue) return;
+        const Te = (Se == null ? void 0 : Se.replace(/^event:\s*/, "")) ?? "message", we = JSON.parse(Ue.replace(/^data:\s*/, ""));
         if (Te === "done") {
-          M(""), J("");
+          U(""), J("");
           return;
         }
         if (Te === "meta") {
@@ -2701,14 +2702,14 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
         const { value: Re, done: Se } = await O.read();
         if (Se) break;
         ie += B.decode(Re, { stream: !0 });
-        const Me = ie.split(`
+        const Ue = ie.split(`
 
 `);
-        ie = Me.pop() ?? "", Me.forEach(Or);
+        ie = Ue.pop() ?? "", Ue.forEach(Or);
       }
-      M(""), J("");
+      U(""), J("");
     }).catch((N) => {
-      I.signal.aborted || (M(""), J(N.message));
+      I.signal.aborted || (U(""), J(N.message));
     });
   };
   return t(
@@ -2807,8 +2808,8 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
             "div",
             { class: "forge-v3-dp-actions" },
             _e(ut) ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", onClick: gr }, "Listen live") : null,
-            ne === "plan" && Ue ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: On }, "✓ Approve plan") : null,
-            ne === "plan" && Ue ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => k(!0) }, "✗ Request changes") : null,
+            ne === "plan" && Me ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: On }, "✓ Approve plan") : null,
+            ne === "plan" && Me ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => k(!0) }, "✗ Request changes") : null,
             ne === "code" && ft ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", onClick: () => tn("review") }, "Review code") : null,
             ne === "fix" && Pe ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: Fn }, `✓ Fix selected (${ge.length})`) : null,
             ne === "fix" && Pe ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: an }, "Skip all") : null,
@@ -2987,7 +2988,7 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
             t("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !Fe.trim() || W === "thinking", onClick: Vn }, W === "thinking" ? "Asking…" : "Ask"),
             W === "thinking" ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => {
               var i;
-              (i = ue.current) == null || i.abort(), M(""), J("");
+              (i = ue.current) == null || i.abort(), U(""), J("");
             } }, "Stop") : null,
             t("span", { class: "forge-v3-ask-hint" }, "⌘/Ctrl + Enter")
           )
@@ -3029,8 +3030,8 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
           t(
             "div",
             { class: "forge-v3-dp-actions" },
-            Ue ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: On }, "✓ Approve plan") : null,
-            Ue ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => et.trim() ? Ae(Ue.id, "rejected", { reason: et.trim() }) : je(Ue, "Plan review") }, "✗ Request changes") : null,
+            Me ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: On }, "✓ Approve plan") : null,
+            Me ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => et.trim() ? Ae(Me.id, "rejected", { reason: et.trim() }) : je(Me, "Plan review") }, "✗ Request changes") : null,
             t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => k(!1) }, "Close")
           )
         )
@@ -3154,8 +3155,8 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
           t(
             "div",
             { class: "forge-v3-dp-actions" },
-            S && ft ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: () => Un("approved") }, "✓ Approve code") : null,
-            S && ft ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => Un("rejected") }, "✗ Request changes") : null,
+            S && ft ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: () => Mn("approved") }, "✓ Approve code") : null,
+            S && ft ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => Mn("rejected") }, "✗ Request changes") : null,
             t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => x(!1) }, "Close")
           )
         )
@@ -3232,7 +3233,7 @@ function Xi() {
   var Fe;
   const e = jt(), [n, a] = A(ya), [r, s] = A({ issues: [], decisions: [], runningAgents: [] }), [l, c] = A([]), [g, f] = A(e.view === "queue" ? e.issueId : null), [d, h] = A(0), [b, u] = A(e.view), [y, p] = A(!1), [v, P] = A(""), [L, k] = A(null), G = qe(/* @__PURE__ */ new Map()), [x, D] = A(0), [H, q] = A(e.addIssue), [Z, Y] = A(!1), [F, w] = A(ji), [S, V] = A("connecting"), [T, ae] = A(!1), [ce, de] = A(() => Ei()), ke = qe(!1), Ee = qe(/* @__PURE__ */ new Set()), Ie = qe(g), Ge = qe({ issues: [], decisions: [], runningAgents: [] }), xe = (m, R) => {
     if (!R) return "";
-    const C = m.issues.find((M) => M.id === R), W = m.decisions.filter((M) => M.issue_id === R).map((M) => [M.id, M.type, M.created_at, M.resolved_at, M.artifact_ref].join(":")).sort().join(",");
+    const C = m.issues.find((U) => U.id === R), W = m.decisions.filter((U) => U.issue_id === R).map((U) => [U.id, U.type, U.created_at, U.resolved_at, U.artifact_ref].join(":")).sort().join(",");
     return `${(C == null ? void 0 : C.state) ?? ""}|${(C == null ? void 0 : C.updated_at) ?? ""}|${W}`;
   }, pe = (m = !1) => {
     const R = [
@@ -3240,14 +3241,14 @@ function Xi() {
       le("/api/settings"),
       m ? le("/api/archive").catch(() => []) : Promise.resolve([])
     ];
-    return Promise.all(R).then(([C, W, M]) => {
+    return Promise.all(R).then(([C, W, U]) => {
       const j = pi(C), J = G.current;
       for (const o of j.issues) {
         const X = J.get(o.id);
         X && X !== "DONE" && o.state === "DONE" && (k(o), setTimeout(() => k(null), 6e3)), J.set(o.id, o.state ?? "");
       }
       Ge.current = j, s(j);
-      const ue = m ? M.length : n.archiveCount;
+      const ue = m ? U.length : n.archiveCount;
       return a({ ...Ni(j, W), archiveCount: ue }), j.decisions.forEach((o) => {
         Ee.current.has(o.id) || (Ee.current.add(o.id), Pi(o, j.issues.find((X) => X.id === o.issue_id), ke.current).catch(() => {
         }));
@@ -3271,28 +3272,28 @@ function Xi() {
       approved: { PLAN_REVIEW: "WORKING", CODE_REVIEW: "CREATING_PR", FIX_APPROVAL: "FIXING", SPLIT_APPROVAL: "SPLITTING" },
       rejected: { PLAN_REVIEW: "PLANNING", CODE_REVIEW: "WORKING", FIX_APPROVAL: "WATCHING_PR", SPLIT_APPROVAL: "WATCHING_PR" }
     };
-    s((M) => {
+    s((U) => {
       var ue;
-      const j = M.decisions.find((o) => o.id === m), J = j != null && j.type ? (ue = W[R]) == null ? void 0 : ue[j.type] : void 0;
+      const j = U.decisions.find((o) => o.id === m), J = j != null && j.type ? (ue = W[R]) == null ? void 0 : ue[j.type] : void 0;
       return {
-        ...M,
-        decisions: M.decisions.filter((o) => o.id !== m),
-        issues: J && j ? M.issues.map((o) => o.id === j.issue_id ? { ...o, state: J } : o) : M.issues
+        ...U,
+        decisions: U.decisions.filter((o) => o.id !== m),
+        issues: J && j ? U.issues.map((o) => o.id === j.issue_id ? { ...o, state: J } : o) : U.issues
       };
     }), ee(
       R === "approved" ? "Decision approved" : "Decision changes requested",
-      () => vi(m, R, C).catch((M) => {
-        const j = M instanceof Error ? M.message : String(M);
+      () => vi(m, R, C).catch((U) => {
+        const j = U instanceof Error ? U.message : String(U);
         if (!(j.includes("409") || j.toLowerCase().includes("already resolved")))
           throw s((J) => ({
             ...J,
             decisions: J.decisions.some((ue) => ue.id === m) ? J.decisions : [...J.decisions, { id: m }]
-          })), M;
+          })), U;
       })
     );
   }, We = (m, R, C) => ee(`Issue ${R}`, () => _i(m, R, C)), De = (m) => ee("Issue removed", () => mi(m).then(() => oe())), ve = (m) => hi(m), me = async () => {
     await bt({ title: "Stop VM runtime?", message: "Stop the VM/runtime used by Forge. Running app processes may be terminated.", confirmText: "Stop VM", danger: !0 }) && ee("VM runtime stopped", () => bi());
-  }, Oe = (m) => ee("PR stack synced", () => yi(m)), E = (m, R, C) => ee("PR feedback added", () => ki(m, R, C)), U = (m) => {
+  }, Oe = (m) => ee("PR stack synced", () => yi(m)), E = (m, R, C) => ee("PR feedback added", () => ki(m, R, C)), M = (m) => {
     f(m), u("queue"), window.requestAnimationFrame(() => rt("queue", { issueId: m }));
   }, oe = () => {
     f(null), rt("queue");
@@ -3306,9 +3307,9 @@ function Xi() {
   }, lt = () => {
     q(!1), Xt({ add: null });
   }, tt = () => ee("Linear backlog refreshed", () => le("/api/linear/issues").then((m) => c(Array.isArray(m) ? m : []))), Pt = (m, R = "", C) => ee("Manual issue created", () => Ii(m, R, C).then((W) => {
-    W.issueId && U(W.issueId);
+    W.issueId && M(W.issueId);
   })), nt = (m, R = "", C) => ee(`Enqueued ${m}`, () => Ai(m, R, C).then((W) => {
-    W.issueId && U(W.issueId);
+    W.issueId && M(W.issueId);
   }).then(() => le("/api/linear/issues")).then((W) => c(Array.isArray(W) ? W : []))), Yt = () => {
     if (T) {
       P("Sending desktop companion notification…"), cr("Forge notifications enabled", "Desktop companion notifications are available", "forge-desktop-test").then(() => P("Desktop companion notification sent")).catch(() => P("Desktop companion notification failed"));
@@ -3379,12 +3380,12 @@ function Xi() {
     if (Je()) return;
     let m = !1;
     const R = new EventSource("/api/events"), C = (W) => {
-      const M = W.type === "issue_updated" || W.type === "issue_removed", j = Ie.current, J = xe(Ge.current, j);
+      const U = W.type === "issue_updated" || W.type === "issue_removed", j = Ie.current, J = xe(Ge.current, j);
       if (W.type === "tick") {
         ge.current();
         return;
       }
-      pe(M).then((ue) => {
+      pe(U).then((ue) => {
         j && xe(ue, j) !== J && D((o) => o + 1);
       }).catch(() => {
       });
@@ -3473,9 +3474,9 @@ function Xi() {
     ),
     v ? t("div", { class: "forge-v3-action-status", role: "status" }, v) : null,
     L ? t("div", { class: "forge-v3-celebration", role: "status" }, t("strong", null, "🎉 ", L.linear_id ?? `Issue #${L.id}`, " completed!"), t("small", null, L.title ?? "Issue merged and archived")) : null,
-    b === "queue" ? t(Gi, { issues: r.issues, decisions: r.decisions, linearBacklog: l, selectedIssueId: g, addIssueOpen: H, onOpenIssue: U, onIssueAction: We, onResolveDecision: $e, onReviewNext: et, onReviewIssue: te, onAddIssue: st, onCloseAddIssue: lt, onRefreshLinear: tt, onCreateManualIssue: Pt, onEnqueueLinear: nt }) : b === "archive" ? t(Vi, null) : b === "settings" ? t(Wi, null) : b === "prompts" ? t(Oi, null) : b === "learnings" ? t(Di, null) : t("main", { class: "forge-v3-main", "data-active-view": b }, t("h1", null, ((Fe = kt.find((m) => m.key === b)) == null ? void 0 : Fe.label) ?? "Dashboard"), t("p", { class: "forge-v3-empty" }, "This v3 view will migrate in a later phase.")),
+    b === "queue" ? t(Gi, { issues: r.issues, decisions: r.decisions, linearBacklog: l, selectedIssueId: g, addIssueOpen: H, onOpenIssue: M, onIssueAction: We, onResolveDecision: $e, onReviewNext: et, onReviewIssue: te, onAddIssue: st, onCloseAddIssue: lt, onRefreshLinear: tt, onCreateManualIssue: Pt, onEnqueueLinear: nt }) : b === "archive" ? t(Vi, null) : b === "settings" ? t(Wi, null) : b === "prompts" ? t(Oi, null) : b === "learnings" ? t(Di, null) : t("main", { class: "forge-v3-main", "data-active-view": b }, t("h1", null, ((Fe = kt.find((m) => m.key === b)) == null ? void 0 : Fe.label) ?? "Dashboard"), t("p", { class: "forge-v3-empty" }, "This v3 view will migrate in a later phase.")),
     t(Hi, { issueId: b === "queue" ? g : null, issuePreview: dt, reloadKey: x, autoOpenDiffKey: d, onClose: oe, onPanelResizeStart: Zt, onIssueAction: We, onRemoveIssue: De, onLaunchRuntime: ve, onStopVm: me, onSyncPrs: Oe, onSubmitFeedback: E, onResolveDecision: $e }),
-    t(Li, { open: y, decisions: r.decisions, onClose: () => p(!1), onNavigate: ct, onRefresh: () => pe(), onOpenIssue: U, onReviewNext: et, onAddIssue: st, onStopVm: me, onHandoverReport: () => Y(!0) }),
+    t(Li, { open: y, decisions: r.decisions, onClose: () => p(!1), onNavigate: ct, onRefresh: () => pe(), onOpenIssue: M, onReviewNext: et, onAddIssue: st, onStopVm: me, onHandoverReport: () => Y(!0) }),
     Z ? t(ur, { onClose: () => Y(!1) }) : null,
     n.runningAgentsCount > 0 ? t(Ci, { status: n, onStopVm: me }) : null
   );
