@@ -958,7 +958,10 @@ function splitApprovalPresentation(decision: Decision | undefined, artifact: Dec
   const artifactSummary = !looksLikeArtifactPath(artifact.summary) ? artifact.summary : undefined;
   const artifactPlan = !looksLikeArtifactPath(artifact.plan) ? artifact.plan : undefined;
   const planSection = extractMarkdownSection(detailPlan(detail), "Split Plan");
-  const markdown = artifactPlan ?? planSection;
+  // Fall back to full plan content when artifact_ref is a file path and no specific
+  // Split Plan section exists — the whole plan.md is the split plan in that case.
+  const fullPlan = detailPlan(detail);
+  const markdown = artifactPlan ?? planSection ?? (decision && looksLikeArtifactPath(decision.artifact_ref ?? "") ? fullPlan : undefined);
   const stack = artifact.proposedStack ?? artifact.stack ?? splitStackFromMarkdown(markdown);
   return {
     summary: artifactSummary ?? (markdown ? "Review the proposed PR stack split from the split planner." : "Review the proposed PR stack split."),

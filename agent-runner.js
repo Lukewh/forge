@@ -63,7 +63,7 @@ function parseJson(value, fallback) {
 
 function getAgentModel(type) {
   const key = `model_${String(type).replace(/-/g, "_")}`;
-  return getSetting(key) || getSetting("model") || "anthropic-vertex/sonnet-4-6";
+  return getSetting(key) || getSetting("model") || "";
 }
 
 function settingEnabled(key) {
@@ -640,7 +640,7 @@ function spawnPi(systemPromptPath, userPrompt, cwd, issueRow) {
       runnerPath,
       "--cwd", cwd || FORGE_DIR,
       "--system-prompt", systemPromptPath,
-      "--model", MODEL,
+      ...(MODEL ? ["--model", MODEL] : []),
       "--prompt-file", promptFile,
     ];
 
