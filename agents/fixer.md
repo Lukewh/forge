@@ -19,27 +19,30 @@ Do the following deterministically:
 3. Fix only the target PR for this run. **The target is always the lowest-position open PR in the stack** — never skip ahead to a later PR even if it has more comments. Fixing in strict stack order prevents conflicts and avoids rebasing the stack repeatedly.
    a. Confirm the current branch is the target branch: `git branch --show-current`. If it is not, switch to it.
    b. For each review comment on the target PR, **cross-reference the commit history you read in step 2** before deciding what to do:
-      - **Comment requests a change that was deliberately reversed in a prior commit** → Do NOT blindly reapply it. Reply to the comment on GitHub explaining the rationale from the commit history (e.g. "This was intentionally removed in commit abc1234 because X — please clarify if you still want this change given that context."). Do not make the code change.
-      - **Already addressed in a later PR in the stack** → Reply to the comment on GitHub with `gh api repos/{owner}/{repo}/pulls/{pr_number}/comments/{comment_id}/replies -f body="Addressed in a future PR in this stack."` (for inline comments) or `gh pr comment {pr_number} --body "Addressed in a future PR in this stack."` (for top-level comments). Do not duplicate the fix in the target PR.
-      - **Needs fixing in this PR** → Make the change in the target branch.
+      - **Comment requests a change that was deliberately reversed in a prior commit** → Do NOT blindly reapply it. Prefer making the safest code change or recording the rationale in the project log. Only reply in the existing GitHub review thread if the fix cannot proceed without reviewer clarification.
+      - **Already addressed in a later PR in the stack** → Do not duplicate the fix in the target PR. Record this in the project log and leave the GitHub thread alone unless the reviewer explicitly asked for a response and there is no code change to make.
+      - **Needs fixing in this PR** → Make the change in the target branch. Do not add a GitHub comment saying it was fixed; the pushed commit is the response.
       - **Not actionable** (LGTM, approved, question already resolved) → Skip.
    c. Run formatting/lint only for files relevant to the target PR changes — **not tests**. Use package/project commands scoped to explicit file paths. If a fixer touches unrelated files, revert them before committing.
    d. Commit on the target branch: `git add -A && git commit -m "address review feedback"`.
 4. After the target branch is committed, update the rest of the stack in order: for each later PR branch, `git checkout {child_branch} && git rebase {parent_branch}`. Resolve only mechanical conflicts caused by the target PR fix; do not implement that later PR's own review comments in this run.
 5. Do not move on to the next PR's review feedback. Later PR comments will be handled by a later fixer run.
-6. Update the project file log with what was changed, which comments were replied to as "addressed in future PR", and which later branches were rebased.
+6. Update the project file log with what was changed, any comments intentionally left to a later PR, and which later branches were rebased.
 
 ## Handling ambiguous comments
 
 - If a comment is unclear, make your best judgment and note the interpretation in the project file log
 - If a comment contradicts the plan, follow the reviewer's comment (they have seen the code)
 - If multiple PRs have the same comment, fix it in the lowest PR and let the restack propagate
-- If a review comment on an earlier PR is already addressed in a later PR in the stack, reply on GitHub with "Addressed in a future PR in this stack." and do not duplicate the fix. Only backport if the reviewer explicitly requires it to be in the earlier PR.
+- If a review comment on an earlier PR is already addressed in a later PR in the stack, do not duplicate the fix. Only backport if the reviewer explicitly requires it to be in the earlier PR. Record the rationale in the project log, not as a new PR comment.
 - When deciding where to fix a stacked-PR comment, always read the other PRs' diffs first. Note in the project log whether the fix was already present in a later PR, backported, or left in a later PR with rationale.
 
 ## Do not
 
-- Do not respond to comments that are just "LGTM" or "approved" — those are not actionable
+- Do not post top-level PR comments, status comments, summary comments, or "fixed/addressed" comments.
+- Do not use `gh pr comment`, `gh issue comment`, or new review comments while fixing.
+- Only reply to an existing GitHub review comment thread when absolutely necessary: the reviewer asked a direct question, the requested change is impossible/unsafe, or clarification is required before code can proceed. Keep any reply short and tied to that existing thread.
+- Do not respond to comments that are just "LGTM" or "approved" — those are not actionable.
 - Do not add new features or scope while fixing
 - **Minimal comments only.** Do not add comments that restate what the code does. Comments are only for _why_ something non-obvious is done — business rules, workarounds, subtle gotchas, or edge cases that cannot be understood by reading the code alone. If the code is clear, it needs no comment.
 - Do not use `git commit --amend` or squash manually
@@ -75,5 +78,5 @@ The system will automatically run the Git Agent to push your fixes.
 
 ## Learned rules
 
-- Before pushing a fix, check whether any reviewer has an open CHANGES_REQUESTED review state on the PR (not just unresolved inline comments). If so, ensure the response addresses the reviewer's top-level concern and request a re-review, not just the individual line comments.
+- Before pushing a fix, check whether any reviewer has an open CHANGES_REQUESTED review state on the PR (not just unresolved inline comments). Ensure the commits address the reviewer's top-level concern; do not post a GitHub comment just to request re-review.
 - After applying any code fix, always run the project formatter scoped to changed files before committing. Format-only CI failures after a logic fix are zero-value cycles that one extra command prevents.

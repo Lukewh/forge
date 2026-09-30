@@ -353,7 +353,7 @@ db.exec(`
     ('linear_enabled','false'),
     ('linear_team',''),
     ('github_use_desktop','false'),
-    ('model','anthropic-vertex/sonnet-4-6'),
+    ('model','vertex-anthropic/claude-sonnet-4-5@20250929'),
     ('model_planner',''),
     ('model_plan_reviewer',''),
     ('model_coder',''),
@@ -363,6 +363,7 @@ db.exec(`
     ('model_split_planner',''),
     ('model_splitter',''),
     ('model_rebaser',''),
+    ('model_reflector',''),
     ('forge_reuse_pi_sessions','false'),
     ('ai_review_max_rounds','5'),
     ('agent_max_runtime_minutes','45'),
@@ -409,6 +410,8 @@ const legacyVmTarget = db.prepare("SELECT value FROM settings WHERE key = 'vm_ss
 const insertSetting = db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)");
 insertSetting.run("host_path_prefix", legacyVmTarget ? "/Users" : "");
 insertSetting.run("vm_path_prefix", legacyVmTarget ? "/mnt/mac/Users" : "");
+insertSetting.run("model_reflector", "");
+db.prepare("UPDATE settings SET value = 'vertex-anthropic/claude-sonnet-4-5@20250929' WHERE key = 'model' AND value = 'anthropic-vertex/sonnet-4-6'").run();
 insertSetting.run("project_prompt_overlay", "");
 insertSetting.run("project_map_json", "");
 
@@ -2457,7 +2460,7 @@ function smartMergeLearning(promptPath, currentContent, suggestion, rationale) {
   fs.writeFileSync(systemFile, systemPrompt, "utf-8");
   fs.writeFileSync(promptFile, userPrompt, "utf-8");
 
-  const model = qOne("SELECT value FROM settings WHERE key = 'model'")?.value || "anthropic-vertex/sonnet-4-6";
+  const model = qOne("SELECT value FROM settings WHERE key = 'model'")?.value || "vertex-anthropic/claude-sonnet-4-5@20250929";
 
   try {
     const result = spawnSync(process.execPath, [
@@ -3099,6 +3102,163 @@ app.patch("/api/settings", (req, res) => {
 });
 
 // ── Agent prompts (for settings editor) ──────────────────────────────
+
+let modelCatalogCache = { fetchedAt: 0, payload: null };
+
+function publicModelShape(model, modelRegistry) {
+  const provider = model.provider || "unknown";
+  return {
+    id: model.id,
+    key: `${provider}/${model.id}`,
+    name: model.name || model.id,
+    provider,
+    api: model.api || null,
+    contextWindow: model.contextWindow || null,
+    maxTokens: model.maxTokens || null,
+    reasoning: Boolean(model.reasoning),
+    input: Array.isArray(model.input) ? model.input : [],
+    cost: model.cost || null,
+  };
+}
+
+async function loadAvailableModels() {
+  const now = Date.now();
+  if (modelCatalogCache.payload && now - modelCatalogCache.fetchedAt < 5 * 60 * 1000) return modelCatalogCache.payload;
+  const pi = await import("@earendil-works/pi-coding-agent");
+  const authStorage = pi.AuthStorage.create();
+  const modelRegistry = pi.ModelRegistry.create(authStorage);
+  let fallbackMessage = null;
+  let loadError = null;
+  try {
+    const loader = new pi.DefaultResourceLoader({ cwd: FORGE_DIR, agentDir: pi.getAgentDir() });
+    await loader.reload();
+    const created = await pi.createAgentSession({
+      cwd: FORGE_DIR,
+      authStorage,
+      modelRegistry,
+      resourceLoader: loader,
+      sessionManager: pi.SessionManager.inMemory(FORGE_DIR),
+    });
+    fallbackMessage = created.modelFallbackMessage || null;
+    created.session?.dispose?.();
+  } catch (error) {
+    loadError = error?.message || String(error);
+    try { await modelRegistry.refresh(); } catch (refreshError) { loadError = refreshError?.message || loadError; }
+  }
+  const payload = {
+    models: modelRegistry.getAvailable().map((model) => publicModelShape(model, modelRegistry)).sort((a, b) => (a.provider + a.name).localeCompare(b.provider + b.name)),
+    error: loadError,
+    warning: fallbackMessage,
+  };
+  modelCatalogCache = { fetchedAt: now, payload };
+  return payload;
+}
+
+app.get("/api/models", async (_req, res) => {
+  try {
+    res.json(await loadAvailableModels());
+  } catch (error) {
+    res.status(500).json({ error: error?.message || "Unable to load models", models: [] });
+  }
+});
+
+const modelHealthCache = new Map();
+const MODEL_CHECK_CACHE_TTL_MS = 10 * 60 * 1000;
+const MODEL_CHECK_TIMEOUT_MS = 45 * 1000;
+
+function sanitizeModelError(text) {
+  return String(text || "")
+    .replace(/Bearer\s+[A-Za-z0-9._~+\/-]+=*/g, "Bearer [redacted]")
+    .replace(/access_token[\"'=:\s]+[A-Za-z0-9._~+\/-]+=*/gi, "access_token=[redacted]")
+    .slice(0, 4000);
+}
+
+function checkModel(modelKey, { force = false } = {}) {
+  const model = String(modelKey || "").trim();
+  if (!model) return Promise.reject(new Error("model required"));
+  const cached = modelHealthCache.get(model);
+  if (!force && cached && Date.now() - cached.checkedAtMs < MODEL_CHECK_CACHE_TTL_MS) return Promise.resolve({ ...cached, cached: true });
+  const startedAt = Date.now();
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "forge-model-check-"));
+  const promptPath = path.join(tmpDir, "prompt.md");
+  fs.writeFileSync(promptPath, "Reply with exactly: ok", "utf-8");
+  const args = [path.join(FORGE_DIR, "pi-sdk-runner.mjs"), "--cwd", FORGE_DIR, "--model", model, "--system-prompt", path.join(FORGE_DIR, "agents", "issue-asker.md"), "--prompt-file", promptPath];
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, args, { cwd: FORGE_DIR, stdio: ["ignore", "pipe", "pipe"] });
+    let stdout = "";
+    let stderr = "";
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      try { child.kill("SIGTERM"); } catch {}
+      setTimeout(() => { try { child.kill("SIGKILL"); } catch {} }, 1500).unref?.();
+    }, MODEL_CHECK_TIMEOUT_MS);
+    child.stdout.on("data", (chunk) => { stdout += chunk.toString(); });
+    child.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      fs.rm(tmpDir, { recursive: true, force: true }, () => {});
+      const text = stdout.split(/\r?\n/).map((line) => {
+        try {
+          const event = JSON.parse(line);
+          return event.type === "text_delta" ? event.delta || "" : "";
+        } catch { return ""; }
+      }).join("").trim();
+      const ok = !timedOut && code === 0 && /\bok\b/i.test(text);
+      const result = {
+        ok,
+        model,
+        latencyMs: Date.now() - startedAt,
+        responsePreview: text.slice(0, 200),
+        error: ok ? null : sanitizeModelError(timedOut ? `Timed out after ${MODEL_CHECK_TIMEOUT_MS / 1000}s` : stderr || stdout || `Exited with code ${code}`),
+        checkedAt: new Date().toISOString(),
+        checkedAtMs: Date.now(),
+        cached: false,
+      };
+      modelHealthCache.set(model, result);
+      resolve(result);
+    });
+    child.on("error", (error) => {
+      clearTimeout(timer);
+      fs.rm(tmpDir, { recursive: true, force: true }, () => {});
+      const result = {
+        ok: false,
+        model,
+        latencyMs: Date.now() - startedAt,
+        responsePreview: "",
+        error: sanitizeModelError(error?.message || String(error)),
+        checkedAt: new Date().toISOString(),
+        checkedAtMs: Date.now(),
+        cached: false,
+      };
+      modelHealthCache.set(model, result);
+      resolve(result);
+    });
+  });
+}
+
+function configuredModelKeys() {
+  const settings = Object.fromEntries(q("SELECT key, value FROM settings").map(s => [s.key, s.value]));
+  const keys = ["model", "model_planner", "model_plan_reviewer", "model_coder", "model_reviewer", "model_git_agent", "model_fixer", "model_split_planner", "model_splitter", "model_rebaser", "model_reflector"];
+  const fallback = settings.model || settings.default_model || "";
+  return [...new Set(keys.map((key) => settings[key] || (key === "model" ? fallback : "")).filter(Boolean))];
+}
+
+app.post("/api/models/check", async (req, res) => {
+  try {
+    const result = await checkModel(req.body?.model, { force: Boolean(req.body?.force) });
+    res.status(result.ok ? 200 : 502).json(result);
+  } catch (error) {
+    res.status(400).json({ ok: false, error: error?.message || "Unable to check model" });
+  }
+});
+
+app.post("/api/models/check-configured", async (req, res) => {
+  const models = configuredModelKeys();
+  const results = [];
+  for (const model of models) results.push(await checkModel(model, { force: Boolean(req.body?.force) }));
+  res.json({ ok: results.every((result) => result.ok), results });
+});
 
 app.get("/api/agents/:type/prompt", (req, res) => {
   const type = req.params.type;

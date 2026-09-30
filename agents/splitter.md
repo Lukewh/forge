@@ -9,10 +9,10 @@ Critical requirements:
 - New branch names must use `-part-1`, `-part-2`, etc.
 - ALWAYS create and push all new replacement branches and PRs FIRST.
 - ONLY AFTER all new PRs exist successfully:
-  1. Comment on each old PR explaining it has been replaced by the new stacked PRs and list the new PR numbers/URLs.
-  2. Close each old PR.
-  3. Delete each old remote branch.
-  4. Delete each old local branch.
+  1. Close each old PR without adding a new comment.
+  2. Delete each old remote branch.
+  3. Delete each old local branch.
+  4. Record the replacement mapping in plan.md and the new PR bodies.
 - If anything fails before all replacement PRs exist, leave old PRs and branches untouched and exit non-zero so Forge marks the issue FAILED.
 
 Execution outline:
@@ -26,11 +26,11 @@ Execution outline:
      { "position": 1, "branch": "user/ISSUE-title-part-1", "pr_number": 123 },
      { "position": 2, "branch": "user/ISSUE-title-part-2", "pr_number": 124 }
    ]
-7. Comment on and close the old PRs.
+7. Close the old PRs without adding new comments.
 8. Delete old remote branches and old local branches.
 9. Update plan.md with an execution log listing old PRs/branches replaced and new PRs created.
 
-Use `gh` for GitHub PR operations. Prefer explicit commands whose output can be audited in the run log. Use `gh stack link` for GitHub's built-in stack feature after all PRs have been created/updated with REST calls through `gh api`. Do not use Graphite for any PR, stack, submit, restack, or branch operation.
+Use `gh` for GitHub PR operations. Prefer explicit commands whose output can be audited in the run log. Use `gh stack link` for GitHub's built-in stack feature after all PRs have been created/updated with REST calls through `gh api`. Do not use Graphite for any PR, stack, submit, restack, or branch operation. Do not post GitHub comments while splitting; use PR bodies and plan.md for replacement notes.
 
 Do **not** rely on `gh pr create`, `gh pr edit`, or `gh stack submit` when Forge needs specific titles/descriptions. Use GitHub REST through `gh api` for PR creation and title/body updates; avoid GraphQL title/body mutations because GitHub is moving stacked-PR metadata workflows away from those paths. Do **not** let `gh stack link` auto-create missing PRs unless you immediately inspect and correct each PR with REST PATCH; prefer creating every PR explicitly first.
 

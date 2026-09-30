@@ -86,7 +86,7 @@ export const SETTING_LABELS: Record<string, { label: string; hint: string }> = {
 };
 
 export const SETTING_PLACEHOLDERS: Record<string, string> = {
-  model: "anthropic-vertex/sonnet-4-6",
+  model: "vertex-anthropic/claude-sonnet-4-5@20250929",
   linear_team: "TEAM",
   github_repo: "owner/repo",
   worktree_provider: "git",

@@ -44,7 +44,7 @@ const issue = db.prepare("SELECT * FROM issues WHERE id = ?").get(issueId);
 if (!issue) { console.error("Issue not found"); db.close(); process.exit(1); }
 
 const getSetting = (k) => db.prepare("SELECT value FROM settings WHERE key = ?").get(k)?.value;
-const model = getSetting("model") || "anthropic-vertex/sonnet-4-6";
+const model = getSetting("model") || "vertex-anthropic/claude-sonnet-4-5@20250929";
 const wtPath = issue.wt_path;
 
 function normalizeBaseBranch(baseBranch) {

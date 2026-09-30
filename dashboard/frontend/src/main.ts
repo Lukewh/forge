@@ -164,6 +164,22 @@ type Overview = {
 
 type Settings = Record<string, string | undefined>;
 
+type ModelOption = {
+  id: string;
+  key?: string;
+  name?: string;
+  provider?: string;
+  api?: string | null;
+  contextWindow?: number | null;
+  maxTokens?: number | null;
+  reasoning?: boolean;
+  input?: string[];
+  cost?: { input?: number; output?: number; cacheRead?: number; cacheWrite?: number } | null;
+};
+
+type ModelsPayload = { models?: ModelOption[]; error?: string | null; warning?: string | null };
+type ModelCheckResult = { ok: boolean; model?: string; latencyMs?: number; responsePreview?: string; error?: string | null; checkedAt?: string; cached?: boolean };
+
 type DesktopBackend = {
   backendOrigin?: string;
   configFile?: string;
@@ -370,7 +386,7 @@ const SETTING_LABELS: Record<string, { label: string; hint: string }> = {
 };
 
 const SETTING_PLACEHOLDERS: Record<string, string> = {
-  model: "anthropic-vertex/sonnet-4-6",
+  model: "vertex-anthropic/claude-sonnet-4-5@20250929",
   linear_team: "TEAM",
   github_repo: "owner/repo",
   worktree_provider: "git",
@@ -2377,7 +2393,10 @@ function AgentPromptsView() {
     AGENT_PROMPT_TYPES.map((type) => [type, { type, content: "", status: "Loading…" }])
   ) as Record<AgentPromptType, AgentPromptState>);
   const [modelSettings, setModelSettings] = useState<Settings>({});
-  const [modelStatus, setModelStatus] = useState("Loading models…");
+  const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
+  const [modelStatus, setModelStatus] = useState("Loading model settings…");
+  const [modelCatalogStatus, setModelCatalogStatus] = useState("Loading available models…");
+  const [modelChecks, setModelChecks] = useState<Record<string, ModelCheckResult | { checking: true }>>({});
 
   const loadPrompt = (type: AgentPromptType) => {
     fetch(`/api/agents/${type}/prompt`)
@@ -2390,14 +2409,24 @@ function AgentPromptsView() {
     getJson<Settings>("/api/settings")
       .then((settings) => {
         setModelSettings(settings);
-        setModelStatus("Models loaded");
+        setModelStatus("Model settings loaded");
       })
       .catch(() => setModelStatus("Unable to load model settings"));
+  };
+
+  const loadModelOptions = () => {
+    getJson<ModelsPayload>("/api/models")
+      .then((payload) => {
+        setModelOptions(payload.models ?? []);
+        setModelCatalogStatus(payload.error ? `Unable to load some models: ${payload.error}` : payload.warning ? `Available models loaded · ${payload.warning}` : "Available models loaded");
+      })
+      .catch(() => setModelCatalogStatus("Unable to load available models"));
   };
 
   useEffect(() => {
     AGENT_PROMPT_TYPES.forEach(loadPrompt);
     loadModelSettings();
+    loadModelOptions();
   }, []);
 
   const updatePrompt = (type: AgentPromptType, content: string) => setPrompts((previous) => ({ ...previous, [type]: { ...previous[type], content, status: "Unsaved" } }));
@@ -2419,6 +2448,27 @@ function AgentPromptsView() {
       })
       .catch(() => setModelStatus("Unable to save model"));
   };
+  const checkModel = (model: string) => {
+    const modelKey = model.trim();
+    if (!modelKey) return;
+    setModelChecks((previous) => ({ ...previous, [modelKey]: { checking: true } }));
+    fetch("/api/models/check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: modelKey, force: true }),
+    })
+      .then((response) => response.json())
+      .then((result: ModelCheckResult) => setModelChecks((previous) => ({ ...previous, [modelKey]: result })))
+      .catch((error) => setModelChecks((previous) => ({ ...previous, [modelKey]: { ok: false, model: modelKey, error: error?.message || "Unable to check model" } })));
+  };
+  const checkConfiguredModels = () => {
+    const configured = [defaultModel, ...AGENT_PROMPT_TYPES.map((type) => modelSettings[PROMPT_MODEL_SETTINGS[type]] || "")].filter(Boolean) as string[];
+    configured.forEach((model) => setModelChecks((previous) => ({ ...previous, [model]: { checking: true } })));
+    fetch("/api/models/check-configured", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ force: true }) })
+      .then((response) => response.json())
+      .then((payload: { results?: ModelCheckResult[] }) => setModelChecks((previous) => ({ ...previous, ...Object.fromEntries((payload.results ?? []).map((result) => [result.model || "", result]).filter(([model]) => model)) })))
+      .catch((error) => setModelStatus(error?.message || "Unable to check configured models"));
+  };
   const savePrompt = (type: AgentPromptType) => {
     fetch(`/api/agents/${type}/prompt`, {
       method: "PUT",
@@ -2437,16 +2487,50 @@ function AgentPromptsView() {
   };
 
   const defaultModel = modelSettings.model ?? modelSettings.default_model ?? "";
+  const formatCompactNumber = (value?: number | null) => value ? value >= 1000 ? `${Math.round(value / 1000)}k` : String(value) : "—";
+  const modelByKey = new Map(modelOptions.map((model) => [model.key || `${model.provider}/${model.id}`, model]));
+  const findModelOption = (value: string) => modelByKey.get(value) ?? modelOptions.find((model) => model.id === value) ?? null;
+  const modelRequestKey = (model: ModelOption) => model.key || `${model.provider}/${model.id}`;
+  const currentModelOption = (value: string) => value && !findModelOption(value) ? { id: value, key: value, name: value, provider: "custom" } : null;
+  const describeModel = (model?: ModelOption | null) => model
+    ? `${model.provider ?? "provider unknown"}${model.reasoning ? " · reasoning" : ""} · context ${formatCompactNumber(model.contextWindow)} · max ${formatCompactNumber(model.maxTokens)}`
+    : modelOptions.length ? "Select an available model." : modelCatalogStatus;
+  const modelOptionLabel = (model: ModelOption) => `${model.name || model.id} (${model.provider || "provider unknown"})`;
+  const renderModelHealth = (value: string) => {
+    const model = value.trim();
+    if (!model) return null;
+    const result = modelChecks[model];
+    if (!result) return h("span", { class: "forge-v3-model-health" }, "Untested");
+    if ("checking" in result) return h("span", { class: "forge-v3-model-health checking" }, "Checking…");
+    return h("span", { class: `forge-v3-model-health ${result.ok ? "ok" : "failed"}`, title: result.error || result.responsePreview || "" }, result.ok ? `Working${result.latencyMs ? ` · ${Math.round(result.latencyMs / 1000)}s` : ""}` : "Failed");
+  };
+  const renderModelPicker = (key: string, value: string, includeDefault: boolean) => {
+    const selected = value ? (findModelOption(value) ?? currentModelOption(value)) : null;
+    const selectedValue = selected ? modelRequestKey(selected) : "";
+    const options = currentModelOption(value) ? [currentModelOption(value)!, ...modelOptions] : modelOptions;
+    return h("div", { class: "forge-v3-model-picker" }, [
+      h("select", { class: "forge-v3-prompt-model-input", value: selectedValue, onChange: (event: Event) => updateModelSetting(key, (event.target as HTMLSelectElement).value) }, [
+        includeDefault ? h("option", { value: "" }, `Use default (${defaultModel || "not set"})`) : null,
+        options.map((model) => h("option", { key: modelRequestKey(model), value: modelRequestKey(model) }, modelOptionLabel(model))),
+      ]),
+      h("div", { class: "forge-v3-model-details" }, selected ? [
+        h("strong", null, selected.id),
+        h("span", null, describeModel(selected)),
+        renderModelHealth(value),
+      ] : h("span", null, includeDefault ? describeModel(findModelOption(defaultModel) ?? currentModelOption(defaultModel)) : describeModel(null)))
+    ]);
+  };
 
   return h(PageFrame, { view: "prompts", className: "forge-v3-prompts-wrap" }, [
-    h(PageHeader, { icon: "✎", title: "Agent Prompts", subtitle: "Edit each agent's prompt and model in one place" }),
+    h(PageHeader, { icon: "✎", title: "Agent Prompts", subtitle: "Edit each agent's prompt and model in one place", actions: h("button", { type: "button", onClick: checkConfiguredModels }, "Test configured models") }),
     h("section", { class: "forge-v3-model-default-card", "aria-label": "Default model" },
       h("div", null,
         h("h2", null, "Default model"),
-        h("p", { class: "forge-v3-prompt-meta" }, "Used by every agent unless an override is set on that agent. ", modelStatus)
+        h("p", { class: "forge-v3-prompt-meta" }, "Used by every agent unless an override is set on that agent. ", modelStatus, " · ", modelCatalogStatus)
       ),
       h("div", { class: "forge-v3-prompt-model-row" },
-        h("input", { class: "forge-v3-prompt-model-input", value: defaultModel, placeholder: "anthropic-vertex/sonnet-4-6", onInput: (event: Event) => updateModelSetting("model", (event.target as HTMLInputElement).value) }),
+        renderModelPicker("model", defaultModel, false),
+        h("button", { type: "button", onClick: () => checkModel(defaultModel), disabled: !defaultModel.trim() }, "Test"),
         h("button", { type: "button", onClick: () => saveModelSetting("model") }, "Save default")
       )
     ),
@@ -2466,7 +2550,8 @@ function AgentPromptsView() {
           ),
           h("div", { class: "forge-v3-prompt-model-row" },
             h("label", { class: "forge-v3-prompt-meta" }, "Model override"),
-            h("input", { class: "forge-v3-prompt-model-input", value: modelValue, placeholder: defaultModel || "Use default model", onInput: (event: Event) => updateModelSetting(modelKey, (event.target as HTMLInputElement).value) }),
+            renderModelPicker(modelKey, modelValue, true),
+            h("button", { type: "button", onClick: () => checkModel(modelValue || defaultModel), disabled: !(modelValue || defaultModel).trim() }, "Test"),
             h("button", { type: "button", onClick: () => saveModelSetting(modelKey) }, "Save model")
           ),
           h("textarea", { class: "forge-v3-prompt-editor", value: prompt.content, rows: 12, onInput: (event: Event) => updatePrompt(type, (event.target as HTMLTextAreaElement).value) }),
@@ -2735,6 +2820,14 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
     askAbortRef.current?.abort();
     askAbortRef.current = null;
   }, [issueId]);
+
+  useEffect(() => {
+    if (!issueId || !issuePreview) return;
+    setDetail((previous) => {
+      if (previous?.issue?.id !== issueId) return { issue: issuePreview };
+      return { ...previous, issue: { ...previous.issue, ...issuePreview } };
+    });
+  }, [issueId, issuePreview?.id, issuePreview?.state, issuePreview?.updated_at, issuePreview?.locked_at, issuePreview?.agent_pid, issuePreview?.auto_fix_enabled, issuePreview?.externally_managed, issuePreview?.awaiting_review]);
 
   useEffect(() => {
     if (!issueId) return;

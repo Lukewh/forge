@@ -178,7 +178,7 @@ const systemPrompt = safeRead(REFLECTOR_PROMPT, 12000) || "You are Forge's refle
 const userPrompt = `Analyze this Forge issue and produce the JSON reflection.\n\nContext:\n${JSON.stringify(context, null, 2)}`;
 
 function getModel() {
-  return settings.model || "anthropic-vertex/sonnet-4-6";
+  return settings.model || "vertex-anthropic/claude-sonnet-4-5@20250929";
 }
 
 function extractRunnerText(stdout) {

@@ -23,7 +23,7 @@ const DEFAULTS = {
   linearTeam: "",
   githubRepo: "",
   concurrencyLimit: "2",
-  model: "anthropic-vertex/sonnet-4-6",
+  model: "vertex-anthropic/claude-sonnet-4-5@20250929",
 };
 
 function hasFlag(flag) {

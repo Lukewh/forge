@@ -142,7 +142,7 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   worktree_root: path.join(os.homedir(), "Projects", "worktrees"),
   branch_prefix: os.userInfo().username || "forge",
   default_branch: "main",
-  model: "anthropic-vertex/sonnet-4-6",
+  model: "vertex-anthropic/claude-sonnet-4-5@20250929",
   model_planner: "",
   model_plan_reviewer: "",
   model_coder: "",
@@ -152,6 +152,7 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   model_split_planner: "",
   model_splitter: "",
   model_rebaser: "",
+  model_reflector: "",
   forge_reuse_pi_sessions: "false",
   ai_review_max_rounds: "5",
   agent_max_runtime_minutes: "45",
@@ -406,6 +407,8 @@ export class ForgeDB {
     const insertSetting = this.db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)");
     insertSetting.run("host_path_prefix", legacyVmTarget ? "/Users" : DEFAULT_SETTINGS.host_path_prefix);
     insertSetting.run("vm_path_prefix", legacyVmTarget ? "/mnt/mac/Users" : DEFAULT_SETTINGS.vm_path_prefix);
+    insertSetting.run("model_reflector", DEFAULT_SETTINGS.model_reflector);
+    this.db.prepare("UPDATE settings SET value = ? WHERE key = 'model' AND value = ?").run(DEFAULT_SETTINGS.model, "anthropic-vertex/sonnet-4-6");
     insertSetting.run("project_prompt_overlay", DEFAULT_SETTINGS.project_prompt_overlay);
 
     this.db.exec(`

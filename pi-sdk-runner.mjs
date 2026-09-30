@@ -18,7 +18,13 @@ function getArg(flag) {
 }
 
 const cwd = getArg("--cwd") || process.cwd();
-const modelName = getArg("--model") || undefined;
+const rawModelName = getArg("--model") || undefined;
+const MODEL_ALIASES = new Map([
+  ["anthropic-vertex/sonnet-4-6", "vertex-anthropic/claude-sonnet-4-5@20250929"],
+  ["anthropic-vertex/sonnet-4.6", "vertex-anthropic/claude-sonnet-4-5@20250929"],
+  ["anthropic-vertex/opus-4-6", "vertex-anthropic/claude-opus-4-6"],
+]);
+const modelName = rawModelName ? MODEL_ALIASES.get(rawModelName) || rawModelName : undefined;
 const systemPromptPath = getArg("--system-prompt") || null;
 const promptFile = getArg("--prompt-file") || null;
 const promptArg = getArg("--prompt") || null;
@@ -55,11 +61,24 @@ if (modelFallbackMessage) console.error(`[forge:pi-sdk] ${modelFallbackMessage}`
 if (modelName) {
   // Extension-registered providers are added while createAgentSession() binds
   // extensions. Resolve after session creation so models from global/project
-  // extensions (for example anthropic-vertex/sonnet-4-6) are visible.
-  const result = resolveCliModel({ cliModel: modelName, modelRegistry });
+  // extensions (for example vertex-anthropic/*) are visible.
+  if (rawModelName && rawModelName !== modelName) console.error(`[forge:pi-sdk] WARN: model alias ${rawModelName} resolved to ${modelName}`);
+  const availableExactMatches = !modelName.includes("/")
+    ? modelRegistry.getAvailable().filter((model) => model.id === modelName)
+    : [];
+  const result = availableExactMatches.length === 1
+    ? { model: availableExactMatches[0], thinkingLevel: undefined, warning: undefined, error: undefined }
+    : resolveCliModel({ cliModel: modelName, modelRegistry });
   if (result.model) {
-    await session.setModel(result.model);
-    if (result.thinkingLevel) session.setThinkingLevel(result.thinkingLevel);
+    try {
+      await session.setModel(result.model);
+      if (result.thinkingLevel) session.setThinkingLevel(result.thinkingLevel);
+    } catch (error) {
+      const fallback = modelRegistry.getAvailable().find((model) => model.id === modelName && model.provider !== result.model.provider);
+      if (!fallback) throw error;
+      console.error(`[forge:pi-sdk] WARN: ${error?.message || error}; retrying with ${fallback.provider}/${fallback.id}`);
+      await session.setModel(fallback);
+    }
   } else if (result.error) {
     console.error(`[forge:pi-sdk] WARN: ${result.error}; using pi default`);
   }

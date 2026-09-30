@@ -482,6 +482,7 @@ function buildContextBundle(issueRow, linearData, assetMap) {
       lines.push(`Target exactly one PR in this run: position ${targetPr.position}, PR #${targetPr.pr_number ?? "unknown"}, branch ${targetPr.gt_branch}.`);
       lines.push("This is the lowest-position open PR in the stack and must be fixed first. Do not skip to a later PR even if it has more comments — strict order prevents conflicts and repeated rebasing. Do not edit later PR branches in this fixer run except to rebase/resolve mechanical conflicts after the target branch has been committed.");
       lines.push("Required order: checkout target branch → make target PR fixes → commit on target branch → rebase/update later stack branches onto their parents → stop. The Git Agent will push the target branch and updated later branches. Later PR review comments are handled by later fixer runs.");
+      lines.push("Do not post GitHub comments while fixing. The pushed commits are the response. Only reply inside an existing review-comment thread if clarification is absolutely required before code can proceed.");
       const targetComments = fixComments.filter(c => targetPr.pr_number && Number(c.prNumber) === Number(targetPr.pr_number));
       const laterComments = fixComments.filter(c => !targetPr.pr_number || Number(c.prNumber) !== Number(targetPr.pr_number));
       if (targetComments.length) lines.push(`Target PR comments in this batch: ${targetComments.length}.`);

@@ -100,8 +100,8 @@ try {
       );
       const row = settingsDb.prepare("SELECT value FROM settings WHERE key = 'model'").get();
       settingsDb.close();
-      return row?.value ?? "anthropic-vertex/sonnet-4-6";
-    } catch { return "anthropic-vertex/sonnet-4-6"; }
+      return row?.value ?? "vertex-anthropic/claude-sonnet-4-5@20250929";
+    } catch { return "vertex-anthropic/claude-sonnet-4-5@20250929"; }
   })();
 
   const result = spawnSync(process.execPath, [

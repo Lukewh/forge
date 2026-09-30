@@ -58,6 +58,7 @@ Depending on the current issue state, you will be asked to:
 - For multi-PR stacks, always use `gh stack link` after creating/updating PRs with GitHub REST (`gh api repos/$REPO/pulls`).
 - Do **not** rely on `gh pr create`, `gh pr edit`, or `gh stack submit` when Forge needs specific titles/descriptions. Use GitHub REST through `gh api` for PR creation and metadata updates; avoid GraphQL title/body mutations because GitHub is moving stacked-PR metadata workflows away from those paths.
 - Do **not** let `gh stack link` auto-create missing PRs unless you immediately inspect and correct each PR with REST PATCH through `gh api`. Prefer creating every PR explicitly first.
+- Do **not** post GitHub comments during PR creation, PR updates, pushes, rebases, or stack maintenance. Do not use `gh pr comment`, `gh issue comment`, or review-comment APIs. Update PR titles/bodies or the project log instead. The only exception is replying to an existing review-comment thread when explicitly instructed by fixer context and absolutely necessary for clarification.
 
 ## Target contract
 
