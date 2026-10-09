@@ -17,6 +17,39 @@ describe("dashboard v3 detail panel", () => {
     assert.match(src, /\/api\/issues\/\$\{issueId\}/);
   });
 
+  test("every overview refresh reloads selected details only when their data changes", async () => {
+    const src = read(`${FORGE_DIR}/dashboard/frontend/src/main.ts`);
+    const refreshSource = src.slice(src.indexOf("  const refreshDashboard ="), src.indexOf("  // Debounced version for SSE"))
+      .replace(/const fetches: \[Promise<unknown>, Promise<Settings>, Promise<ArchiveIssue\[\]>\]/, "const fetches")
+      .replace(/getJson<[^>]+>/g, "getJson")
+      .replaceAll("[] as ArchiveIssue[]", "[]");
+    let nextOverview = { issues: [{ id: 1, state: "WORKING" }], decisions: [] };
+    const overviewRef = { current: nextOverview };
+    const selectedIssueIdRef = { current: 1 };
+    let reloads = 0;
+    const signatureSource = src.slice(src.indexOf("  const issueDetailSignature ="), src.indexOf("  const refreshDashboard ="))
+      .replace("data: Overview, issueId: number | null", "data, issueId");
+    const signature = new Function(`${signatureSource}; return issueDetailSignature;`)();
+    const refresh = new Function("getJson", "normalizeOverview", "previousIssueStatesRef", "selectedIssueIdRef", "issueDetailSignature", "overviewRef", "setDetailReloadKey", "setOverview", "status", "setStatus", "shellStatusFromData", "notifiedDecisionIds", "notifyPendingDecisionOnce", "desktopNotificationsAvailableRef", "setCelebrationIssue", `${refreshSource}; return refreshDashboard;`)(
+      async (url) => url === "/api/overview" ? nextOverview : {},
+      (value) => value, { current: new Map() }, selectedIssueIdRef, signature,
+      overviewRef, () => reloads++, () => {}, { archiveCount: 0 }, () => {},
+      () => ({}), { current: new Set() }, async () => {}, { current: false }, () => {},
+    );
+    await refresh();
+    assert.equal(reloads, 0, "unchanged ticks preserve panel state");
+    nextOverview = { ...nextOverview, issues: [{ id: 1, state: "AI_REVIEWING" }] };
+    await refresh();
+    assert.equal(reloads, 1, "tick/poll refresh reloads a changed state");
+    nextOverview = { ...nextOverview, decisions: [{ id: 2, issue_id: 1, type: "CODE_REVIEW" }] };
+    await refresh();
+    assert.equal(reloads, 2, "new decisions refresh panel actions");
+    selectedIssueIdRef.current = null;
+    nextOverview = { ...nextOverview, issues: [{ id: 1, state: "CREATING_PR" }] };
+    await refresh();
+    assert.equal(reloads, 2, "closed panel needs no reload");
+  });
+
   test("issue cards open the right-side detail panel instead of full-page navigation", () => {
     const src = readAllDashboardSource();
 

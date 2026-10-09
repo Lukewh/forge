@@ -2838,7 +2838,7 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
       .catch(() => { if (!cancelled) setDetail({ issue: { id: issueId, title: "Unable to load issue" } }); });
 
     return () => { cancelled = true; };
-  }, [issueId, reloadKey]);
+  }, [issueId, reloadKey, issuePreview?.state, issuePreview?.updated_at]);
 
   useEffect(() => {
     if (!issueId) return;
@@ -3652,6 +3652,10 @@ function DashboardShell() {
         }
         prevStates.set(issue.id, issue.state ?? "");
       }
+      const selectedId = selectedIssueIdRef.current;
+      if (selectedId && issueDetailSignature(nextOverview, selectedId) !== issueDetailSignature(overviewRef.current, selectedId)) {
+        setDetailReloadKey((key) => key + 1);
+      }
       overviewRef.current = nextOverview;
       setOverview(nextOverview);
       const archiveCount = includeArchive ? archiveIssues.length : status.archiveCount;
@@ -3890,21 +3894,12 @@ function DashboardShell() {
     const events = new EventSource("/api/events");
     const refreshFromEvent = (event: Event) => {
       const includeArchive = event.type === "issue_updated" || event.type === "issue_removed";
-      const selectedBefore = selectedIssueIdRef.current;
-      const beforeSignature = issueDetailSignature(overviewRef.current, selectedBefore);
       // Debounce rapid SSE events (multiple can fire within milliseconds)
       if (event.type === "tick") {
         debouncedRefresh.current();
         return;
       }
-      refreshDashboard(includeArchive)
-        .then((nextOverview) => {
-          if (!selectedBefore) return;
-          if (issueDetailSignature(nextOverview, selectedBefore) !== beforeSignature) {
-            setDetailReloadKey((key) => key + 1);
-          }
-        })
-        .catch(() => undefined);
+      refreshDashboard(includeArchive).catch(() => undefined);
     };
     events.onopen = () => { if (!closed) setEventStreamStatus("live"); };
     events.onerror = () => { if (!closed) setEventStreamStatus("offline"); };
