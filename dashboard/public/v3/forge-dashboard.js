@@ -1,36 +1,36 @@
-var Jt, O, Wa, qe, na, Da, Oa, ln, Wt, yt, Fa, Nn, _n, mn, Ut = {}, Vt = [], Fr = /acit|ex(?:s|g|n|p|$)|rph|grid|ows|mnc|ntw|ine[ch]|zoo|^ord|itera/i, Et = Array.isArray;
-function Ge(e, n) {
+var zt, O, Wa, qe, aa, Da, Oa, cn, Dt, yt, Fa, Pn, mn, hn, Vt = {}, Ht = [], Fr = /acit|ex(?:s|g|n|p|$)|rph|grid|ows|mnc|ntw|ine[ch]|zoo|^ord|itera/i, Et = Array.isArray;
+function $e(e, n) {
   for (var a in n) e[a] = n[a];
   return e;
 }
-function Pn(e) {
+function Rn(e) {
   e && e.parentNode && e.parentNode.removeChild(e);
 }
 function t(e, n, a) {
   var r, s, l, c = {};
   for (l in n) l == "key" ? r = n[l] : l == "ref" ? s = n[l] : c[l] = n[l];
-  if (arguments.length > 2 && (c.children = arguments.length > 3 ? Jt.call(arguments, 2) : a), typeof e == "function" && e.defaultProps != null) for (l in e.defaultProps) c[l] === void 0 && (c[l] = e.defaultProps[l]);
-  return Dt(e, c, r, s, null);
+  if (arguments.length > 2 && (c.children = arguments.length > 3 ? zt.call(arguments, 2) : a), typeof e == "function" && e.defaultProps != null) for (l in e.defaultProps) c[l] === void 0 && (c[l] = e.defaultProps[l]);
+  return Ot(e, c, r, s, null);
 }
-function Dt(e, n, a, r, s) {
+function Ot(e, n, a, r, s) {
   var l = { type: e, props: n, key: a, ref: r, __k: null, __: null, __b: 0, __e: null, __c: null, constructor: void 0, __v: s ?? ++Wa, __i: -1, __u: 0 };
   return s == null && O.vnode != null && O.vnode(l), l;
 }
-function it(e) {
+function ot(e) {
   return e.children;
 }
-function $e(e, n) {
+function We(e, n) {
   this.props = e, this.context = n;
 }
-function st(e, n) {
-  if (n == null) return e.__ ? st(e.__, e.__i + 1) : null;
+function it(e, n) {
+  if (n == null) return e.__ ? it(e.__, e.__i + 1) : null;
   for (var a; n < e.__k.length; n++) if ((a = e.__k[n]) != null && a.__e != null) return a.__e;
-  return typeof e.type == "function" ? st(e) : null;
+  return typeof e.type == "function" ? it(e) : null;
 }
 function Mr(e) {
   if (e.__P && e.__d) {
-    var n = e.__v, a = n.__e, r = [], s = [], l = Ge({}, n);
-    l.__v = n.__v + 1, O.vnode && O.vnode(l), Rn(e.__P, l, n, e.__n, e.__P.namespaceURI, 32 & n.__u ? [a] : null, r, a ?? st(n), !!(32 & n.__u), s), l.__v = n.__v, l.__.__k[l.__i] = l, qa(r, l, s), n.__e = n.__ = null, l.__e != a && Ma(l);
+    var n = e.__v, a = n.__e, r = [], s = [], l = $e({}, n);
+    l.__v = n.__v + 1, O.vnode && O.vnode(l), Sn(e.__P, l, n, e.__n, e.__P.namespaceURI, 32 & n.__u ? [a] : null, r, a ?? it(n), !!(32 & n.__u), s), l.__v = n.__v, l.__.__k[l.__i] = l, qa(r, l, s), n.__e = n.__ = null, l.__e != a && Ma(l);
   }
 }
 function Ma(e) {
@@ -38,25 +38,25 @@ function Ma(e) {
     if (n != null && n.__e != null) return e.__e = e.__c.base = n.__e;
   }), Ma(e);
 }
-function aa(e) {
-  (!e.__d && (e.__d = !0) && qe.push(e) && !Ht.__r++ || na != O.debounceRendering) && ((na = O.debounceRendering) || Da)(Ht);
+function ra(e) {
+  (!e.__d && (e.__d = !0) && qe.push(e) && !qt.__r++ || aa != O.debounceRendering) && ((aa = O.debounceRendering) || Da)(qt);
 }
-function Ht() {
+function qt() {
   try {
     for (var e, n = 1; qe.length; ) qe.length > n && qe.sort(Oa), e = qe.shift(), n = qe.length, Mr(e);
   } finally {
-    qe.length = Ht.__r = 0;
+    qe.length = qt.__r = 0;
   }
 }
 function Ua(e, n, a, r, s, l, c, p, f, d, h) {
-  var k, u, y, v, b, S, W, I = r && r.__k || Vt, D = n.length;
-  for (f = Ur(a, n, I, f, D), k = 0; k < D; k++) (y = a.__k[k]) != null && (u = y.__i != -1 && I[y.__i] || Ut, y.__i = k, S = Rn(e, y, u, s, l, c, p, f, d, h), v = y.__e, y.ref && u.ref != y.ref && (u.ref && Sn(u.ref, null, y), h.push(y.ref, y.__c || v, y)), b == null && v != null && (b = v), (W = !!(4 & y.__u)) || u.__k === y.__k ? (f = Va(y, f, e, W), W && u.__e && (u.__e = null)) : typeof y.type == "function" && S !== void 0 ? f = S : v && (f = v.nextSibling), y.__u &= -7);
+  var k, u, y, v, b, S, W, I = r && r.__k || Ht, D = n.length;
+  for (f = Ur(a, n, I, f, D), k = 0; k < D; k++) (y = a.__k[k]) != null && (u = y.__i != -1 && I[y.__i] || Vt, y.__i = k, S = Sn(e, y, u, s, l, c, p, f, d, h), v = y.__e, y.ref && u.ref != y.ref && (u.ref && Tn(u.ref, null, y), h.push(y.ref, y.__c || v, y)), b == null && v != null && (b = v), (W = !!(4 & y.__u)) || u.__k === y.__k ? (f = Va(y, f, e, W), W && u.__e && (u.__e = null)) : typeof y.type == "function" && S !== void 0 ? f = S : v && (f = v.nextSibling), y.__u &= -7);
   return a.__e = b, f;
 }
 function Ur(e, n, a, r, s) {
   var l, c, p, f, d, h = a.length, k = h, u = 0;
-  for (e.__k = new Array(s), l = 0; l < s; l++) (c = n[l]) != null && typeof c != "boolean" && typeof c != "function" ? (typeof c == "string" || typeof c == "number" || typeof c == "bigint" || c.constructor == String ? c = e.__k[l] = Dt(null, c, null, null, null) : Et(c) ? c = e.__k[l] = Dt(it, { children: c }, null, null, null) : c.constructor === void 0 && c.__b > 0 ? c = e.__k[l] = Dt(c.type, c.props, c.key, c.ref ? c.ref : null, c.__v) : e.__k[l] = c, f = l + u, c.__ = e, c.__b = e.__b + 1, p = null, (d = c.__i = Vr(c, a, f, k)) != -1 && (k--, (p = a[d]) && (p.__u |= 2)), p == null || p.__v == null ? (d == -1 && (s > h ? u-- : s < h && u++), typeof c.type != "function" && (c.__u |= 4)) : d != f && (d == f - 1 ? u-- : d == f + 1 ? u++ : (d > f ? u-- : u++, c.__u |= 4))) : e.__k[l] = null;
-  if (k) for (l = 0; l < h; l++) (p = a[l]) != null && (2 & p.__u) == 0 && (p.__e == r && (r = st(p)), Ba(p, p));
+  for (e.__k = new Array(s), l = 0; l < s; l++) (c = n[l]) != null && typeof c != "boolean" && typeof c != "function" ? (typeof c == "string" || typeof c == "number" || typeof c == "bigint" || c.constructor == String ? c = e.__k[l] = Ot(null, c, null, null, null) : Et(c) ? c = e.__k[l] = Ot(ot, { children: c }, null, null, null) : c.constructor === void 0 && c.__b > 0 ? c = e.__k[l] = Ot(c.type, c.props, c.key, c.ref ? c.ref : null, c.__v) : e.__k[l] = c, f = l + u, c.__ = e, c.__b = e.__b + 1, p = null, (d = c.__i = Vr(c, a, f, k)) != -1 && (k--, (p = a[d]) && (p.__u |= 2)), p == null || p.__v == null ? (d == -1 && (s > h ? u-- : s < h && u++), typeof c.type != "function" && (c.__u |= 4)) : d != f && (d == f - 1 ? u-- : d == f + 1 ? u++ : (d > f ? u-- : u++, c.__u |= 4))) : e.__k[l] = null;
+  if (k) for (l = 0; l < h; l++) (p = a[l]) != null && (2 & p.__u) == 0 && (p.__e == r && (r = it(p)), Ba(p, p));
   return r;
 }
 function Va(e, n, a, r) {
@@ -65,15 +65,15 @@ function Va(e, n, a, r) {
     for (s = e.__k, l = 0; s && l < s.length; l++) s[l] && (s[l].__ = e, n = Va(s[l], n, a, r));
     return n;
   }
-  e.__e != n && (r && (n && e.type && !n.parentNode && (n = st(e)), a.insertBefore(e.__e, n || null)), n = e.__e);
+  e.__e != n && (r && (n && e.type && !n.parentNode && (n = it(e)), a.insertBefore(e.__e, n || null)), n = e.__e);
   do
     n = n && n.nextSibling;
   while (n != null && n.nodeType == 8);
   return n;
 }
-function qt(e, n) {
+function jt(e, n) {
   return n = n || [], e == null || typeof e == "boolean" || (Et(e) ? e.some(function(a) {
-    qt(a, n);
+    jt(a, n);
   }) : n.push(e)), n;
 }
 function Vr(e, n, a, r) {
@@ -84,17 +84,17 @@ function Vr(e, n, a, r) {
   }
   return -1;
 }
-function ra(e, n, a) {
+function oa(e, n, a) {
   n[0] == "-" ? e.setProperty(n, a ?? "") : e[n] = a == null ? "" : typeof a != "number" || Fr.test(n) ? a : a + "px";
 }
 function xt(e, n, a, r, s) {
   var l, c;
   e: if (n == "style") if (typeof a == "string") e.style.cssText = a;
   else {
-    if (typeof r == "string" && (e.style.cssText = r = ""), r) for (n in r) a && n in a || ra(e.style, n, "");
-    if (a) for (n in a) r && a[n] == r[n] || ra(e.style, n, a[n]);
+    if (typeof r == "string" && (e.style.cssText = r = ""), r) for (n in r) a && n in a || oa(e.style, n, "");
+    if (a) for (n in a) r && a[n] == r[n] || oa(e.style, n, a[n]);
   }
-  else if (n[0] == "o" && n[1] == "n") l = n != (n = n.replace(Fa, "$1")), c = n.toLowerCase(), n = c in e || n == "onFocusOut" || n == "onFocusIn" ? c.slice(2) : n.slice(2), e.l || (e.l = {}), e.l[n + l] = a, a ? r ? a[yt] = r[yt] : (a[yt] = Nn, e.addEventListener(n, l ? mn : _n, l)) : e.removeEventListener(n, l ? mn : _n, l);
+  else if (n[0] == "o" && n[1] == "n") l = n != (n = n.replace(Fa, "$1")), c = n.toLowerCase(), n = c in e || n == "onFocusOut" || n == "onFocusIn" ? c.slice(2) : n.slice(2), e.l || (e.l = {}), e.l[n + l] = a, a ? r ? a[yt] = r[yt] : (a[yt] = Pn, e.addEventListener(n, l ? hn : mn, l)) : e.removeEventListener(n, l ? hn : mn, l);
   else {
     if (s == "http://www.w3.org/2000/svg") n = n.replace(/xlink(H|:h)/, "h").replace(/sName$/, "s");
     else if (n != "width" && n != "height" && n != "href" && n != "list" && n != "form" && n != "tabIndex" && n != "download" && n != "rowSpan" && n != "colSpan" && n != "role" && n != "popover" && n in e) try {
@@ -105,48 +105,48 @@ function xt(e, n, a, r, s) {
     typeof a == "function" || (a == null || a === !1 && n[4] != "-" ? e.removeAttribute(n) : e.setAttribute(n, n == "popover" && a == 1 ? "" : a));
   }
 }
-function oa(e) {
+function ia(e) {
   return function(n) {
     if (this.l) {
       var a = this.l[n.type + e];
-      if (n[Wt] == null) n[Wt] = Nn++;
-      else if (n[Wt] < a[yt]) return;
+      if (n[Dt] == null) n[Dt] = Pn++;
+      else if (n[Dt] < a[yt]) return;
       return a(O.event ? O.event(n) : n);
     }
   };
 }
-function Rn(e, n, a, r, s, l, c, p, f, d) {
-  var h, k, u, y, v, b, S, W, I, D, $, M, F, q, te, Y, U = n.type;
+function Sn(e, n, a, r, s, l, c, p, f, d) {
+  var h, k, u, y, v, b, S, W, I, D, $, U, F, j, ne, Z, V = n.type;
   if (n.constructor !== void 0) return null;
   128 & a.__u && (f = !!(32 & a.__u), l = [p = n.__e = a.__e]), (h = O.__b) && h(n);
-  e: if (typeof U == "function") {
+  e: if (typeof V == "function") {
     k = c.length;
     try {
-      if (I = n.props, D = U.prototype && U.prototype.render, $ = (h = U.contextType) && r[h.__c], M = h ? $ ? $.props.value : h.__ : r, a.__c ? W = (u = n.__c = a.__c).__ = u.__E : (D ? n.__c = u = new U(I, M) : (n.__c = u = new $e(I, M), u.constructor = U, u.render = qr), $ && $.sub(u), u.state || (u.state = {}), u.__n = r, y = u.__d = !0, u.__h = [], u._sb = []), D && u.__s == null && (u.__s = u.state), D && U.getDerivedStateFromProps != null && (u.__s == u.state && (u.__s = Ge({}, u.__s)), Ge(u.__s, U.getDerivedStateFromProps(I, u.__s))), v = u.props, b = u.state, u.__v = n, y) D && U.getDerivedStateFromProps == null && u.componentWillMount != null && u.componentWillMount(), D && u.componentDidMount != null && u.__h.push(u.componentDidMount);
+      if (I = n.props, D = V.prototype && V.prototype.render, $ = (h = V.contextType) && r[h.__c], U = h ? $ ? $.props.value : h.__ : r, a.__c ? W = (u = n.__c = a.__c).__ = u.__E : (D ? n.__c = u = new V(I, U) : (n.__c = u = new We(I, U), u.constructor = V, u.render = qr), $ && $.sub(u), u.state || (u.state = {}), u.__n = r, y = u.__d = !0, u.__h = [], u._sb = []), D && u.__s == null && (u.__s = u.state), D && V.getDerivedStateFromProps != null && (u.__s == u.state && (u.__s = $e({}, u.__s)), $e(u.__s, V.getDerivedStateFromProps(I, u.__s))), v = u.props, b = u.state, u.__v = n, y) D && V.getDerivedStateFromProps == null && u.componentWillMount != null && u.componentWillMount(), D && u.componentDidMount != null && u.__h.push(u.componentDidMount);
       else {
-        if (D && U.getDerivedStateFromProps == null && I !== v && u.componentWillReceiveProps != null && u.componentWillReceiveProps(I, M), n.__v == a.__v || !u.__e && u.shouldComponentUpdate != null && u.shouldComponentUpdate(I, u.__s, M) === !1) {
-          n.__v != a.__v && (u.props = I, u.state = u.__s, u.__d = !1), n.__e = a.__e, n.__k = a.__k, n.__k.some(function(N) {
-            N && (N.__ = n);
-          }), Vt.push.apply(u.__h, u._sb), u._sb = [], u.__h.length && c.push(u);
+        if (D && V.getDerivedStateFromProps == null && I !== v && u.componentWillReceiveProps != null && u.componentWillReceiveProps(I, U), n.__v == a.__v || !u.__e && u.shouldComponentUpdate != null && u.shouldComponentUpdate(I, u.__s, U) === !1) {
+          n.__v != a.__v && (u.props = I, u.state = u.__s, u.__d = !1), n.__e = a.__e, n.__k = a.__k, n.__k.some(function(P) {
+            P && (P.__ = n);
+          }), Ht.push.apply(u.__h, u._sb), u._sb = [], u.__h.length && c.push(u);
           break e;
         }
-        u.componentWillUpdate != null && u.componentWillUpdate(I, u.__s, M), D && u.componentDidUpdate != null && u.__h.push(function() {
+        u.componentWillUpdate != null && u.componentWillUpdate(I, u.__s, U), D && u.componentDidUpdate != null && u.__h.push(function() {
           u.componentDidUpdate(v, b, S);
         });
       }
-      if (u.context = M, u.props = I, u.__P = e, u.__e = !1, F = O.__r, q = 0, D) u.state = u.__s, u.__d = !1, F && F(n), h = u.render(u.props, u.state, u.context), Vt.push.apply(u.__h, u._sb), u._sb = [];
+      if (u.context = U, u.props = I, u.__P = e, u.__e = !1, F = O.__r, j = 0, D) u.state = u.__s, u.__d = !1, F && F(n), h = u.render(u.props, u.state, u.context), Ht.push.apply(u.__h, u._sb), u._sb = [];
       else do
         u.__d = !1, F && F(n), h = u.render(u.props, u.state, u.context), u.state = u.__s;
-      while (u.__d && ++q < 25);
-      u.state = u.__s, u.getChildContext != null && (r = Ge(Ge({}, r), u.getChildContext())), D && !y && u.getSnapshotBeforeUpdate != null && (S = u.getSnapshotBeforeUpdate(v, b)), te = h != null && h.type === it && h.key == null ? ja(h.props.children) : h, p = Ua(e, Et(te) ? te : [te], n, a, r, s, l, c, p, f, d), u.base = n.__e, n.__u &= -161, u.__h.length && c.push(u), W && (u.__E = u.__ = null);
-    } catch (N) {
+      while (u.__d && ++j < 25);
+      u.state = u.__s, u.getChildContext != null && (r = $e($e({}, r), u.getChildContext())), D && !y && u.getSnapshotBeforeUpdate != null && (S = u.getSnapshotBeforeUpdate(v, b)), ne = h != null && h.type === ot && h.key == null ? ja(h.props.children) : h, p = Ua(e, Et(ne) ? ne : [ne], n, a, r, s, l, c, p, f, d), u.base = n.__e, n.__u &= -161, u.__h.length && c.push(u), W && (u.__E = u.__ = null);
+    } catch (P) {
       if (c.length = k, n.__v = null, f || l != null) {
-        if (N.then) {
+        if (P.then) {
           for (n.__u |= f ? 160 : 128; p && p.nodeType == 8 && p.nextSibling; ) p = p.nextSibling;
           l != null && (l[l.indexOf(p)] = null), n.__e = p;
-        } else if (l != null) for (Y = l.length; Y--; ) Pn(l[Y]);
+        } else if (l != null) for (Z = l.length; Z--; ) Rn(l[Z]);
       } else n.__e = a.__e;
-      n.__k == null && (n.__k = a.__k || []), N.then || Ha(n), O.__e(N, n, a);
+      n.__k == null && (n.__k = a.__k || []), P.then || Ha(n), O.__e(P, n, a);
     }
   } else l == null && n.__v == a.__v ? (n.__k = a.__k, n.__e = a.__e) : p = n.__e = Hr(a.__e, n, a, r, s, l, c, f, d);
   return (h = O.diffed) && h(n), 128 & n.__u ? void 0 : p;
@@ -155,7 +155,7 @@ function Ha(e) {
   e && (e.__c && (e.__c.__e = !0), e.__k && e.__k.some(Ha));
 }
 function qa(e, n, a) {
-  for (var r = 0; r < a.length; r++) Sn(a[r], a[++r], a[++r]);
+  for (var r = 0; r < a.length; r++) Tn(a[r], a[++r], a[++r]);
   O.__c && O.__c(n, e), e.some(function(s) {
     try {
       e = s.__h, s.__h = [], e.some(function(l) {
@@ -167,10 +167,10 @@ function qa(e, n, a) {
   });
 }
 function ja(e) {
-  return typeof e != "object" || e == null || e.__b > 0 ? e : Et(e) ? e.map(ja) : e.constructor !== void 0 ? null : Ge({}, e);
+  return typeof e != "object" || e == null || e.__b > 0 ? e : Et(e) ? e.map(ja) : e.constructor !== void 0 ? null : $e({}, e);
 }
 function Hr(e, n, a, r, s, l, c, p, f) {
-  var d, h, k, u, y, v, b, S = a.props || Ut, W = n.props, I = n.type;
+  var d, h, k, u, y, v, b, S = a.props || Vt, W = n.props, I = n.type;
   if (I == "svg" ? s = "http://www.w3.org/2000/svg" : I == "math" ? s = "http://www.w3.org/1998/Math/MathML" : s || (s = "http://www.w3.org/1999/xhtml"), l != null) {
     for (d = 0; d < l.length; d++) if ((y = l[d]) && "setAttribute" in y == !!I && (I ? y.localName == I : y.nodeType == 3)) {
       e = y, l[d] = null;
@@ -183,16 +183,16 @@ function Hr(e, n, a, r, s, l, c, p, f) {
   }
   if (I == null) S === W || p && e.data == W || (e.data = W);
   else {
-    if (l = I == "textarea" && W.defaultValue != null ? null : l && Jt.call(e.childNodes), !p && l != null) for (S = {}, d = 0; d < e.attributes.length; d++) S[(y = e.attributes[d]).name] = y.value;
+    if (l = I == "textarea" && W.defaultValue != null ? null : l && zt.call(e.childNodes), !p && l != null) for (S = {}, d = 0; d < e.attributes.length; d++) S[(y = e.attributes[d]).name] = y.value;
     for (d in S) y = S[d], d == "dangerouslySetInnerHTML" ? k = y : d == "children" || d in W || d == "value" && "defaultValue" in W || d == "checked" && "defaultChecked" in W || xt(e, d, null, y, s);
     for (d in W) y = W[d], d == "children" ? u = y : d == "dangerouslySetInnerHTML" ? h = y : d == "value" ? v = y : d == "checked" ? b = y : p && typeof y != "function" || S[d] === y || xt(e, d, y, S[d], s);
     if (h) p || k && (h.__html == k.__html || h.__html == e.innerHTML) || (e.innerHTML = h.__html), n.__k = [];
-    else if (k && (e.innerHTML = ""), Ua(n.type == "template" ? e.content : e, Et(u) ? u : [u], n, a, r, I == "foreignObject" ? "http://www.w3.org/1999/xhtml" : s, l, c, l ? l[0] : a.__k && st(a, 0), p, f), l != null) for (d = l.length; d--; ) Pn(l[d]);
+    else if (k && (e.innerHTML = ""), Ua(n.type == "template" ? e.content : e, Et(u) ? u : [u], n, a, r, I == "foreignObject" ? "http://www.w3.org/1999/xhtml" : s, l, c, l ? l[0] : a.__k && it(a, 0), p, f), l != null) for (d = l.length; d--; ) Rn(l[d]);
     p && I != "textarea" || (d = "value", I == "progress" && v == null ? e.removeAttribute("value") : v != null && (v !== e[d] || I == "progress" && !v || I == "option" && v != S[d]) && xt(e, d, v, S[d], s), d = "checked", b != null && b != e[d] && xt(e, d, b, S[d], s));
   }
   return e;
 }
-function Sn(e, n, a) {
+function Tn(e, n, a) {
   try {
     if (typeof e == "function") {
       var r = typeof e.__u == "function";
@@ -204,7 +204,7 @@ function Sn(e, n, a) {
 }
 function Ba(e, n, a) {
   var r, s;
-  if (O.unmount && O.unmount(e), (r = e.ref) && (r.current && r.current != e.__e || Sn(r, null, n)), (r = e.__c) != null) {
+  if (O.unmount && O.unmount(e), (r = e.ref) && (r.current && r.current != e.__e || Tn(r, null, n)), (r = e.__c) != null) {
     if (r.componentWillUnmount) try {
       r.componentWillUnmount();
     } catch (l) {
@@ -213,45 +213,45 @@ function Ba(e, n, a) {
     r.base = r.__P = r.__n = null;
   }
   if (r = e.__k) for (s = 0; s < r.length; s++) r[s] && Ba(r[s], n, a || typeof e.type != "function");
-  a || Pn(e.__e), e.__c = e.__ = e.__e = void 0;
+  a || Rn(e.__e), e.__c = e.__ = e.__e = void 0;
 }
 function qr(e, n, a) {
   return this.constructor(e, a);
 }
 function Je(e, n, a) {
   var r, s, l, c;
-  n == document && (n = document.documentElement), O.__ && O.__(e, n), s = (r = !1) ? null : n.__k, l = [], c = [], Rn(n, e = n.__k = t(it, null, [e]), s || Ut, Ut, n.namespaceURI, s ? null : n.firstChild ? Jt.call(n.childNodes) : null, l, s ? s.__e : n.firstChild, r, c), qa(l, e, c), e.props.children = null;
+  n == document && (n = document.documentElement), O.__ && O.__(e, n), s = (r = !1) ? null : n.__k, l = [], c = [], Sn(n, e = n.__k = t(ot, null, [e]), s || Vt, Vt, n.namespaceURI, s ? null : n.firstChild ? zt.call(n.childNodes) : null, l, s ? s.__e : n.firstChild, r, c), qa(l, e, c), e.props.children = null;
 }
-Jt = Vt.slice, O = { __e: function(e, n, a, r) {
+zt = Ht.slice, O = { __e: function(e, n, a, r) {
   for (var s, l, c; n = n.__; ) if ((s = n.__c) && !s.__) try {
     if ((l = s.constructor) && l.getDerivedStateFromError != null && (s.setState(l.getDerivedStateFromError(e)), c = s.__d), s.componentDidCatch != null && (s.componentDidCatch(e, r || {}), c = s.__d), c) return s.__E = s;
   } catch (p) {
     e = p;
   }
   throw e;
-} }, Wa = 0, $e.prototype.setState = function(e, n) {
+} }, Wa = 0, We.prototype.setState = function(e, n) {
   var a;
-  a = this.__s != null && this.__s != this.state ? this.__s : this.__s = Ge({}, this.state), typeof e == "function" && (e = e(Ge({}, a), this.props)), e && Ge(a, e), e != null && this.__v && (n && this._sb.push(n), aa(this));
-}, $e.prototype.forceUpdate = function(e) {
-  this.__v && (this.__e = !0, e && this.__h.push(e), aa(this));
-}, $e.prototype.render = it, qe = [], Da = typeof Promise == "function" ? Promise.prototype.then.bind(Promise.resolve()) : setTimeout, Oa = function(e, n) {
+  a = this.__s != null && this.__s != this.state ? this.__s : this.__s = $e({}, this.state), typeof e == "function" && (e = e($e({}, a), this.props)), e && $e(a, e), e != null && this.__v && (n && this._sb.push(n), ra(this));
+}, We.prototype.forceUpdate = function(e) {
+  this.__v && (this.__e = !0, e && this.__h.push(e), ra(this));
+}, We.prototype.render = ot, qe = [], Da = typeof Promise == "function" ? Promise.prototype.then.bind(Promise.resolve()) : setTimeout, Oa = function(e, n) {
   return e.__v.__b - n.__v.__b;
-}, Ht.__r = 0, ln = Math.random().toString(8), Wt = "__d" + ln, yt = "__a" + ln, Fa = /(PointerCapture)$|Capture$/i, Nn = 0, _n = oa(!1), mn = oa(!0);
-var wt, ee, cn, ia, jt = 0, Xa = [], ae = O, sa = ae.__b, la = ae.__r, ca = ae.diffed, da = ae.__c, ua = ae.unmount, fa = ae.__;
-function Tn(e, n) {
-  ae.__h && ae.__h(ee, e, jt || n), jt = 0;
-  var a = ee.__H || (ee.__H = { __: [], __h: [] });
+}, qt.__r = 0, cn = Math.random().toString(8), Dt = "__d" + cn, yt = "__a" + cn, Fa = /(PointerCapture)$|Capture$/i, Pn = 0, mn = ia(!1), hn = ia(!0);
+var wt, te, dn, sa, Bt = 0, Xa = [], re = O, la = re.__b, ca = re.__r, da = re.diffed, ua = re.__c, fa = re.unmount, pa = re.__;
+function Cn(e, n) {
+  re.__h && re.__h(te, e, Bt || n), Bt = 0;
+  var a = te.__H || (te.__H = { __: [], __h: [] });
   return e >= a.__.length && a.__.push({}), a.__[e];
 }
 function E(e) {
-  return jt = 1, jr(Qa, e);
+  return Bt = 1, jr(Qa, e);
 }
 function jr(e, n, a) {
-  var r = Tn(wt++, 2);
+  var r = Cn(wt++, 2);
   if (r.t = e, !r.__c && (r.__ = [a ? a(n) : Qa(void 0, n), function(p) {
     var f = r.__N ? r.__N[0] : r.__[0], d = r.t(f, p);
     f !== d && (r.__N = [d, r.__[1]], r.__c.setState({}));
-  }], r.__c = ee, !ee.__f)) {
+  }], r.__c = te, !te.__f)) {
     var s = function(p, f, d) {
       if (!r.__c.__H) return !0;
       var h = !1, k = r.__c.props !== p;
@@ -267,94 +267,94 @@ function jr(e, n, a) {
       }
       return !h || k;
     };
-    ee.__f = !0;
-    var l = ee.shouldComponentUpdate, c = ee.componentWillUpdate;
-    ee.componentWillUpdate = function(p, f, d) {
+    te.__f = !0;
+    var l = te.shouldComponentUpdate, c = te.componentWillUpdate;
+    te.componentWillUpdate = function(p, f, d) {
       if (this.__e) {
         var h = l;
         l = void 0, s(p, f, d), l = h;
       }
       c && c.call(this, p, f, d);
-    }, ee.shouldComponentUpdate = s;
+    }, te.shouldComponentUpdate = s;
   }
   return r.__N || r.__;
 }
-function z(e, n) {
-  var a = Tn(wt++, 3);
-  !ae.__s && Ka(a.__H, n) && (a.__ = e, a.u = n, ee.__H.__h.push(a));
+function Y(e, n) {
+  var a = Cn(wt++, 3);
+  !re.__s && Ka(a.__H, n) && (a.__ = e, a.u = n, te.__H.__h.push(a));
 }
 function je(e) {
-  return jt = 5, ht(function() {
+  return Bt = 5, ht(function() {
     return { current: e };
   }, []);
 }
 function ht(e, n) {
-  var a = Tn(wt++, 7);
+  var a = Cn(wt++, 7);
   return Ka(a.__H, n) && (a.__ = e(), a.__H = n, a.__h = e), a.__;
 }
 function Br() {
   for (var e; e = Xa.shift(); ) {
     var n = e.__H;
     if (e.__P && n) try {
-      n.__h.some(Ot), n.__h.some(hn), n.__h = [];
+      n.__h.some(Ft), n.__h.some(bn), n.__h = [];
     } catch (a) {
-      n.__h = [], ae.__e(a, e.__v);
+      n.__h = [], re.__e(a, e.__v);
     }
   }
 }
-ae.__b = function(e) {
-  ee = null, sa && sa(e);
-}, ae.__ = function(e, n) {
-  e && n.__k && n.__k.__m && (e.__m = n.__k.__m), fa && fa(e, n);
-}, ae.__r = function(e) {
-  la && la(e), wt = 0;
-  var n = (ee = e.__c).__H;
-  n && (cn === ee ? (n.__h = [], ee.__h = [], n.__.some(function(a) {
+re.__b = function(e) {
+  te = null, la && la(e);
+}, re.__ = function(e, n) {
+  e && n.__k && n.__k.__m && (e.__m = n.__k.__m), pa && pa(e, n);
+}, re.__r = function(e) {
+  ca && ca(e), wt = 0;
+  var n = (te = e.__c).__H;
+  n && (dn === te ? (n.__h = [], te.__h = [], n.__.some(function(a) {
     a.__N && (a.__ = a.__N), a.u = a.__N = void 0;
-  })) : (n.__h.some(Ot), n.__h.some(hn), n.__h = [], wt = 0)), cn = ee;
-}, ae.diffed = function(e) {
-  ca && ca(e);
+  })) : (n.__h.some(Ft), n.__h.some(bn), n.__h = [], wt = 0)), dn = te;
+}, re.diffed = function(e) {
+  da && da(e);
   var n = e.__c;
-  n && n.__H && (n.__H.__h.length && (Xa.push(n) !== 1 && ia === ae.requestAnimationFrame || ((ia = ae.requestAnimationFrame) || Xr)(Br)), n.__H.__.some(function(a) {
+  n && n.__H && (n.__H.__h.length && (Xa.push(n) !== 1 && sa === re.requestAnimationFrame || ((sa = re.requestAnimationFrame) || Xr)(Br)), n.__H.__.some(function(a) {
     a.u && (a.__H = a.u, a.u = void 0);
-  })), cn = ee = null;
-}, ae.__c = function(e, n) {
+  })), dn = te = null;
+}, re.__c = function(e, n) {
   n.some(function(a) {
     try {
-      a.__h.some(Ot), a.__h = a.__h.filter(function(r) {
-        return !r.__ || hn(r);
+      a.__h.some(Ft), a.__h = a.__h.filter(function(r) {
+        return !r.__ || bn(r);
       });
     } catch (r) {
       n.some(function(s) {
         s.__h && (s.__h = []);
-      }), n = [], ae.__e(r, a.__v);
+      }), n = [], re.__e(r, a.__v);
     }
-  }), da && da(e, n);
-}, ae.unmount = function(e) {
-  ua && ua(e);
+  }), ua && ua(e, n);
+}, re.unmount = function(e) {
+  fa && fa(e);
   var n, a = e.__c;
   a && a.__H && (a.__H.__.some(function(r) {
     try {
-      Ot(r);
+      Ft(r);
     } catch (s) {
       n = s;
     }
-  }), a.__H = void 0, n && ae.__e(n, a.__v));
+  }), a.__H = void 0, n && re.__e(n, a.__v));
 };
-var pa = typeof requestAnimationFrame == "function";
+var ga = typeof requestAnimationFrame == "function";
 function Xr(e) {
   var n, a = function() {
-    clearTimeout(r), pa && cancelAnimationFrame(n), setTimeout(e);
+    clearTimeout(r), ga && cancelAnimationFrame(n), setTimeout(e);
   }, r = setTimeout(a, 35);
-  pa && (n = requestAnimationFrame(a));
+  ga && (n = requestAnimationFrame(a));
 }
-function Ot(e) {
-  var n = ee, a = e.__c;
-  typeof a == "function" && (e.__c = void 0, a()), ee = n;
+function Ft(e) {
+  var n = te, a = e.__c;
+  typeof a == "function" && (e.__c = void 0, a()), te = n;
 }
-function hn(e) {
-  var n = ee;
-  e.__c = e.__(), ee = n;
+function bn(e) {
+  var n = te;
+  e.__c = e.__(), te = n;
 }
 function Ka(e, n) {
   return !e || e.length !== n.length || n.some(function(a, r) {
@@ -368,30 +368,30 @@ function Kr(e, n) {
   for (var a in n) e[a] = n[a];
   return e;
 }
-function bn(e, n) {
+function kn(e, n) {
   for (var a in e) if (a !== "__source" && !(a in n)) return !0;
   for (var r in n) if (r !== "__source" && e[r] !== n[r]) return !0;
   return !1;
 }
-function ga(e, n) {
+function va(e, n) {
   this.props = e, this.context = n;
 }
 function Qr(e, n) {
   function a(s) {
     var l = this.props.ref;
-    return l != s.ref && l && (typeof l == "function" ? l(null) : l.current = null), n ? !n(this.props, s) || l != s.ref : bn(this.props, s);
+    return l != s.ref && l && (typeof l == "function" ? l(null) : l.current = null), n ? !n(this.props, s) || l != s.ref : kn(this.props, s);
   }
   function r(s) {
     return this.shouldComponentUpdate = a, t(e, s);
   }
   return r.displayName = "Memo(" + (e.displayName || e.name) + ")", r.__f = r.prototype.isReactComponent = !0, r.type = e, r;
 }
-(ga.prototype = new $e()).isPureReactComponent = !0, ga.prototype.shouldComponentUpdate = function(e, n) {
-  return bn(this.props, e) || bn(this.state, n);
+(va.prototype = new We()).isPureReactComponent = !0, va.prototype.shouldComponentUpdate = function(e, n) {
+  return kn(this.props, e) || kn(this.state, n);
 };
-var va = O.__b;
+var _a = O.__b;
 O.__b = function(e) {
-  e.type && e.type.__f && e.ref && (e.props.ref = e.ref, e.ref = null), va && va(e);
+  e.type && e.type.__f && e.ref && (e.props.ref = e.ref, e.ref = null), _a && _a(e);
 };
 var Jr = O.__e;
 O.__e = function(e, n, a, r) {
@@ -400,7 +400,7 @@ O.__e = function(e, n, a, r) {
   }
   Jr(e, n, a, r);
 };
-var _a = O.unmount;
+var ma = O.unmount;
 function Ja(e, n, a) {
   return e && (e.__c && e.__c.__H && (e.__c.__H.__.forEach(function(r) {
     typeof r.__c == "function" && r.__c();
@@ -413,7 +413,7 @@ function za(e, n, a) {
     return za(r, n, a);
   }), e.__c && e.__c.__P === n && (e.__e && a.appendChild(e.__e), e.__c.__e = !0, e.__c.__P = a)), e;
 }
-function dn() {
+function un() {
   this.__u = 0, this.o = null, this.__b = null;
 }
 function Ya(e) {
@@ -425,8 +425,8 @@ function Gt() {
 }
 O.unmount = function(e) {
   var n = e.__c;
-  n && (n.__z = !0), n && n.__R && n.__R(), n && 32 & e.__u && (e.type = null), _a && _a(e);
-}, (dn.prototype = new $e()).__c = function(e, n) {
+  n && (n.__z = !0), n && n.__R && n.__R(), n && 32 & e.__u && (e.type = null), ma && ma(e);
+}, (un.prototype = new We()).__c = function(e, n) {
   var a = n.__c, r = this;
   r.o == null && (r.o = []), r.o.push(a);
   var s = Ya(r.__v), l = !1, c = function() {
@@ -446,9 +446,9 @@ O.unmount = function(e) {
     }
   };
   r.__u++ || 32 & n.__u || r.setState({ __a: r.__b = r.__v.__k[0] }), e.then(c, c);
-}, dn.prototype.componentWillUnmount = function() {
+}, un.prototype.componentWillUnmount = function() {
   this.o = [];
-}, dn.prototype.render = function(e, n) {
+}, un.prototype.render = function(e, n) {
   if (this.__b) {
     if (this.__v.__k) {
       var a = document.createElement("div"), r = this.__v.__k[0].__c;
@@ -456,49 +456,49 @@ O.unmount = function(e) {
     }
     this.__b = null;
   }
-  var s = n.__a && t(it, null, e.fallback);
-  return s && (s.__u &= -33), [t(it, null, n.__a ? null : e.children), s];
+  var s = n.__a && t(ot, null, e.fallback);
+  return s && (s.__u &= -33), [t(ot, null, n.__a ? null : e.children), s];
 };
-var ma = function(e, n, a) {
+var ha = function(e, n, a) {
   if (++a[1] === a[0] && e.l.delete(n), e.props.revealOrder && (e.props.revealOrder[0] !== "t" || !e.l.size)) for (a = e.i; a; ) {
     for (; a.length > 3; ) a.pop()();
     if (a[1] < a[0]) break;
     e.i = a = a[2];
   }
 };
-(Gt.prototype = new $e()).__a = function(e) {
+(Gt.prototype = new We()).__a = function(e) {
   var n = this, a = Ya(n.__v), r = n.l.get(e);
   return r[0]++, function(s) {
     var l = function() {
-      n.props.revealOrder ? (r.push(s), ma(n, e, r)) : s();
+      n.props.revealOrder ? (r.push(s), ha(n, e, r)) : s();
     };
     a ? a(l) : l();
   };
 }, Gt.prototype.render = function(e) {
   this.i = null, this.l = /* @__PURE__ */ new Map();
-  var n = qt(e.children);
+  var n = jt(e.children);
   e.revealOrder && e.revealOrder[0] === "b" && n.reverse();
   for (var a = n.length; a--; ) this.l.set(n[a], this.i = [1, 0, this.i]);
   return e.children;
 }, Gt.prototype.componentDidUpdate = Gt.prototype.componentDidMount = function() {
   var e = this;
   this.l.forEach(function(n, a) {
-    ma(e, a, n);
+    ha(e, a, n);
   });
 };
 var zr = typeof Symbol < "u" && Symbol.for && Symbol.for("react.element") || 60103, Yr = /^(?:accent|alignment|arabic|baseline|cap|clip(?!PathU)|color|dominant|fill|flood|font|glyph(?!R)|horiz|image(!S)|letter|lighting|marker(?!H|W|U)|overline|paint|pointer|shape|stop|strikethrough|stroke|text(?!L)|transform|underline|unicode|units|v|vector|vert|word|writing|x(?!C))[A-Z]/, Zr = /^on(Ani|Tra|Tou|BeforeInp|Compo)/, eo = /[A-Z0-9]/g, to = typeof document < "u", no = function(e) {
   return (typeof Symbol < "u" && typeof Symbol() == "symbol" ? /fil|che|rad/ : /fil|che|ra/).test(e);
 };
-$e.prototype.isReactComponent = !0, ["componentWillMount", "componentWillReceiveProps", "componentWillUpdate"].forEach(function(e) {
-  Object.defineProperty($e.prototype, e, { configurable: !0, get: function() {
+We.prototype.isReactComponent = !0, ["componentWillMount", "componentWillReceiveProps", "componentWillUpdate"].forEach(function(e) {
+  Object.defineProperty(We.prototype, e, { configurable: !0, get: function() {
     return this["UNSAFE_" + e];
   }, set: function(n) {
     Object.defineProperty(this, e, { configurable: !0, writable: !0, value: n });
   } });
 });
-var ha = O.event;
+var ba = O.event;
 O.event = function(e) {
-  return ha && (e = ha(e)), e.persist = function() {
+  return ba && (e = ba(e)), e.persist = function() {
   }, e.isPropagationStopped = function() {
     return this.cancelBubble;
   }, e.isDefaultPrevented = function() {
@@ -507,7 +507,7 @@ O.event = function(e) {
 };
 var ao = { configurable: !0, get: function() {
   return this.class;
-} }, ba = O.vnode;
+} }, ka = O.vnode;
 O.vnode = function(e) {
   typeof e.type == "string" && (function(n) {
     var a = n.props, r = n.type, s = {}, l = r.indexOf("-") == -1;
@@ -518,20 +518,20 @@ O.vnode = function(e) {
         c === "defaultValue" && "value" in a && a.value == null ? c = "value" : c === "download" && p === !0 ? p = "" : f === "translate" && p === "no" ? p = !1 : f[0] === "o" && f[1] === "n" ? f === "ondoubleclick" ? c = "ondblclick" : f !== "onchange" || r !== "input" && r !== "textarea" || no(a.type) ? f === "onfocus" ? c = "onfocusin" : f === "onblur" ? c = "onfocusout" : Zr.test(c) && (c = f) : f = c = "oninput" : l && Yr.test(c) ? c = c.replace(eo, "-$&").toLowerCase() : p === null && (p = void 0), f === "oninput" && s[c = f] && (c = "oninputCapture"), s[c] = p;
       }
     }
-    r == "select" && (s.multiple && Array.isArray(s.value) && (s.value = qt(a.children).forEach(function(d) {
+    r == "select" && (s.multiple && Array.isArray(s.value) && (s.value = jt(a.children).forEach(function(d) {
       d.props.selected = s.value.indexOf(d.props.value) != -1;
-    })), s.defaultValue != null && (s.value = qt(a.children).forEach(function(d) {
+    })), s.defaultValue != null && (s.value = jt(a.children).forEach(function(d) {
       d.props.selected = s.multiple ? s.defaultValue.indexOf(d.props.value) != -1 : s.defaultValue == d.props.value;
     }))), a.class && !a.className ? (s.class = a.class, Object.defineProperty(s, "className", ao)) : a.className && (s.class = s.className = a.className), n.props = s;
-  })(e), e.$$typeof = zr, ba && ba(e);
+  })(e), e.$$typeof = zr, ka && ka(e);
 };
-var ka = O.__r;
+var ya = O.__r;
 O.__r = function(e) {
-  ka && ka(e), e.__c;
+  ya && ya(e), e.__c;
 };
-var ya = O.diffed;
+var Ia = O.diffed;
 O.diffed = function(e) {
-  ya && ya(e);
+  Ia && Ia(e);
   var n = e.props, a = e.__e;
   a != null && e.type === "textarea" && "value" in n && n.value !== a.value && (a.value = n.value == null ? "" : n.value);
 };
@@ -541,15 +541,15 @@ const It = [
   { label: "Settings", key: "settings", hint: "Runtime", icon: "⚙️" },
   { label: "Agent Prompts", key: "prompts", hint: "System prompts", icon: "📖" },
   { label: "Learnings", key: "learnings", hint: "Reflections", icon: "🧠" }
-], kn = [
+], yn = [
   { key: "available", label: "Available", states: ["PENDING"] },
-  { key: "active", label: "Active", states: ["SETTING_UP", "PLANNING", "AI_PLAN_REVIEWING", "WORKING", "AI_REVIEWING", "SPLIT_PLANNING", "SPLITTING", "CREATING_PR", "WATCHING_PR", "IN_MERGE_QUEUE", "FIXING", "PUSHING", "REBASING"] },
+  { key: "active", label: "Active", states: ["SETTING_UP", "PLANNING", "AI_PLAN_REVIEWING", "WORKING", "AI_REVIEWING", "SPLIT_PLANNING", "SPLITTING", "CREATING_PR", "FIXING", "PUSHING", "REBASING"] },
   { key: "awaiting", label: "Awaiting You", states: ["AWAITING_PLAN_APPROVAL", "AWAITING_SPLIT_APPROVAL", "AWAITING_CODE_REVIEW", "AWAITING_FIX_APPROVAL", "AWAITING_FIX_REVIEW", "STEERING", "FAILED", "PAUSED", "IGNORED"] }
 ], ro = [
   { key: "overview", label: "Overview" },
   { key: "activity", label: "Activity" },
   { key: "ask", label: "Ask" }
-], zt = [
+], Yt = [
   { label: "Automation", keys: ["concurrency_limit", "scheduler_interval_seconds", "ai_review_max_rounds", "auto_retry_max", "agent_max_runtime_minutes", "forge_reuse_pi_sessions"] },
   { label: "External Services", keys: ["linear_enabled", "linear_team", "github_repo", "github_use_desktop", "linear_poll_interval_seconds"] },
   { label: "Code Workspace", keys: ["worktree_provider", "repo_root", "wt_root", "worktree_root", "branch_prefix", "default_branch"] },
@@ -609,7 +609,7 @@ const It = [
   backend: { label: "Backend name", hint: "Optional label for the selected backend environment." },
   backend_mode: { label: "Backend mode", hint: "Optional mode label shown in the dashboard shell." },
   api_base_url: { label: "API base URL", hint: "Optional API origin override for the dashboard frontend." }
-}, Ia = {
+}, Aa = {
   model: "vertex-anthropic/claude-sonnet-4-5@20250929",
   linear_team: "TEAM",
   github_repo: "owner/repo",
@@ -623,7 +623,7 @@ const It = [
   host_path_prefix: "/Users",
   vm_path_prefix: "/mnt/mac/Users",
   dashboard_port: "3142"
-}, $t = ["planner", "plan-reviewer", "coder", "reviewer", "git-agent", "fixer", "split-planner", "splitter", "rebaser", "reflector"], yn = {
+}, $t = ["planner", "plan-reviewer", "coder", "reviewer", "git-agent", "fixer", "split-planner", "splitter", "rebaser", "reflector"], In = {
   planner: "model_planner",
   "plan-reviewer": "model_plan_reviewer",
   coder: "model_coder",
@@ -634,7 +634,7 @@ const It = [
   splitter: "model_splitter",
   rebaser: "model_rebaser",
   reflector: "model_reflector"
-}, io = ["model", "default_model", ...Object.values(yn)], Cn = /* @__PURE__ */ new Set([...zt.flatMap((e) => e.keys), ...io]), so = new Set(zt.flatMap((e) => e.keys).filter((e) => Qt(e) === "number")), lo = new Set(zt.flatMap((e) => e.keys).filter((e) => Qt(e) === "checkbox")), co = /* @__PURE__ */ new Set(["runtime_mode", "vm_ssh_target", "host_path_prefix", "vm_path_prefix", "vm_frontend_staging_backend_command", "vm_backend_staging_command", "vm_command", "terminal_command", "backend", "backend_mode", "api_base_url", "dashboard_port"]), uo = [
+}, io = ["model", "default_model", ...Object.values(In)], Ln = /* @__PURE__ */ new Set([...Yt.flatMap((e) => e.keys), ...io]), so = new Set(Yt.flatMap((e) => e.keys).filter((e) => Jt(e) === "number")), lo = new Set(Yt.flatMap((e) => e.keys).filter((e) => Jt(e) === "checkbox")), co = /* @__PURE__ */ new Set(["runtime_mode", "vm_ssh_target", "host_path_prefix", "vm_path_prefix", "vm_frontend_staging_backend_command", "vm_backend_staging_command", "vm_command", "terminal_command", "backend", "backend_mode", "api_base_url", "dashboard_port"]), uo = [
   { key: "suggestions", label: "Suggestions" },
   { key: "changes", label: "Change log" },
   { key: "reflections", label: "Reflection history" }
@@ -741,7 +741,7 @@ const _o = [
   PAUSED: "awaiting",
   FAILED: "awaiting",
   IGNORED: "awaiting"
-}, Aa = {
+}, wa = {
   scheduler: "unknown",
   activeCount: 0,
   awaitingDecisionsCount: 0,
@@ -810,7 +810,7 @@ function nr() {
 function Io(e) {
   return nr()[String(e)] ?? { messages: [], input: "" };
 }
-function wa(e, n) {
+function Ea(e, n) {
   try {
     const a = nr(), r = (n.messages ?? []).filter((s) => (s.role === "user" || s.role === "assistant") && typeof s.text == "string").slice(-tr);
     a[String(e)] = { messages: r, input: n.input ?? "" }, window.localStorage.setItem(er, JSON.stringify(a));
@@ -820,7 +820,7 @@ function wa(e, n) {
 function ar(e) {
   return e.state === "AWAITING_PLAN_APPROVAL" ? { id: 9101, issue_id: e.id, type: "PLAN_REVIEW", issueTitle: e.title } : e.state === "AWAITING_CODE_REVIEW" ? { id: 9102, issue_id: e.id, type: "CODE_REVIEW", issueTitle: e.title } : e.state === "AWAITING_FIX_APPROVAL" ? { id: 9103, issue_id: e.id, type: "FIX_APPROVAL", issueTitle: e.title, artifact_ref: JSON.stringify({ comments: [{ id: "c1", author: "Reviewer", body: "Please cover the empty-state path before merging.", path: "src/mock.ts", line: 3, pr_number: 4521, reviewState: "CHANGES_REQUESTED" }, { id: "ci-1", author: "CI", body: "Typecheck failure in mock review fixture.", path: "src/mock.ts", line: null, pr_number: 4521, source: "ci" }] }) } : e.state === "AWAITING_FIX_REVIEW" ? { id: 9104, issue_id: e.id, type: "FIX_REVIEW", issueTitle: e.title, artifact_ref: "fix-review" } : e.state === "AWAITING_SPLIT_APPROVAL" ? { id: 9104, issue_id: e.id, type: "SPLIT_APPROVAL", issueTitle: e.title, artifact_ref: JSON.stringify({ summary: "Split generated code review prep from dashboard polish.", proposedStack: [{ branch: "mock/review-foundation", title: "Review foundation" }, { branch: "mock/review-polish", title: "Review polish" }] }) } : null;
 }
-function In() {
+function An() {
   return bo.map((e, n) => ({
     id: 9e3 + n,
     linear_id: `MOCK-${n + 1}`,
@@ -835,7 +835,7 @@ function In() {
     prStack: ["CREATING_PR", "WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL", "FIXING", "AWAITING_FIX_REVIEW", "PUSHING", "REBASING"].includes(e) ? [{ pr_number: e === "CREATING_PR" ? null : 4521 + n, branch: `user/mock-${n + 1}`, status: e === "IN_MERGE_QUEUE" ? "merged" : "open" }] : []
   }));
 }
-function Ea(e) {
+function Na(e) {
   return `# ${e.linear_id} ${e.title}
 
 ## Goal
@@ -852,15 +852,15 @@ Use this mock fixture to tidy copy, action availability, colors, and spacing bef
 }
 function Ao(e) {
   var r, s;
-  const n = In().find((l) => l.id === e) ?? In()[0], a = ar(n);
+  const n = An().find((l) => l.id === e) ?? An()[0], a = ar(n);
   return {
     issue: n,
-    plan: Ea(n),
-    planContent: Ea(n),
+    plan: Na(n),
+    planContent: Na(n),
     decisions: a ? [a] : [],
     agentRuns: [
       { id: n.id * 10 + 1, agent_type: "planner", started_at: Be(38), exit_code: 0 },
-      { id: n.id * 10 + 2, agent_type: (r = n.state) != null && r.toLowerCase().includes("review") ? "reviewer" : "coder", started_at: Be(9), exit_code: ye(n) ? null : 0 }
+      { id: n.id * 10 + 2, agent_type: (r = n.state) != null && r.toLowerCase().includes("review") ? "reviewer" : "coder", started_at: Be(9), exit_code: Ae(n) ? null : 0 }
     ],
     activityLog: [
       { id: n.id * 100 + 1, type: "agent_completed", actor: "planner", message: "Planner wrote the implementation plan", created_at: Be(38) },
@@ -876,14 +876,14 @@ TypeError: Cannot read properties of undefined` } : null,
   };
 }
 function wo() {
-  const e = In(), n = e.flatMap((a) => {
+  const e = An(), n = e.flatMap((a) => {
     const r = ar(a);
     return r ? [r] : [];
   });
   return {
     issues: e,
     decisions: n,
-    runningAgents: e.filter(ye).map((a) => ({ issueId: a.id, state: a.state })),
+    runningAgents: e.filter(Ae).map((a) => ({ issueId: a.id, state: a.state })),
     scheduler: { running: !0 },
     doneThisWeek: [{ id: 9999 }],
     learningSuggestionsCount: 0
@@ -910,7 +910,7 @@ function Eo(e) {
   const a = Ye(e);
   return { available: 2, active: 55, awaiting: 70 }[a];
 }
-function Ft(e) {
+function Mt(e) {
   if (!e.updated_at) return !1;
   const n = Ze(e.updated_at);
   return Number.isFinite(n) && Date.now() - n > 1440 * 60 * 1e3;
@@ -929,18 +929,18 @@ function we(e) {
   const s = Math.floor(r / 60);
   return s < 24 ? `${s}h` : `${Math.floor(s / 24)}d`;
 }
-function un(e) {
+function fn(e) {
   if (!e) return "date unknown";
   const n = Ze(e);
   return Number.isFinite(n) ? new Intl.DateTimeFormat(void 0, { dateStyle: "medium", timeStyle: "short" }).format(new Date(n)) : e;
 }
-function Ln(e) {
+function xn(e) {
   return e === 1 ? "▰▰▰" : e === 2 ? "▰▰░" : e === 3 ? "▰░░" : e === 4 ? "░░░" : "□□□";
 }
-function xn(e) {
+function Gn(e) {
   return e === 1 ? "urgent" : e === 2 ? "high" : e === 3 ? "medium" : e === 4 ? "low" : "none";
 }
-function Gn(e) {
+function $n(e) {
   return e === 1 ? "priority-urgent" : e === 2 ? "priority-high" : "priority-normal";
 }
 function et(e) {
@@ -978,10 +978,10 @@ function No(e) {
 function Po(e) {
   return (e.type ?? "Decision").toLowerCase().replaceAll("_", " ");
 }
-function ye(e) {
+function Ae(e) {
   return ["SETTING_UP", "PLANNING", "AI_PLAN_REVIEWING", "SPLIT_PLANNING", "SPLITTING", "WORKING", "AI_REVIEWING", "FIXING", "PUSHING", "REBASING", "CREATING_PR"].includes(e.state ?? "");
 }
-function Bt(e) {
+function Xt(e) {
   return !!(e.pr_approved_at || (e.prStack ?? []).some((n) => String(n.reviewDecision ?? "").toUpperCase() === "APPROVED"));
 }
 function Ro(e) {
@@ -993,23 +993,23 @@ function So(e) {
 }
 function To(e) {
   const n = [];
-  return e.externally_managed && n.push({ className: "forge-v3-external-badge", label: "👤 External" }), e.awaiting_review && n.push({ className: "forge-v3-awaiting-review-badge", label: "👀 Awaiting review" }), ye(e) && n.push({ className: "forge-v3-live-badge", label: "Live" }), e.updated_at && n.push({ className: `forge-v3-elapsed-badge${Ft(e) ? " long" : ""}`, label: Ft(e) ? "24h+" : we(e.updated_at) }), Ft(e) && n.push({ className: "forge-v3-stuck-indicator", label: "⚠ long" }), n;
+  return e.externally_managed && n.push({ className: "forge-v3-external-badge", label: "👤 External" }), e.awaiting_review && n.push({ className: "forge-v3-awaiting-review-badge", label: "👀 Awaiting review" }), Ae(e) && n.push({ className: "forge-v3-live-badge", label: "Live" }), e.updated_at && n.push({ className: `forge-v3-elapsed-badge${Mt(e) ? " long" : ""}`, label: Mt(e) ? "24h+" : we(e.updated_at) }), Mt(e) && n.push({ className: "forge-v3-stuck-indicator", label: "⚠ long" }), n;
 }
 function rr(e) {
   const n = e.state ?? "";
-  return ["PLANNING", "SETTING_UP"].includes(n) ? [t("strong", null, "Planner"), " reading ", t("code", null, "project context"), " — exploring component structure and requirements…"] : n === "AI_PLAN_REVIEWING" ? [t("strong", null, "AI plan reviewer"), " checking scope, risks, and task sequencing…"] : n === "AWAITING_PLAN_APPROVAL" ? ["Plan ready for you — ", t("strong", null, "review tasks"), " and AI reviewer notes before approving."] : n === "WORKING" ? [t("strong", null, "Coder"), " writing changes — implementing planned code updates…"] : n === "AI_REVIEWING" ? [t("strong", null, "Reviewer"), " checking security, test coverage, and conventions…"] : n === "AWAITING_CODE_REVIEW" ? ["AI review ", t("strong", { style: { color: "var(--emerald)" } }, "approved"), ". Review changed files and tests."] : n === "REBASING" ? [t("strong", null, "Rebaser"), " updating branch history against the base branch — resolving conflicts cautiously if needed…"] : Bt(e) ? ["GitHub review ", t("strong", { style: { color: "var(--emerald)" } }, "approved"), " — ready for merge queue or final checks."] : n === "FAILED" ? [t("strong", { style: { color: "var(--red)" } }, "Agent crashed"), " — inspect logs and retry."] : n === "PAUSED" ? ["Paused by user. Was in ", t("strong", null, "active"), " state."] : e.updated_at ? "Updated recently" : "Queued in Forge";
+  return ["PLANNING", "SETTING_UP"].includes(n) ? [t("strong", null, "Planner"), " reading ", t("code", null, "project context"), " — exploring component structure and requirements…"] : n === "AI_PLAN_REVIEWING" ? [t("strong", null, "AI plan reviewer"), " checking scope, risks, and task sequencing…"] : n === "AWAITING_PLAN_APPROVAL" ? ["Plan ready for you — ", t("strong", null, "review tasks"), " and AI reviewer notes before approving."] : n === "WORKING" ? [t("strong", null, "Coder"), " writing changes — implementing planned code updates…"] : n === "AI_REVIEWING" ? [t("strong", null, "Reviewer"), " checking security, test coverage, and conventions…"] : n === "AWAITING_CODE_REVIEW" ? ["AI review ", t("strong", { style: { color: "var(--emerald)" } }, "approved"), ". Review changed files and tests."] : n === "REBASING" ? [t("strong", null, "Rebaser"), " updating branch history against the base branch — resolving conflicts cautiously if needed…"] : Xt(e) ? ["GitHub review ", t("strong", { style: { color: "var(--emerald)" } }, "approved"), " — ready for merge queue or final checks."] : n === "FAILED" ? [t("strong", { style: { color: "var(--red)" } }, "Agent crashed"), " — inspect logs and retry."] : n === "PAUSED" ? ["Paused by user. Was in ", t("strong", null, "active"), " state."] : e.updated_at ? "Updated recently" : "Queued in Forge";
 }
-function Na(e) {
+function Pa(e) {
   var a;
   const n = we(e.updated_at ?? e.created_at);
-  return ye(e) ? e.state === "AI_REVIEWING" ? `In review ${n}` : `Started ${n} ago` : (a = e.state) != null && a.startsWith("AWAITING") ? `Waiting ${n}` : e.state === "FAILED" ? `Failed ${n} ago` : e.state === "PAUSED" ? `Paused ${n} ago` : Ye(e) === "available" ? `Added ${n} ago` : `Updated ${n} ago`;
+  return Ae(e) ? e.state === "AI_REVIEWING" ? `In review ${n}` : `Started ${n} ago` : (a = e.state) != null && a.startsWith("AWAITING") ? `Waiting ${n}` : e.state === "FAILED" ? `Failed ${n} ago` : e.state === "PAUSED" ? `Paused ${n} ago` : Ye(e) === "available" ? `Added ${n} ago` : `Updated ${n} ago`;
 }
 function or(e) {
   var a;
   const n = ((a = e[0]) == null ? void 0 : a.type) ?? "";
   return n ? n.includes("PLAN") ? "plan" : n.includes("CODE") ? "code" : n === "FIX_REVIEW" ? "fix-review" : n.includes("FIX") ? "fix" : n.includes("SPLIT") ? "split" : "generic" : null;
 }
-function Mt(e) {
+function Ut(e) {
   if (!(e != null && e.artifact_ref)) return {};
   try {
     const n = JSON.parse(e.artifact_ref);
@@ -1018,7 +1018,7 @@ function Mt(e) {
     return { summary: e.artifact_ref };
   }
 }
-function fn(e) {
+function pn(e) {
   return !!(e && /(?:^|[\\/])(?:plan|handoff|summary)\.md$/i.test(e.trim()));
 }
 function Co(e, n) {
@@ -1049,7 +1049,7 @@ function Lo(e) {
   return n;
 }
 function xo(e, n, a) {
-  const r = fn(n.summary) ? void 0 : n.summary, s = fn(n.plan) ? void 0 : n.plan, l = Co(An(a), "Split Plan"), c = An(a), p = s ?? l ?? (e && fn(e.artifact_ref ?? "") ? c : void 0), f = n.proposedStack ?? n.stack ?? Lo(p);
+  const r = pn(n.summary) ? void 0 : n.summary, s = pn(n.plan) ? void 0 : n.plan, l = Co(wn(a), "Split Plan"), c = wn(a), p = s ?? l ?? (e && pn(e.artifact_ref ?? "") ? c : void 0), f = n.proposedStack ?? n.stack ?? Lo(p);
   return {
     summary: r ?? (p ? "Review the proposed PR stack split from the split planner." : "Review the proposed PR stack split."),
     markdown: p,
@@ -1102,9 +1102,9 @@ function Oo(e) {
 }
 function Fo(e, n) {
   const a = e.state ?? "", r = or(n);
-  return r === "plan" || a === "AWAITING_PLAN_APPROVAL" ? { icon: "📋", tone: "awaiting", title: "Plan ready for review", text: "Planner generated a plan. AI plan reviewer approved with notes for your review.", live: !1 } : r === "code" || a === "AWAITING_CODE_REVIEW" ? { icon: "⬡", tone: "awaiting", title: "Code review ready", text: "AI reviewer finished. Review the diff, then approve or request changes.", live: !1 } : r === "fix" || a === "AWAITING_FIX_APPROVAL" ? { icon: "💬", tone: "awaiting", title: "PR comments ready for review", text: "Select which comments and failures should be sent to the fixer agent.", live: !1 } : a === "AWAITING_FIX_REVIEW" ? { icon: "🔍", tone: "awaiting", title: "Fix ready for review", text: "The fixer addressed review comments. Review the diff and approve to push, or reject to send back for more changes.", live: !1 } : a === "AWAITING_SPLIT_APPROVAL" ? { icon: "⑂", tone: "awaiting", title: "Split plan ready", text: "Review the proposed PR stack split before Forge creates branch work.", live: !1 } : a === "REBASING" ? { icon: "↥", tone: "running", title: "Rebasing branch", text: "Forge is rebasing onto the base branch. If conflicts appear, the rebaser agent will resolve them carefully and stop rather than guess.", live: !0 } : Bt(e) && ["WATCHING_PR", "IN_MERGE_QUEUE"].includes(a) ? { icon: "✓", tone: "running", title: "PR approved", text: e.pr_approved_at ? `GitHub review approved ${we(e.pr_approved_at)} ago. Forge is watching for merge queue and merge status.` : "GitHub review is approved. Forge is watching for merge queue and merge status.", live: !1 } : ye(e) ? { icon: "spinner", tone: "running", title: `${et(e)} agent running`, text: `Active for ${we(e.updated_at)} — Forge is working on this issue.`, live: !0 } : a === "FAILED" ? { icon: "!", tone: "failed", title: "Issue needs attention", text: "The last agent run failed. Review activity and retry when ready.", live: !1 } : { icon: dr(Ye(e)), tone: Ye(e), title: et(e), text: e.updated_at ? `Updated ${we(e.updated_at)} ago` : "Waiting for activity", live: !1 };
+  return r === "plan" || a === "AWAITING_PLAN_APPROVAL" ? { icon: "📋", tone: "awaiting", title: "Plan ready for review", text: "Planner generated a plan. AI plan reviewer approved with notes for your review.", live: !1 } : r === "code" || a === "AWAITING_CODE_REVIEW" ? { icon: "⬡", tone: "awaiting", title: "Code review ready", text: "AI reviewer finished. Review the diff, then approve or request changes.", live: !1 } : r === "fix" || a === "AWAITING_FIX_APPROVAL" ? { icon: "💬", tone: "awaiting", title: "PR comments ready for review", text: "Select which comments and failures should be sent to the fixer agent.", live: !1 } : a === "AWAITING_FIX_REVIEW" ? { icon: "🔍", tone: "awaiting", title: "Fix ready for review", text: "The fixer addressed review comments. Review the diff and approve to push, or reject to send back for more changes.", live: !1 } : a === "AWAITING_SPLIT_APPROVAL" ? { icon: "⑂", tone: "awaiting", title: "Split plan ready", text: "Review the proposed PR stack split before Forge creates branch work.", live: !1 } : a === "REBASING" ? { icon: "↥", tone: "running", title: "Rebasing branch", text: "Forge is rebasing onto the base branch. If conflicts appear, the rebaser agent will resolve them carefully and stop rather than guess.", live: !0 } : Xt(e) && ["WATCHING_PR", "IN_MERGE_QUEUE"].includes(a) ? { icon: "✓", tone: "running", title: "PR approved", text: e.pr_approved_at ? `GitHub review approved ${we(e.pr_approved_at)} ago. Forge is watching for merge queue and merge status.` : "GitHub review is approved. Forge is watching for merge queue and merge status.", live: !1 } : Ae(e) ? { icon: "spinner", tone: "running", title: `${et(e)} agent running`, text: `Active for ${we(e.updated_at)} — Forge is working on this issue.`, live: !0 } : a === "FAILED" ? { icon: "!", tone: "failed", title: "Issue needs attention", text: "The last agent run failed. Review activity and retry when ready.", live: !1 } : { icon: dr(Ye(e)), tone: Ye(e), title: et(e), text: e.updated_at ? `Updated ${we(e.updated_at)} ago` : "Waiting for activity", live: !1 };
 }
-const Pa = ["Setup", "Plan", "Code", "Review", "PR", "Watch", "Done"];
+const Ra = ["Setup", "Plan", "Code", "Review", "PR", "Watch", "Done"];
 function pe(e, n, a = `${n}s`) {
   return `${e} ${e === 1 ? n : a}`;
 }
@@ -1114,7 +1114,7 @@ function He(e, n) {
 function Mo(e) {
   return (e ?? []).filter((n) => n.type === "FIX_APPROVAL").reduce((n, a) => {
     var r;
-    return n + (((r = Mt(a).comments) == null ? void 0 : r.length) ?? 0);
+    return n + (((r = Ut(a).comments) == null ? void 0 : r.length) ?? 0);
   }, 0);
 }
 function Uo(e, n) {
@@ -1131,7 +1131,7 @@ function Ho(e) {
 function qo(e) {
   return ["AWAITING_PLAN_APPROVAL", "AWAITING_CODE_REVIEW", "AWAITING_FIX_APPROVAL", "AWAITING_FIX_REVIEW", "AWAITING_SPLIT_APPROVAL"].includes(e ?? "");
 }
-function An(e) {
+function wn(e) {
   return (e == null ? void 0 : e.planContent) ?? (e == null ? void 0 : e.plan) ?? "No plan available.";
 }
 function jo(e) {
@@ -1151,7 +1151,7 @@ function Ko(e) {
   return ["AI_REVIEWING", "AWAITING_CODE_REVIEW", "CREATING_PR", "WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL", "FIXING", "AWAITING_FIX_REVIEW", "PUSHING", "REBASING"].includes(e ?? "");
 }
 function Qo(e) {
-  return e ? ["AWAITING_CODE_REVIEW", "WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL", "AWAITING_FIX_REVIEW"].includes(e.state ?? "") && !ye(e) && !e.locked_at && !e.agent_pid : !1;
+  return e ? ["AWAITING_CODE_REVIEW", "WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL", "AWAITING_FIX_REVIEW"].includes(e.state ?? "") && !Ae(e) && !e.locked_at && !e.agent_pid : !1;
 }
 function Jo(e) {
   return e.startsWith("+") ? "add" : e.startsWith("-") ? "del" : e.startsWith("@@") ? "hunk" : e.startsWith("diff --git") || e.startsWith("index ") || e.startsWith("---") || e.startsWith("+++") ? "meta" : "ctx";
@@ -1159,7 +1159,7 @@ function Jo(e) {
 function zo(e) {
   return e.startsWith("+") ? "+" : e.startsWith("-") ? "−" : "";
 }
-function Ra(e) {
+function Sa(e) {
   return e.split(/[\\/]/).filter(Boolean).pop() || e;
 }
 function At(e) {
@@ -1191,7 +1191,7 @@ function bt(e) {
 }
 function ti(e, n) {
   var p, f;
-  const a = [...(e == null ? void 0 : e.agentRuns) ?? []].sort((d, h) => ce(h.started_at) - ce(d.started_at)), r = [...(e == null ? void 0 : e.activityLog) ?? []].sort((d, h) => ce(h.created_at) - ce(d.created_at)), s = ye(n), l = new Map(a.map((d) => [d.agent_type, d])), c = r.length ? r.map((d) => {
+  const a = [...(e == null ? void 0 : e.agentRuns) ?? []].sort((d, h) => de(h.started_at) - de(d.started_at)), r = [...(e == null ? void 0 : e.activityLog) ?? []].sort((d, h) => de(h.created_at) - de(d.created_at)), s = Ae(n), l = new Map(a.map((d) => [d.agent_type, d])), c = r.length ? r.map((d) => {
     var k;
     const h = l.get(d.actor ?? "") ?? ((k = d.type) != null && k.includes("agent") ? a.find((u) => u.agent_type === d.actor) : void 0);
     return { id: String(d.id ?? `${d.type}-${d.created_at}`), actor: d.actor ?? "Forge", time: d.created_at ? `${we(d.created_at)} ago` : "recent", tone: Zo(d.type, d.actor), text: ei(d), snippet: d.metadata ?? null, logUrl: bt(h == null ? void 0 : h.id) };
@@ -1239,7 +1239,7 @@ Reading files, updating the project plan, and streaming progress…`, logUrl: bt
 function lr(e) {
   return e.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 }
-function pn(e) {
+function gn(e) {
   return lr(e).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
 }
 function Qe(e) {
@@ -1247,7 +1247,7 @@ function Qe(e) {
 `), a = [];
   let r = !1, s = !1, l = [];
   const c = () => {
-    l.length && (a.push(`<p>${pn(l.join(" "))}</p>`), l = []);
+    l.length && (a.push(`<p>${gn(l.join(" "))}</p>`), l = []);
   }, p = () => {
     r && (a.push("</ul>"), r = !1);
   };
@@ -1269,14 +1269,14 @@ function Qe(e) {
     if (h) {
       c(), p();
       const u = Math.min(h[1].length + 1, 4);
-      a.push(`<h${u}>${pn(h[2])}</h${u}>`);
+      a.push(`<h${u}>${gn(h[2])}</h${u}>`);
       continue;
     }
     const k = d.match(/^[-*]\s+(\[[ xX]\]\s+)?(.+)$/);
     if (k) {
       c(), r || (a.push("<ul>"), r = !0);
       const u = k[1] ? `<input type="checkbox" disabled ${k[1].toLowerCase().includes("x") ? "checked" : ""}> ` : "";
-      a.push(`<li>${u}${pn(k[2])}</li>`);
+      a.push(`<li>${u}${gn(k[2])}</li>`);
       continue;
     }
     l.push(d.trim());
@@ -1312,38 +1312,38 @@ function si(e, n) {
 }
 function li(e, n) {
   const a = e.state ?? "";
-  return n === "needs-me" ? ["AWAITING_PLAN_APPROVAL", "AWAITING_CODE_REVIEW", "AWAITING_FIX_APPROVAL", "AWAITING_FIX_REVIEW", "AWAITING_SPLIT_APPROVAL", "STEERING"].includes(a) : n === "running" ? ye(e) : n === "failed" ? a === "FAILED" : n === "watching-pr" ? ["WATCHING_PR", "CREATING_PR", "IN_MERGE_QUEUE"].includes(a) : n === "paused" ? ["PAUSED", "IGNORED"].includes(a) : !0;
+  return n === "needs-me" ? ["AWAITING_PLAN_APPROVAL", "AWAITING_CODE_REVIEW", "AWAITING_FIX_APPROVAL", "AWAITING_FIX_REVIEW", "AWAITING_SPLIT_APPROVAL", "STEERING"].includes(a) : n === "running" ? Ae(e) : n === "failed" ? a === "FAILED" : n === "watching-pr" ? ["WATCHING_PR", "CREATING_PR", "IN_MERGE_QUEUE"].includes(a) : n === "paused" ? ["PAUSED", "IGNORED"].includes(a) : !0;
 }
-function ce(e) {
+function de(e) {
   const n = e ? Ze(e) : 0;
   return Number.isFinite(n) ? n : 0;
 }
 function ci(e, n) {
   const a = [...e];
-  return n === "newest" ? a.sort((r, s) => ce(s.created_at ?? s.updated_at) - ce(r.created_at ?? r.updated_at)) : n === "oldest" ? a.sort((r, s) => ce(r.created_at ?? r.updated_at) - ce(s.created_at ?? s.updated_at)) : n === "recently-updated" ? a.sort((r, s) => ce(s.updated_at) - ce(r.updated_at)) : a.sort((r, s) => (r.priority ?? 99) - (s.priority ?? 99) || ce(s.updated_at) - ce(r.updated_at));
+  return n === "newest" ? a.sort((r, s) => de(s.created_at ?? s.updated_at) - de(r.created_at ?? r.updated_at)) : n === "oldest" ? a.sort((r, s) => de(r.created_at ?? r.updated_at) - de(s.created_at ?? s.updated_at)) : n === "recently-updated" ? a.sort((r, s) => de(s.updated_at) - de(r.updated_at)) : a.sort((r, s) => (r.priority ?? 99) - (s.priority ?? 99) || de(s.updated_at) - de(r.updated_at));
 }
 function di(e, n) {
   var s;
   if (n === "awaiting")
-    return [...e].sort((l, c) => ce(c.updated_at ?? c.created_at) - ce(l.updated_at ?? l.created_at));
-  const a = ((s = kn.find((l) => l.key === n)) == null ? void 0 : s.states) ?? [], r = (l) => {
+    return [...e].sort((l, c) => de(c.updated_at ?? c.created_at) - de(l.updated_at ?? l.created_at));
+  const a = ((s = yn.find((l) => l.key === n)) == null ? void 0 : s.states) ?? [], r = (l) => {
     const c = l.state ?? "";
     if (c === "FAILED") return -1;
     const p = a.indexOf(c);
     return p >= 0 ? p : Ke[c] ?? 999;
   };
   return [...e].sort(
-    (l, c) => r(l) - r(c) || (l.priority ?? 99) - (c.priority ?? 99) || ce(c.updated_at) - ce(l.updated_at)
+    (l, c) => r(l) - r(c) || (l.priority ?? 99) - (c.priority ?? 99) || de(c.updated_at) - de(l.updated_at)
   );
 }
-function Sa(e, n) {
+function Ta(e, n) {
   const a = n.find((r) => r.id === e.issue_id);
   return a != null && a.state ? Ke[a.state] ?? 999 : e.type === "PLAN_REVIEW" ? Ke.AWAITING_PLAN_APPROVAL : e.type === "SPLIT_APPROVAL" ? Ke.AWAITING_SPLIT_APPROVAL : e.type === "CODE_REVIEW" ? Ke.AWAITING_CODE_REVIEW : e.type === "FIX_APPROVAL" ? Ke.AWAITING_FIX_APPROVAL : e.type === "FIX_REVIEW" ? Ke.AWAITING_FIX_REVIEW : 999;
 }
 function ui(e, n) {
   return [...e].sort((a, r) => {
     const s = n.find((c) => c.id === a.issue_id), l = n.find((c) => c.id === r.issue_id);
-    return Sa(a, n) - Sa(r, n) || ((s == null ? void 0 : s.priority) ?? 99) - ((l == null ? void 0 : l.priority) ?? 99) || a.id - r.id;
+    return Ta(a, n) - Ta(r, n) || ((s == null ? void 0 : s.priority) ?? 99) - ((l == null ? void 0 : l.priority) ?? 99) || a.id - r.id;
   });
 }
 function fi(e, n) {
@@ -1363,7 +1363,7 @@ function pi(e) {
     archiveCount: n.archiveCount
   };
 }
-async function de(e) {
+async function ue(e) {
   if (ze()) {
     if (e === "/api/overview") return wo();
     if (e === "/api/settings") return { model: "mock-state-fixtures", concurrency_limit: "4", runtime_mode: "mock" };
@@ -1411,7 +1411,7 @@ async function gi(e) {
   if (!n.ok) throw new Error(`Failed to delete ${e}: ${n.status}`);
   return await n.json();
 }
-function gn(e) {
+function vn(e) {
   if (!e.trim()) return [];
   const n = [];
   let a = null;
@@ -1451,20 +1451,20 @@ function yi(e, n, a) {
 function Ii(e, n = "", a) {
   return Ee("/api/issues", { title: e, description: n, ...a });
 }
-function Ai(e, n = "", a) {
-  return Ee("/api/linear/enqueue", { linearId: e, planningGuidance: n, ...a });
+function Ai(e, n = "", a, r) {
+  return Ee("/api/linear/enqueue", { linearId: e, planningGuidance: n, ...a, ...r ? { prUrl: r } : {} });
 }
 function wi() {
-  return de("/api/desktop-capabilities");
+  return ue("/api/desktop-capabilities");
 }
 function cr(e, n, a) {
   return Ee("/api/desktop-notify", { title: e, body: n, tag: a });
 }
-function $n() {
+function Wn() {
   return typeof window < "u" && "Notification" in window;
 }
 function Ei() {
-  return $n() ? window.Notification.permission : "unsupported";
+  return Wn() ? window.Notification.permission : "unsupported";
 }
 async function Ni(e, n, a = !1) {
   const r = Po(e) || "Forge decision needed", s = n != null && n.title ? `${n.title} needs your review` : "A Forge issue needs your review", l = `forge-decision-${e.id}`;
@@ -1474,7 +1474,7 @@ async function Ni(e, n, a = !1) {
       return;
     } catch {
     }
-  if (!$n() || window.Notification.permission !== "granted") return;
+  if (!Wn() || window.Notification.permission !== "granted") return;
   const c = new window.Notification(r, { body: s, tag: l });
   c.onclick = () => {
     window.focus();
@@ -1504,7 +1504,7 @@ function mt(e) {
   const n = Number(e);
   return Number.isInteger(n) && n > 0 ? n : null;
 }
-function Xt(e = window.location.hash) {
+function Kt(e = window.location.hash) {
   const n = new URLSearchParams(window.location.search), a = n.get("view") || void 0, r = mt(n.get("issue") || void 0), s = mt(n.get("decision") || void 0), l = n.get("tab"), c = l === "activity" || l === "ask" ? l : "overview", p = n.get("panel"), f = p === "plan" || p === "diff" || p === "review" || p === "listen" || p === "jump" ? p : null, d = It.some((S) => S.key === a) ? a : null;
   if (d || r || f || n.has("add"))
     return {
@@ -1527,7 +1527,7 @@ function Xt(e = window.location.hash) {
     addIssue: !1
   } : { view: It.some((S) => S.key === k) ? k : "queue", issueId: null, decisionId: null, detailTab: "overview", panel: null, diffPath: "", addIssue: !1 };
 }
-function Kt(e, n = !0) {
+function Qt(e, n = !0) {
   const a = new URL(window.location.href);
   a.hash = "";
   for (const [l, c] of Object.entries(e))
@@ -1535,10 +1535,10 @@ function Kt(e, n = !0) {
   const r = `${a.pathname}${a.search}${a.hash}`, s = `${window.location.pathname}${window.location.search}${window.location.hash}`;
   r !== s && window.history[n ? "replaceState" : "pushState"]({}, "", r);
 }
-function ot(e, n = {}) {
-  Kt({ view: e, issue: e === "queue" ? n.issueId : null, decision: n.decisionId, panel: n.decisionId ? "review" : null }, !1);
+function rt(e, n = {}) {
+  Qt({ view: e, issue: e === "queue" ? n.issueId : null, decision: n.decisionId, panel: n.decisionId ? "review" : null }, !1);
 }
-function Yt({ icon: e, title: n, subtitle: a, actions: r }) {
+function Zt({ icon: e, title: n, subtitle: a, actions: r }) {
   return t(
     "header",
     { class: "forge-v3-page-header" },
@@ -1558,7 +1558,7 @@ function Nt({ view: e, className: n = "", children: a }) {
     t("div", { class: "forge-v3-page-wrap" }, a)
   );
 }
-function Ae(e) {
+function he(e) {
   return typeof document > "u" ? Promise.resolve(null) : new Promise((n) => {
     const a = document.createElement("div");
     document.body.appendChild(a);
@@ -1657,9 +1657,12 @@ function dr(e) {
 }
 function Si({ issue: e, onEnqueue: n }) {
   const a = async () => {
-    var s;
-    const r = ((s = await Ae({ title: `Enqueue ${e.identifier}`, message: "Add optional planning guidance before Forge creates the plan.", label: "Planning guidance", confirmText: "Enqueue" })) == null ? void 0 : s.trim()) ?? "";
-    n(e.identifier, r);
+    var l;
+    const s = ((l = await he({ title: `Enqueue ${e.identifier}`, message: "Add optional planning guidance before Forge creates the plan.", label: "Planning guidance", confirmText: "Enqueue" })) == null ? void 0 : l.trim()) ?? "";
+    n(e.identifier, s);
+  }, r = async () => {
+    const s = await he({ title: `Watch PR for ${e.identifier}`, message: "Paste the existing GitHub PR URL. Forge will prepare the worktree and watch the PR, skipping planning and implementation.", label: "GitHub PR URL", confirmText: "Watch PR" });
+    s != null && s.trim() && n(e.identifier, "", void 0, s.trim());
   };
   return t(
     "article",
@@ -1673,33 +1676,38 @@ function Si({ issue: e, onEnqueue: n }) {
         { class: "forge-v3-backlog-meta" },
         t("span", null, e.identifier),
         t("span", null, "·"),
-        t("span", { class: `forge-v3-priority-meta ${Gn(e.priority)}` }, Ln(e.priority), " ", xn(e.priority))
+        t("span", { class: `forge-v3-priority-meta ${$n(e.priority)}` }, xn(e.priority), " ", Gn(e.priority))
       )
     ),
-    t("button", { type: "button", onClick: a }, "Enqueue →")
+    t(
+      "div",
+      { class: "forge-v3-backlog-actions" },
+      t("button", { type: "button", onClick: a }, "Enqueue →"),
+      t("button", { type: "button", onClick: r }, "Watch PR")
+    )
   );
 }
-function Ta(e) {
+function Ca(e) {
   e.stopPropagation();
 }
-function Ca(e) {
+function La(e) {
   return e.composedPath().some((n) => {
     var a;
     return n instanceof HTMLElement && !!((a = n.closest) != null && a.call(n, "button,a,input,select,textarea"));
   });
 }
 function Ti({ issue: e, selected: n, onOpenIssue: a, onIssueAction: r, onReviewIssue: s }) {
-  const l = Eo(e), c = Ye(e), p = c === "available", f = ye(e), d = e.state === "PAUSED" ? "unpause" : e.state === "FAILED" ? "retry" : "pause", h = d === "unpause" ? "Resume" : d === "retry" ? "Retry" : "Pause", k = To(e), u = oi(e), y = ri(e);
+  const l = Eo(e), c = Ye(e), p = c === "available", f = Ae(e), d = e.state === "PAUSED" ? "unpause" : e.state === "FAILED" ? "retry" : "pause", h = d === "unpause" ? "Resume" : d === "retry" ? "Retry" : "Pause", k = To(e), u = oi(e), y = ri(e);
   return t(
     "article",
-    { class: `forge-v3-issue-card ${n ? "selected" : ""} ${Bt(e) ? "pr-approved" : ""} ${(e.prStack ?? []).some((v) => v.isInMergeQueue) ? "in-merge-queue" : ""} state-${e.state ?? "unknown"} stage-${c}`, "data-issue-id": String(e.id), tabIndex: 0, "aria-label": `Open issue ${e.linear_id ?? e.id}`, onClick: (v) => {
-      Ca(v) || a(e.id);
+    { class: `forge-v3-issue-card ${n ? "selected" : ""} ${Xt(e) ? "pr-approved" : ""} ${(e.prStack ?? []).some((v) => v.isInMergeQueue) ? "in-merge-queue" : ""} state-${e.state ?? "unknown"} stage-${c}`, "data-issue-id": String(e.id), tabIndex: 0, "aria-label": `Open issue ${e.linear_id ?? e.id}`, onClick: (v) => {
+      La(v) || a(e.id);
     }, onKeyDown: (v) => {
-      Ca(v) || (v.key === "Enter" || v.key === " ") && a(e.id);
+      La(v) || (v.key === "Enter" || v.key === " ") && a(e.id);
     } },
     t(
       "div",
-      { class: "forge-v3-ic-hover", onPointerDown: Ta },
+      { class: "forge-v3-ic-hover", onPointerDown: Ca },
       p ? t("button", { class: "forge-v3-hact", type: "button", onClick: (v) => {
         v.stopPropagation(), r(e.id, "ignore");
       } }, "Ignore") : e.state === "AWAITING_PLAN_APPROVAL" ? [
@@ -1754,11 +1762,11 @@ function Ti({ issue: e, selected: n, onOpenIssue: a, onIssueAction: r, onReviewI
           "span",
           { class: "forge-v3-issue-keyline" },
           t("span", { class: "forge-v3-issue-id" }, e.linear_id ?? `#${e.id}`),
-          t("span", { class: `forge-v3-priority-glyph ${Gn(e.priority)}`, "aria-label": `Priority ${xn(e.priority)}` }, Ln(e.priority))
+          t("span", { class: `forge-v3-priority-glyph ${$n(e.priority)}`, "aria-label": `Priority ${Gn(e.priority)}` }, xn(e.priority))
         )
       ),
       t("h3", null, e.title ?? "Untitled issue"),
-      So(e) ? t("div", { class: "forge-v3-approved-banner" }, t("span", null, "✓"), t("strong", null, "Merged"), t("small", null, "finalizing")) : (e.prStack ?? []).some((v) => v.isInMergeQueue) ? t("div", { class: "forge-v3-merge-queue-banner" }, t("span", null, "⇄"), t("strong", null, "Merge queue"), t("small", null, "waiting to merge")) : Bt(e) && ["WATCHING_PR", "IN_MERGE_QUEUE"].includes(e.state ?? "") ? t("div", { class: "forge-v3-approved-banner" }, t("span", null, "✓"), t("strong", null, "Approved"), t("small", null, e.pr_approved_at ? `${we(e.pr_approved_at)} ago` : "watching merge")) : null,
+      So(e) ? t("div", { class: "forge-v3-approved-banner" }, t("span", null, "✓"), t("strong", null, "Merged"), t("small", null, "finalizing")) : (e.prStack ?? []).some((v) => v.isInMergeQueue) ? t("div", { class: "forge-v3-merge-queue-banner" }, t("span", null, "⇄"), t("strong", null, "Merge queue"), t("small", null, "waiting to merge")) : Xt(e) && ["WATCHING_PR", "IN_MERGE_QUEUE"].includes(e.state ?? "") ? t("div", { class: "forge-v3-approved-banner" }, t("span", null, "✓"), t("strong", null, "Approved"), t("small", null, e.pr_approved_at ? `${we(e.pr_approved_at)} ago` : "watching merge")) : null,
       t(
         "div",
         { class: "forge-v3-issue-state-row" },
@@ -1766,16 +1774,16 @@ function Ti({ issue: e, selected: n, onOpenIssue: a, onIssueAction: r, onReviewI
         t("span", { class: No(e) }, et(e)),
         k.map((v) => t("span", { class: v.className }, v.label))
       ),
-      p ? t("div", { class: "forge-v3-ic-meta" }, Na(e)) : [
+      p ? t("div", { class: "forge-v3-ic-meta" }, Pa(e)) : [
         t("p", { class: "forge-v3-activity-snippet" }, rr(e)),
-        t("div", { class: "forge-v3-ic-meta" }, Na(e), Ft(e) ? t("span", { class: "forge-v3-long-meta" }, "⚠ long") : null)
+        t("div", { class: "forge-v3-ic-meta" }, Pa(e), Mt(e) ? t("span", { class: "forge-v3-long-meta" }, "⚠ long") : null)
       ],
       !p && u.length ? t("div", { class: "forge-v3-pr-metadata" }, u.map((v) => t("span", { class: v.className }, v.label))) : null
     ),
     t("div", { class: "forge-v3-ic-progress forge-v3-issue-progress", "aria-hidden": "true" }, t("span", { class: "forge-v3-ic-fill", style: { width: `${l}%` } })),
     t(
       "div",
-      { class: "forge-v3-issue-actions", onPointerDown: Ta },
+      { class: "forge-v3-issue-actions", onPointerDown: Ca },
       t("button", { type: "button", onClick: (v) => {
         v.stopPropagation(), a(e.id);
       } }, "Open"),
@@ -1791,7 +1799,7 @@ function Ti({ issue: e, selected: n, onOpenIssue: a, onIssueAction: r, onReviewI
     )
   );
 }
-const La = Qr(Ti, (e, n) => e.issue === n.issue && e.selected === n.selected);
+const Wt = Qr(Ti, (e, n) => e.issue === n.issue && e.selected === n.selected);
 function Ci({ status: e, onStopVm: n }) {
   return t(
     "aside",
@@ -1842,64 +1850,64 @@ function Li({ open: e, decisions: n, onClose: a, onNavigate: r, onRefresh: s, on
 function xi({ issues: e, decisions: n, linearBacklog: a, selectedIssueId: r, addIssueOpen: s, onOpenIssue: l, onIssueAction: c, onResolveDecision: p, onReviewNext: f, onReviewIssue: d, onAddIssue: h, onCloseAddIssue: k, onRefreshLinear: u, onCreateManualIssue: y, onEnqueueLinear: v }) {
   const [b, S] = E(""), W = ht(() => {
     try {
-      const P = window.localStorage.getItem("forge.v3.queuePrefs");
-      if (!P) return { filter: "all", sort: "priority" };
-      const B = JSON.parse(P);
+      const N = window.localStorage.getItem("forge.v3.queuePrefs");
+      if (!N) return { filter: "all", sort: "priority" };
+      const Q = JSON.parse(N);
       return {
-        filter: ["all", "needs-me", "running", "failed", "watching-pr", "paused"].includes(B.filter) ? B.filter : "all",
-        sort: ["priority", "newest", "oldest", "recently-updated"].includes(B.sort) ? B.sort : "priority"
+        filter: ["all", "needs-me", "running", "failed", "watching-pr", "paused"].includes(Q.filter) ? Q.filter : "all",
+        sort: ["priority", "newest", "oldest", "recently-updated"].includes(Q.sort) ? Q.sort : "priority"
       };
     } catch {
       return { filter: "all", sort: "priority" };
     }
-  }, []), [I, D] = E(W.filter), [$, M] = E(W.sort);
-  z(() => {
+  }, []), [I, D] = E(W.filter), [$, U] = E(W.sort);
+  Y(() => {
     try {
       window.localStorage.setItem("forge.v3.queuePrefs", JSON.stringify({ filter: I, sort: $ }));
     } catch {
     }
   }, [I, $]);
-  const [F, q] = E("linear"), [te, Y] = E(""), [U, N] = E(""), [C, j] = E(""), [L, ne] = E(""), [m, A] = E(""), [x, Q] = E(""), [le, me] = E(""), [ge, he] = E(""), be = ht(() => ci(
-    e.filter((P) => ho(P) && si(P, b) && li(P, I)),
+  const [F, j] = E("linear"), [ne, Z] = E(""), [V, P] = E(""), [C, B] = E(""), [L, ae] = E(""), [m, A] = E(""), [x, J] = E(""), [le, be] = E(""), [ge, ke] = E(""), ve = ht(() => ci(
+    e.filter((N) => ho(N) && si(N, b) && li(N, I)),
     $
-  ), [e, b, I, $]), re = ht(() => {
-    const P = /* @__PURE__ */ new Map();
-    return kn.forEach((B) => P.set(B.key, [])), be.forEach((B) => {
-      var ue;
-      return (ue = P.get(Ye(B))) == null ? void 0 : ue.push(B);
-    }), P.forEach((B, ue) => P.set(ue, di(B, ue))), P;
-  }, [be]), We = ht(() => a.filter((P) => ai(P, b)).slice(0, 12), [a, b]), De = ze(), Oe = () => ({ targetKind: m.trim(), targetPaths: x.trim(), avoidPaths: le.trim(), scopeNotes: ge.trim() }), ke = () => {
-    A(""), Q(""), me(""), he("");
-  }, Ie = () => {
-    const P = te.trim();
-    P && (y(P, U.trim(), Oe()), Y(""), N(""), ke(), k());
+  ), [e, b, I, $]), oe = ht(() => {
+    const N = /* @__PURE__ */ new Map();
+    return yn.forEach((Q) => N.set(Q.key, [])), ve.filter((Q) => !["WATCHING_PR", "IN_MERGE_QUEUE"].includes(Q.state ?? "")).forEach((Q) => {
+      var ce;
+      return (ce = N.get(Ye(Q))) == null ? void 0 : ce.push(Q);
+    }), N.forEach((Q, ce) => N.set(ce, di(Q, ce))), N;
+  }, [ve]), De = ht(() => a.filter((N) => ai(N, b)), [a, b]), Re = ve.filter((N) => ["WATCHING_PR", "IN_MERGE_QUEUE"].includes(N.state ?? "")), Oe = ze(), ye = () => ({ targetKind: m.trim(), targetPaths: x.trim(), avoidPaths: le.trim(), scopeNotes: ge.trim() }), Ie = () => {
+    A(""), J(""), be(""), ke("");
   }, Fe = () => {
-    const P = C.trim();
-    P && (v(P, L.trim(), Oe()), j(""), ne(""), ke(), k());
+    const N = ne.trim();
+    N && (y(N, V.trim(), ye()), Z(""), P(""), Ie(), k());
+  }, st = () => {
+    const N = C.trim();
+    N && (v(N, L.trim(), ye()), B(""), ae(""), Ie(), k());
   };
   return t(Nt, { view: "queue", className: `forge-v3-queue-shell ${r ? "forge-v3-has-detail" : ""}` }, [
-    De ? t("div", { class: "forge-v3-mock-state-banner" }, t("strong", null, "Mock state fixtures enabled"), t("span", null, "Review every Forge state without touching real issues."), t("button", { type: "button", onClick: yo }, "Exit mock data")) : null,
+    Oe ? t("div", { class: "forge-v3-mock-state-banner" }, t("strong", null, "Mock state fixtures enabled"), t("span", null, "Review every Forge state without touching real issues."), t("button", { type: "button", onClick: yo }, "Exit mock data")) : null,
     t(
       "section",
       { id: "queue-toolbar", class: "forge-v3-command-center", "aria-label": "Queue toolbar" },
       t(
         "div",
         { class: "forge-v3-toolbar-actions forge-v3-left-tools" },
-        t("input", { type: "search", placeholder: "Search issues, IDs, branch", "aria-label": "Search issues", value: b, onInput: (P) => S(P.target.value) }),
+        t("input", { type: "search", placeholder: "Search issues, IDs, branch", "aria-label": "Search issues", value: b, onInput: (N) => S(N.target.value) }),
         t(
           "div",
           { class: "forge-v3-filter-chips", "aria-label": "Queue filters" },
-          fo.map((P) => t("button", { key: P.key, type: "button", class: I === P.key ? "active" : "", onClick: () => D(P.key) }, P.label))
+          fo.map((N) => t("button", { key: N.key, type: "button", class: I === N.key ? "active" : "", onClick: () => D(N.key) }, N.label))
         )
       ),
       t(
         "div",
         { class: "forge-v3-toolbar-actions" },
-        t("select", { "aria-label": "Sort issues", value: $, onChange: (P) => M(P.target.value) }, po.map((P) => t("option", { key: P.key, value: P.key }, P.label))),
+        t("select", { "aria-label": "Sort issues", value: $, onChange: (N) => U(N.target.value) }, po.map((N) => t("option", { key: N.key, value: N.key }, N.label))),
         t("button", { type: "button", disabled: n.length === 0, onClick: f }, "⚡ Review next", n.length ? ` (${n.length})` : ""),
         t("button", { type: "button", title: "Refresh Linear", onClick: u }, "↻ Sync"),
         t("button", { type: "button", disabled: !0 }, "⌘ Command"),
-        De ? null : t("button", { type: "button", onClick: ko }, "Mock states"),
+        Oe ? null : t("button", { type: "button", onClick: ko }, "Mock states"),
         t("button", { type: "button", onClick: h }, "+ Add issue")
       )
     ),
@@ -1918,33 +1926,33 @@ function xi({ issues: e, decisions: n, linearBacklog: a, selectedIssueId: r, add
         t(
           "nav",
           { class: "forge-v3-detail-tabs" },
-          t("button", { type: "button", class: F === "linear" ? "active" : "", onClick: () => q("linear") }, "Linear issue"),
-          t("button", { type: "button", class: F === "manual" ? "active" : "", onClick: () => q("manual") }, "Manual issue")
+          t("button", { type: "button", class: F === "linear" ? "active" : "", onClick: () => j("linear") }, "Linear issue"),
+          t("button", { type: "button", class: F === "manual" ? "active" : "", onClick: () => j("manual") }, "Manual issue")
         ),
         t(
           "div",
           { class: "forge-v3-add-issue-body" },
           F === "linear" ? [
-            t("label", null, "Linear ID", t("input", { type: "text", placeholder: "TEAM-1234", value: C, onInput: (P) => j(P.target.value) })),
-            t("label", null, "Planning guidance", t("textarea", { rows: 5, placeholder: "Optional notes for the planner…", value: L, onInput: (P) => ne(P.target.value) }))
+            t("label", null, "Linear ID", t("input", { type: "text", placeholder: "TEAM-1234", value: C, onInput: (N) => B(N.target.value) })),
+            t("label", null, "Planning guidance", t("textarea", { rows: 5, placeholder: "Optional notes for the planner…", value: L, onInput: (N) => ae(N.target.value) }))
           ] : [
-            t("label", null, "Title", t("input", { type: "text", placeholder: "Manual issue title", value: te, onInput: (P) => Y(P.target.value) })),
-            t("label", null, "Description", t("textarea", { rows: 6, placeholder: "Optional issue description or project notes…", value: U, onInput: (P) => N(P.target.value) }))
+            t("label", null, "Title", t("input", { type: "text", placeholder: "Manual issue title", value: ne, onInput: (N) => Z(N.target.value) })),
+            t("label", null, "Description", t("textarea", { rows: 6, placeholder: "Optional issue description or project notes…", value: V, onInput: (N) => P(N.target.value) }))
           ],
           t(
             "div",
             { class: "forge-v3-scope-grid" },
-            t("label", null, "Target kind", t("input", { type: "text", placeholder: "backend-shared, pricing-frontend, fullstack…", value: m, onInput: (P) => A(P.target.value) })),
-            t("label", null, "Target paths", t("textarea", { rows: 2, placeholder: "One per line, e.g. functions/", value: x, onInput: (P) => Q(P.target.value) })),
-            t("label", null, "Avoid paths", t("textarea", { rows: 2, placeholder: "One per line, e.g. frontend/apps/pricing/", value: le, onInput: (P) => me(P.target.value) })),
-            t("label", null, "Scope notes", t("textarea", { rows: 2, placeholder: "Generic shared endpoint; do not describe as pricing-scoped.", value: ge, onInput: (P) => he(P.target.value) }))
+            t("label", null, "Target kind", t("input", { type: "text", placeholder: "backend-shared, pricing-frontend, fullstack…", value: m, onInput: (N) => A(N.target.value) })),
+            t("label", null, "Target paths", t("textarea", { rows: 2, placeholder: "One per line, e.g. functions/", value: x, onInput: (N) => J(N.target.value) })),
+            t("label", null, "Avoid paths", t("textarea", { rows: 2, placeholder: "One per line, e.g. frontend/apps/pricing/", value: le, onInput: (N) => be(N.target.value) })),
+            t("label", null, "Scope notes", t("textarea", { rows: 2, placeholder: "Generic shared endpoint; do not describe as pricing-scoped.", value: ge, onInput: (N) => ke(N.target.value) }))
           )
         ),
         t(
           "footer",
           null,
           t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: k }, "Cancel"),
-          F === "linear" ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !C.trim(), onClick: Fe }, "Enqueue Linear issue") : t("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !te.trim(), onClick: Ie }, "Create manual issue")
+          F === "linear" ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !C.trim(), onClick: st }, "Enqueue Linear issue") : t("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !ne.trim(), onClick: Fe }, "Create manual issue")
         )
       )
     ) : null,
@@ -1954,34 +1962,51 @@ function xi({ issues: e, decisions: n, linearBacklog: a, selectedIssueId: r, add
       t(
         "section",
         { id: "pipeline-wrapper", class: "forge-v3-pipeline", "aria-label": "Issue pipeline" },
-        kn.map((P) => {
-          const B = re.get(P.key) ?? [], ue = P.key === "available" ? B.length + We.length : B.length;
+        yn.map((N) => {
+          const Q = oe.get(N.key) ?? [], ce = N.key === "available" ? Q.length + De.length : Q.length;
           return t(
             "section",
-            { key: P.key, class: "forge-v3-pipeline-column", "data-stage": P.key },
+            { key: N.key, class: "forge-v3-pipeline-column", "data-stage": N.key },
             t(
               "header",
-              { class: `forge-v3-col-head ${P.key === "awaiting" ? "needs-head" : ""}` },
-              t("span", { class: `forge-v3-col-label ${P.key === "awaiting" ? "needs" : ""}` }, P.key === "available" ? P.label : `${dr(P.key)} ${P.label}`),
-              P.key === "available" ? t("button", { type: "button", class: "forge-v3-col-head-btn", onClick: u }, "↻ Sync") : null,
-              t("span", { class: `forge-v3-col-count ${ue && P.key === "awaiting" ? "bad" : ""}` }, String(ue))
+              { class: `forge-v3-col-head ${N.key === "awaiting" ? "needs-head" : ""}` },
+              t("span", { class: `forge-v3-col-label ${N.key === "awaiting" ? "needs" : ""}` }, N.key === "available" ? N.label : `${dr(N.key)} ${N.label}`),
+              N.key === "available" ? t("button", { type: "button", class: "forge-v3-col-head-btn", onClick: u }, "↻ Sync") : null,
+              t("span", { class: `forge-v3-col-count ${ce && N.key === "awaiting" ? "bad" : ""}` }, String(ce))
             ),
             t(
               "div",
-              { class: `forge-v3-col-cards forge-v3-pipeline-list ${P.key === "available" ? "forge-v3-available-split" : ""}` },
-              P.key === "available" ? [
+              { class: `forge-v3-col-cards forge-v3-pipeline-list ${N.key === "available" ? "forge-v3-available-split" : N.key === "awaiting" ? "forge-v3-awaiting-split" : ""}` },
+              N.key === "available" ? [
                 t(
                   "div",
                   { class: "forge-v3-available-backlog" },
-                  We.length ? We.map((oe) => t(Si, { key: oe.identifier, issue: oe, onEnqueue: v })) : t("p", { class: "forge-v3-empty" }, b ? "No Linear issues match" : "No available Linear issues")
+                  De.length ? De.map((z) => t(Si, { key: z.identifier, issue: z, onEnqueue: v })) : t("p", { class: "forge-v3-empty" }, b ? "No Linear issues match" : "No available Linear issues")
                 ),
                 t("div", { class: "forge-v3-col-sub forge-v3-available-divider" }, "Queued in Forge"),
                 t(
                   "div",
                   { class: "forge-v3-available-queued" },
-                  B.length ? B.map((oe) => t(La, { key: oe.id, issue: oe, selected: r === oe.id, onOpenIssue: l, onIssueAction: c, onReviewIssue: d })) : t("p", { class: "forge-v3-empty" }, b || I !== "all" ? "No queued issues match" : "No queued issues")
+                  Q.length ? Q.map((z) => t(Wt, { key: z.id, issue: z, selected: r === z.id, onOpenIssue: l, onIssueAction: c, onReviewIssue: d })) : t("p", { class: "forge-v3-empty" }, b || I !== "all" ? "No queued issues match" : "No queued issues")
                 )
-              ] : B.length === 0 ? t("p", { class: "forge-v3-empty" }, b || I !== "all" ? "No issues match the active filters" : "No issues") : B.map((oe) => t(La, { key: oe.id, issue: oe, selected: r === oe.id, onOpenIssue: l, onIssueAction: c, onReviewIssue: d }))
+              ] : N.key === "awaiting" ? [
+                t(
+                  "div",
+                  { class: "forge-v3-awaiting-actions", "aria-label": "Awaiting you issues" },
+                  Q.length ? Q.map((z) => t(Wt, { key: z.id, issue: z, selected: r === z.id, onOpenIssue: l, onIssueAction: c, onReviewIssue: d })) : t("p", { class: "forge-v3-empty" }, b || I !== "all" ? "No issues match the active filters" : "Nothing awaiting you")
+                ),
+                t(
+                  "header",
+                  { class: "forge-v3-col-head forge-v3-watching-head" },
+                  t("span", { class: "forge-v3-col-label" }, "Watching PRs"),
+                  t("span", { class: "forge-v3-col-count" }, String(Re.length))
+                ),
+                t(
+                  "div",
+                  { class: "forge-v3-watching-prs", "aria-label": "Watching pull requests" },
+                  Re.length ? Re.map((z) => t(Wt, { key: z.id, issue: z, selected: r === z.id, onOpenIssue: l, onIssueAction: c, onReviewIssue: d })) : t("p", { class: "forge-v3-empty" }, b || I !== "all" ? "No watched PRs match the active filters" : "No PRs being watched")
+                )
+              ] : Q.length === 0 ? t("p", { class: "forge-v3-empty" }, b || I !== "all" ? "No issues match the active filters" : "No issues") : Q.map((z) => t(Wt, { key: z.id, issue: z, selected: r === z.id, onOpenIssue: l, onIssueAction: c, onReviewIssue: d }))
             )
           );
         })
@@ -1989,10 +2014,10 @@ function xi({ issues: e, decisions: n, linearBacklog: a, selectedIssueId: r, add
     )
   ]);
 }
-function Qt(e) {
+function Jt(e) {
   return e.includes("limit") || e.includes("seconds") || e.includes("rounds") || e.endsWith("_max") || e === "dashboard_port" ? "number" : e.startsWith("enable_") || e.startsWith("use_") || e.endsWith("_enabled") || e.includes("reuse") || e.includes("use_desktop") ? "checkbox" : "text";
 }
-function wn(e) {
+function En(e) {
   var n;
   return ((n = Za[e]) == null ? void 0 : n.label) ?? e;
 }
@@ -2004,52 +2029,52 @@ function xa(e) {
 function Gi(e, n) {
   return n.keys.filter((a) => Object.prototype.hasOwnProperty.call(e, a)).map((a) => ({ key: a, value: e[a] ?? "" }));
 }
-function En(e, n) {
+function Nn(e, n) {
   return lo.has(e) ? n === "true" ? "true" : "false" : n;
 }
 function Ga(e, n, a) {
-  return Object.fromEntries(Object.entries(n).filter(([r]) => a || Cn.has(r)).map(([r, s]) => [r, En(r, s ?? "")]).filter(([r, s]) => En(String(r), e[String(r)] ?? "") !== s));
+  return Object.fromEntries(Object.entries(n).filter(([r]) => a || Ln.has(r)).map(([r, s]) => [r, Nn(r, s ?? "")]).filter(([r, s]) => Nn(String(r), e[String(r)] ?? "") !== s));
 }
 function $i(e, n) {
   const a = [];
   return Object.entries(e).forEach(([r, s]) => {
-    if (!n && !Cn.has(r) || !so.has(r)) return;
+    if (!n && !Ln.has(r) || !so.has(r)) return;
     const l = String(s ?? "").trim();
-    (!l || !Number.isFinite(Number(l)) || Number(l) < 0) && a.push(`${wn(r)} must be a non-negative number.`);
+    (!l || !Number.isFinite(Number(l)) || Number(l) < 0) && a.push(`${En(r)} must be a non-negative number.`);
   }), a;
 }
 function Wi() {
   const [e, n] = E({}), [a, r] = E({}), [s, l] = E(null), [c, p] = E(""), [f, d] = E(""), [h, k] = E("Loading settings…"), [u, y] = E([]), [v, b] = E(!1), S = () => {
-    de("/api/desktop-backend").then((N) => {
-      l(N), p(N.backendOrigin ?? ""), d("");
+    ue("/api/desktop-backend").then((P) => {
+      l(P), p(P.backendOrigin ?? ""), d("");
     }).catch(() => {
       l(null), d("Desktop backend switching is available in the Forge desktop app.");
     });
   };
-  z(() => {
-    let N = !1;
-    return de("/api/settings").then((C) => {
-      N || (n(C), r(C), y([]), k(""));
+  Y(() => {
+    let P = !1;
+    return ue("/api/settings").then((C) => {
+      P || (n(C), r(C), y([]), k(""));
     }).catch(() => {
-      N || k("Unable to load settings");
+      P || k("Unable to load settings");
     }), S(), () => {
-      N = !0;
+      P = !0;
     };
   }, []);
-  const W = (N, C) => {
-    r((j) => ({ ...j, [N]: En(N, C) })), y((j) => j.filter((L) => !L.includes(wn(N))));
+  const W = (P, C) => {
+    r((B) => ({ ...B, [P]: Nn(P, C) })), y((B) => B.filter((L) => !L.includes(En(P))));
   }, I = () => {
     d("Saving backend…"), fetch("/api/desktop-backend", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ backendOrigin: c })
-    }).then((N) => N.ok ? N.json() : Promise.reject(new Error("backend failed"))).then((N) => {
-      l(N), p(N.backendOrigin ?? c), d("Backend saved. Refresh if the dashboard did not reconnect automatically.");
+    }).then((P) => P.ok ? P.json() : Promise.reject(new Error("backend failed"))).then((P) => {
+      l(P), p(P.backendOrigin ?? c), d("Backend saved. Refresh if the dashboard did not reconnect automatically.");
     }).catch(() => d("Unable to save desktop backend"));
   }, D = () => {
-    const N = $i(a, v);
-    if (N.length) {
-      y(N), k("Fix validation errors before saving");
+    const P = $i(a, v);
+    if (P.length) {
+      y(P), k("Fix validation errors before saving");
       return;
     }
     const C = Ga(e, a, v);
@@ -2061,21 +2086,21 @@ function Wi() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(C)
-    }).then((j) => j.json().then((L) => j.ok ? L : Promise.reject(new Error((L == null ? void 0 : L.error) ?? "Unable to save settings")))).then((j) => {
-      const L = j.settings ?? { ...e, ...C };
+    }).then((B) => B.json().then((L) => B.ok ? L : Promise.reject(new Error((L == null ? void 0 : L.error) ?? "Unable to save settings")))).then((B) => {
+      const L = B.settings ?? { ...e, ...C };
       n(L), r(L), y([]), k("Settings saved");
-    }).catch((j) => k(j.message || "Unable to save settings"));
+    }).catch((B) => k(B.message || "Unable to save settings"));
   }, $ = () => {
     r(e), y([]), k("Reset changes");
-  }, M = Object.entries(a).filter(([N]) => !Cn.has(N)).map(([N, C]) => ({ key: N, value: C ?? "" })), F = Ga(e, a, v), q = Object.keys(F).length, te = [...zt, { label: "Other", keys: [] }], Y = (N, C = !1) => {
-    if (N.key.includes("context") || N.key.includes("prompt") || N.key.includes("command"))
-      return t("textarea", { class: "forge-v3-setting-control", value: N.value, rows: N.key === "project_prompt_overlay" ? 8 : 3, placeholder: Ia[N.key], disabled: C, readOnly: C, onInput: (L) => W(N.key, L.target.value) });
-    const j = Qt(N.key);
-    return t("input", { class: "forge-v3-setting-control", type: Qt(N.key), checked: j === "checkbox" ? N.value === "true" : void 0, value: j === "checkbox" ? void 0 : N.value, placeholder: Ia[N.key], disabled: C, readOnly: C, min: j === "number" ? "0" : void 0, onInput: (L) => {
-      const ne = L.target;
-      W(N.key, j === "checkbox" ? String(ne.checked) : ne.value);
+  }, U = Object.entries(a).filter(([P]) => !Ln.has(P)).map(([P, C]) => ({ key: P, value: C ?? "" })), F = Ga(e, a, v), j = Object.keys(F).length, ne = [...Yt, { label: "Other", keys: [] }], Z = (P, C = !1) => {
+    if (P.key.includes("context") || P.key.includes("prompt") || P.key.includes("command"))
+      return t("textarea", { class: "forge-v3-setting-control", value: P.value, rows: P.key === "project_prompt_overlay" ? 8 : 3, placeholder: Aa[P.key], disabled: C, readOnly: C, onInput: (L) => W(P.key, L.target.value) });
+    const B = Jt(P.key);
+    return t("input", { class: "forge-v3-setting-control", type: Jt(P.key), checked: B === "checkbox" ? P.value === "true" : void 0, value: B === "checkbox" ? void 0 : P.value, placeholder: Aa[P.key], disabled: C, readOnly: C, min: B === "number" ? "0" : void 0, onInput: (L) => {
+      const ae = L.target;
+      W(P.key, B === "checkbox" ? String(ae.checked) : ae.value);
     } });
-  }, U = () => t(
+  }, V = () => t(
     "div",
     { key: "desktop-backend-origin", class: "forge-v3-setting-row forge-v3-desktop-backend-row" },
     t("span", null, "Desktop backend origin"),
@@ -2083,66 +2108,66 @@ function Wi() {
     t(
       "div",
       { class: "forge-v3-toolbar-actions" },
-      t("input", { class: "forge-v3-setting-control", type: "url", value: c, placeholder: "http://127.0.0.1:3142", disabled: !s, onInput: (N) => p(N.target.value) }),
+      t("input", { class: "forge-v3-setting-control", type: "url", value: c, placeholder: "http://127.0.0.1:3142", disabled: !s, onInput: (P) => p(P.target.value) }),
       t("button", { type: "button", disabled: !s, onClick: I }, "Use backend"),
       t("a", { class: "forge-v3-btn-primary", href: "/desktop/backend" }, "Switch page")
     )
   );
   return t(Nt, { view: "settings", className: "forge-v3-settings-wrap" }, [
-    t(Yt, { icon: "⚙️", title: "Settings", subtitle: "Configure Forge scheduler, models, integrations, and repository", actions: t(
+    t(Zt, { icon: "⚙️", title: "Settings", subtitle: "Configure Forge scheduler, models, integrations, and repository", actions: t(
       "div",
       { class: "forge-v3-toolbar-actions" },
       t("a", { class: "forge-v3-btn-primary", href: "/classic.html" }, "Open classic v2"),
       t("button", { type: "button", onClick: $ }, "↺ Reset changes")
     ) }),
     h ? t("p", { class: `forge-v3-empty ${u.length ? "forge-v3-settings-error" : ""}` }, h) : null,
-    u.length ? t("ul", { class: "forge-v3-settings-errors" }, u.map((N) => t("li", { key: N }, N))) : null,
-    t("p", { class: "forge-v3-settings-helper" }, q ? `${q} changed setting${q === 1 ? "" : "s"} will be saved.` : "Only settings you change will be sent on save."),
+    u.length ? t("ul", { class: "forge-v3-settings-errors" }, u.map((P) => t("li", { key: P }, P))) : null,
+    t("p", { class: "forge-v3-settings-helper" }, j ? `${j} changed setting${j === 1 ? "" : "s"} will be saved.` : "Only settings you change will be sent on save."),
     t(
       "section",
       { class: "forge-v3-settings-grid", "aria-label": "Settings groups" },
-      te.map((N) => {
-        const C = N.label === "Other" ? M : Gi(a, N), j = [
-          ...N.label === "Dashboard Backend" ? [U()] : [],
+      ne.map((P) => {
+        const C = P.label === "Other" ? U : Gi(a, P), B = [
+          ...P.label === "Dashboard Backend" ? [V()] : [],
           ...C.map((L) => {
-            const ne = N.label === "Other", m = co.has(L.key);
+            const ae = P.label === "Other", m = co.has(L.key);
             return t(
               "label",
-              { key: L.key, class: `forge-v3-setting-row ${ne ? "forge-v3-setting-unknown" : ""} ${m ? "forge-v3-setting-runtime" : ""}` },
-              t("span", null, wn(L.key), ne && !v ? t("em", null, " read-only") : null),
+              { key: L.key, class: `forge-v3-setting-row ${ae ? "forge-v3-setting-unknown" : ""} ${m ? "forge-v3-setting-runtime" : ""}` },
+              t("span", null, En(L.key), ae && !v ? t("em", null, " read-only") : null),
               t("small", null, m ? `${xa(L.key)} · Runtime/backend changes may require reconnecting the dashboard or restarting agents.` : xa(L.key)),
-              Y(L, ne && !v)
+              Z(L, ae && !v)
             );
           })
         ];
         return t(
           "section",
-          { key: N.label, class: "forge-v3-settings-card forge-v3-settings-group" },
+          { key: P.label, class: "forge-v3-settings-card forge-v3-settings-group" },
           t(
             "header",
             null,
-            t("div", null, t("h2", null, N.label), t("p", null, oo[N.label])),
-            N.label === "Other" ? t("label", { class: "forge-v3-other-unlock" }, t("input", { type: "checkbox", checked: v, onInput: (L) => b(L.target.checked) }), " Edit unknown") : t("span", null, String(j.length))
+            t("div", null, t("h2", null, P.label), t("p", null, oo[P.label])),
+            P.label === "Other" ? t("label", { class: "forge-v3-other-unlock" }, t("input", { type: "checkbox", checked: v, onInput: (L) => b(L.target.checked) }), " Edit unknown") : t("span", null, String(B.length))
           ),
-          j.length === 0 ? t("p", { class: "forge-v3-empty" }, "No settings in this group.") : j
+          B.length === 0 ? t("p", { class: "forge-v3-empty" }, "No settings in this group.") : B
         );
       })
     ),
     t(
       "div",
       { class: "forge-v3-settings-save-bar" },
-      t("button", { type: "button", class: "forge-v3-btn-primary", disabled: q === 0, onClick: D }, q ? `Save ${q} change${q === 1 ? "" : "s"}` : "Save settings"),
+      t("button", { type: "button", class: "forge-v3-btn-primary", disabled: j === 0, onClick: D }, j ? `Save ${j} change${j === 1 ? "" : "s"}` : "Save settings"),
       h === "Settings saved" ? t("span", { class: "forge-v3-saved-indicator" }, "✓ Saved") : null
     )
   ]);
 }
 function Di() {
   const [e, n] = E("suggestions"), [a, r] = E({ suggestions: [], events: [], changes: [] }), [s, l] = E("Loading learnings…"), c = () => {
-    de("/api/learnings").then((f) => {
+    ue("/api/learnings").then((f) => {
       r({ suggestions: f.suggestions ?? [], events: f.events ?? [], changes: f.changes ?? [] }), l("");
     }).catch(() => l("Unable to load learnings"));
   };
-  z(() => {
+  Y(() => {
     c();
     const f = window.setInterval(c, 3e4), d = typeof EventSource < "u" ? new EventSource("/api/events") : null;
     return d == null || d.addEventListener("message", (h) => {
@@ -2165,7 +2190,7 @@ function Di() {
     });
   };
   return t(Nt, { view: "learnings", className: "forge-v3-learnings-wrap" }, [
-    t(Yt, { icon: "🧠", title: "Learnings", subtitle: "Suggestions, reflection history, and prompt change log" }),
+    t(Zt, { icon: "🧠", title: "Learnings", subtitle: "Suggestions, reflection history, and prompt change log" }),
     t(
       "nav",
       { class: "forge-v3-learning-tabs", "aria-label": "Learning tabs" },
@@ -2178,7 +2203,7 @@ function Di() {
       a.suggestions.length === 0 ? t("p", { class: "forge-v3-empty" }, "No learning suggestions.") : a.suggestions.map((f) => t(
         "article",
         { key: f.id, class: "forge-v3-learning-card" },
-        t("div", { class: "forge-v3-learning-meta" }, f.linear_id ?? `Issue #${f.issue_id ?? "—"}`, " · ", f.target ?? "target", " · Added ", f.created_at ? `${we(f.created_at)} ago (${un(f.created_at)})` : "date unknown"),
+        t("div", { class: "forge-v3-learning-meta" }, f.linear_id ?? `Issue #${f.issue_id ?? "—"}`, " · ", f.target ?? "target", " · Added ", f.created_at ? `${we(f.created_at)} ago (${fn(f.created_at)})` : "date unknown"),
         t("h2", null, f.suggestion ?? "Untitled suggestion"),
         t("p", null, f.rationale ?? "No rationale provided."),
         t(
@@ -2195,7 +2220,7 @@ function Di() {
       a.changes.length === 0 ? t("p", { class: "forge-v3-empty" }, "No learning changes yet.") : a.changes.map((f) => t(
         "article",
         { key: f.id, class: "forge-v3-learning-card" },
-        t("div", { class: "forge-v3-learning-meta" }, f.linear_id ?? "Global", " · ", f.target ?? "target", " · ", f.change_type ?? "change", " · ", f.created_at ? un(f.created_at) : "date unknown"),
+        t("div", { class: "forge-v3-learning-meta" }, f.linear_id ?? "Global", " · ", f.target ?? "target", " · ", f.change_type ?? "change", " · ", f.created_at ? fn(f.created_at) : "date unknown"),
         t("h2", null, f.change_summary ?? "Learning change"),
         t("p", null, f.reason ?? "No reason recorded.")
       ))
@@ -2206,7 +2231,7 @@ function Di() {
       a.events.length === 0 ? t("p", { class: "forge-v3-empty" }, "No reflection history yet.") : a.events.map((f) => t(
         "article",
         { key: f.id, class: "forge-v3-learning-card" },
-        t("div", { class: "forge-v3-learning-meta" }, f.linear_id ?? "Global", " · ", f.event_type ?? "reflection", " · ", f.created_at ? un(f.created_at) : "date unknown"),
+        t("div", { class: "forge-v3-learning-meta" }, f.linear_id ?? "Global", " · ", f.event_type ?? "reflection", " · ", f.created_at ? fn(f.created_at) : "date unknown"),
         t("h2", null, f.summary ?? "Reflection event")
       ))
     )
@@ -2218,15 +2243,15 @@ function Oi() {
   )), [a, r] = E({}), [s, l] = E([]), [c, p] = E("Loading model settings…"), [f, d] = E("Loading available models…"), [h, k] = E({}), u = (m) => {
     fetch(`/api/agents/${m}/prompt`).then((A) => A.ok ? A.text() : Promise.reject(new Error("prompt failed"))).then((A) => n((x) => ({ ...x, [m]: { type: m, content: A, status: "Loaded" } }))).catch(() => n((A) => ({ ...A, [m]: { ...A[m], status: "Unable to load prompt" } })));
   }, y = () => {
-    de("/api/settings").then((m) => {
+    ue("/api/settings").then((m) => {
       r(m), p("Model settings loaded");
     }).catch(() => p("Unable to load model settings"));
   }, v = () => {
-    de("/api/models").then((m) => {
+    ue("/api/models").then((m) => {
       l(m.models ?? []), d(m.error ? `Unable to load some models: ${m.error}` : m.warning ? `Available models loaded · ${m.warning}` : "Available models loaded");
     }).catch(() => d("Unable to load available models"));
   };
-  z(() => {
+  Y(() => {
     $t.forEach(u), y(), v();
   }, []);
   const b = (m, A) => n((x) => ({ ...x, [m]: { ...x[m], content: A, status: "Unsaved" } })), S = (m, A) => {
@@ -2245,38 +2270,38 @@ function Oi() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ model: A, force: !0 })
-    }).then((x) => x.json()).then((x) => k((Q) => ({ ...Q, [A]: x }))).catch((x) => k((Q) => ({ ...Q, [A]: { ok: !1, model: A, error: (x == null ? void 0 : x.message) || "Unable to check model" } }))));
+    }).then((x) => x.json()).then((x) => k((J) => ({ ...J, [A]: x }))).catch((x) => k((J) => ({ ...J, [A]: { ok: !1, model: A, error: (x == null ? void 0 : x.message) || "Unable to check model" } }))));
   }, D = () => {
-    [F, ...$t.map((A) => a[yn[A]] || "")].filter(Boolean).forEach((A) => k((x) => ({ ...x, [A]: { checking: !0 } }))), fetch("/api/models/check-configured", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ force: !0 }) }).then((A) => A.json()).then((A) => k((x) => ({ ...x, ...Object.fromEntries((A.results ?? []).map((Q) => [Q.model || "", Q]).filter(([Q]) => Q)) }))).catch((A) => p((A == null ? void 0 : A.message) || "Unable to check configured models"));
+    [F, ...$t.map((A) => a[In[A]] || "")].filter(Boolean).forEach((A) => k((x) => ({ ...x, [A]: { checking: !0 } }))), fetch("/api/models/check-configured", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ force: !0 }) }).then((A) => A.json()).then((A) => k((x) => ({ ...x, ...Object.fromEntries((A.results ?? []).map((J) => [J.model || "", J]).filter(([J]) => J)) }))).catch((A) => p((A == null ? void 0 : A.message) || "Unable to check configured models"));
   }, $ = (m) => {
     fetch(`/api/agents/${m}/prompt`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content: e[m].content })
     }).then((A) => A.ok ? A.json() : Promise.reject(new Error("save failed"))).then(() => n((A) => ({ ...A, [m]: { ...A[m], status: "Saved" } }))).catch(() => n((A) => ({ ...A, [m]: { ...A[m], status: "Unable to save prompt" } })));
-  }, M = (m) => {
+  }, U = (m) => {
     fetch(`/api/agents/${m}/prompt/default`).then((A) => A.ok ? A.text() : Promise.reject(new Error("default failed"))).then((A) => n((x) => ({ ...x, [m]: { type: m, content: A, status: "Reset to default" } }))).catch(() => n((A) => ({ ...A, [m]: { ...A[m], status: "Unable to reset prompt" } })));
-  }, F = a.model ?? a.default_model ?? "", q = (m) => m ? m >= 1e3 ? `${Math.round(m / 1e3)}k` : String(m) : "—", te = new Map(s.map((m) => [m.key || `${m.provider}/${m.id}`, m])), Y = (m) => te.get(m) ?? s.find((A) => A.id === m) ?? null, U = (m) => m.key || `${m.provider}/${m.id}`, N = (m) => m && !Y(m) ? { id: m, key: m, name: m, provider: "custom" } : null, C = (m) => m ? `${m.provider ?? "provider unknown"}${m.reasoning ? " · reasoning" : ""} · context ${q(m.contextWindow)} · max ${q(m.maxTokens)}` : s.length ? "Select an available model." : f, j = (m) => `${m.name || m.id} (${m.provider || "provider unknown"})`, L = (m) => {
+  }, F = a.model ?? a.default_model ?? "", j = (m) => m ? m >= 1e3 ? `${Math.round(m / 1e3)}k` : String(m) : "—", ne = new Map(s.map((m) => [m.key || `${m.provider}/${m.id}`, m])), Z = (m) => ne.get(m) ?? s.find((A) => A.id === m) ?? null, V = (m) => m.key || `${m.provider}/${m.id}`, P = (m) => m && !Z(m) ? { id: m, key: m, name: m, provider: "custom" } : null, C = (m) => m ? `${m.provider ?? "provider unknown"}${m.reasoning ? " · reasoning" : ""} · context ${j(m.contextWindow)} · max ${j(m.maxTokens)}` : s.length ? "Select an available model." : f, B = (m) => `${m.name || m.id} (${m.provider || "provider unknown"})`, L = (m) => {
     const A = m.trim();
     if (!A) return null;
     const x = h[A];
     return x ? "checking" in x ? t("span", { class: "forge-v3-model-health checking" }, "Checking…") : t("span", { class: `forge-v3-model-health ${x.ok ? "ok" : "failed"}`, title: x.error || x.responsePreview || "" }, x.ok ? `Working${x.latencyMs ? ` · ${Math.round(x.latencyMs / 1e3)}s` : ""}` : "Failed") : t("span", { class: "forge-v3-model-health" }, "Untested");
-  }, ne = (m, A, x) => {
-    const Q = A ? Y(A) ?? N(A) : null, le = Q ? U(Q) : "", me = N(A) ? [N(A), ...s] : s;
+  }, ae = (m, A, x) => {
+    const J = A ? Z(A) ?? P(A) : null, le = J ? V(J) : "", be = P(A) ? [P(A), ...s] : s;
     return t("div", { class: "forge-v3-model-picker" }, [
       t("select", { class: "forge-v3-prompt-model-input", value: le, onChange: (ge) => S(m, ge.target.value) }, [
         x ? t("option", { value: "" }, `Use default (${F || "not set"})`) : null,
-        me.map((ge) => t("option", { key: U(ge), value: U(ge) }, j(ge)))
+        be.map((ge) => t("option", { key: V(ge), value: V(ge) }, B(ge)))
       ]),
-      t("div", { class: "forge-v3-model-details" }, Q ? [
-        t("strong", null, Q.id),
-        t("span", null, C(Q)),
+      t("div", { class: "forge-v3-model-details" }, J ? [
+        t("strong", null, J.id),
+        t("span", null, C(J)),
         L(A)
-      ] : t("span", null, C(x ? Y(F) ?? N(F) : null)))
+      ] : t("span", null, C(x ? Z(F) ?? P(F) : null)))
     ]);
   };
   return t(Nt, { view: "prompts", className: "forge-v3-prompts-wrap" }, [
-    t(Yt, { icon: "✎", title: "Agent Prompts", subtitle: "Edit each agent's prompt and model in one place", actions: t("button", { type: "button", onClick: D }, "Test configured models") }),
+    t(Zt, { icon: "✎", title: "Agent Prompts", subtitle: "Edit each agent's prompt and model in one place", actions: t("button", { type: "button", onClick: D }, "Test configured models") }),
     t(
       "section",
       { class: "forge-v3-model-default-card", "aria-label": "Default model" },
@@ -2289,7 +2314,7 @@ function Oi() {
       t(
         "div",
         { class: "forge-v3-prompt-model-row" },
-        ne("model", F, !1),
+        ae("model", F, !1),
         t("button", { type: "button", onClick: () => I(F), disabled: !F.trim() }, "Test"),
         t("button", { type: "button", onClick: () => W("model") }, "Save default")
       )
@@ -2298,7 +2323,7 @@ function Oi() {
       "section",
       { class: "forge-v3-prompts-grid", "aria-label": "Agent prompt editors" },
       $t.map((m) => {
-        const A = e[m], x = A.content.length, Q = yn[m], le = a[Q] ?? "";
+        const A = e[m], x = A.content.length, J = In[m], le = a[J] ?? "";
         return t(
           "article",
           { key: m, class: "forge-v3-prompt-card" },
@@ -2317,11 +2342,11 @@ function Oi() {
             "div",
             { class: "forge-v3-prompt-model-row" },
             t("label", { class: "forge-v3-prompt-meta" }, "Model override"),
-            ne(Q, le, !0),
+            ae(J, le, !0),
             t("button", { type: "button", onClick: () => I(le || F), disabled: !(le || F).trim() }, "Test"),
-            t("button", { type: "button", onClick: () => W(Q) }, "Save model")
+            t("button", { type: "button", onClick: () => W(J) }, "Save model")
           ),
-          t("textarea", { class: "forge-v3-prompt-editor", value: A.content, rows: 12, onInput: (me) => b(m, me.target.value) }),
+          t("textarea", { class: "forge-v3-prompt-editor", value: A.content, rows: 12, onInput: (be) => b(m, be.target.value) }),
           t(
             "footer",
             { class: "forge-v3-prompt-meta" },
@@ -2329,7 +2354,7 @@ function Oi() {
             t(
               "div",
               { class: "forge-v3-toolbar-actions" },
-              t("button", { type: "button", onClick: () => M(m) }, "Reset to default"),
+              t("button", { type: "button", onClick: () => U(m) }, "Reset to default"),
               t("button", { type: "button", onClick: () => $(m) }, "Save prompt")
             )
           )
@@ -2416,7 +2441,7 @@ function ur({ onClose: e }) {
     } catch {
     }
   };
-  return z(() => {
+  return Y(() => {
     v();
   }, []), t(
     "div",
@@ -2451,9 +2476,9 @@ function ur({ onClose: e }) {
 }
 function Vi() {
   const [e, n] = E(null), [a, r] = E(null), [s, l] = E(""), [c, p] = E(null), [f, d] = E(!1);
-  z(() => {
+  Y(() => {
     let I = !1;
-    return de("/api/archive").then((D) => {
+    return ue("/api/archive").then((D) => {
       I || n(D);
     }).catch(() => {
       I || r("Unable to load archive");
@@ -2465,16 +2490,16 @@ function Vi() {
     var $;
     return I + Number(D.pr_count ?? (($ = D.prStack) == null ? void 0 : $.length) ?? 0);
   }, 0) / v).toFixed(1) : "0.0", W = (() => {
-    const I = u.filter((M) => M.created_at && (M.merged ?? M.updated_at)).map((M) => {
-      const F = Ze(M.created_at), q = Ze(M.merged ?? M.updated_at);
-      return Number.isFinite(F) && Number.isFinite(q) ? q - F : 0;
-    }).filter((M) => M > 0);
+    const I = u.filter((U) => U.created_at && (U.merged ?? U.updated_at)).map((U) => {
+      const F = Ze(U.created_at), j = Ze(U.merged ?? U.updated_at);
+      return Number.isFinite(F) && Number.isFinite(j) ? j - F : 0;
+    }).filter((U) => U > 0);
     if (!I.length) return "—";
-    const D = I.reduce((M, F) => M + F, 0) / I.length, $ = Math.round(D / 36e5);
+    const D = I.reduce((U, F) => U + F, 0) / I.length, $ = Math.round(D / 36e5);
     return $ < 24 ? `${$}h` : `${($ / 24).toFixed(1)}d`;
   })();
   return t(Nt, { view: "archive", className: `forge-v3-archive-wrap ${y ? "forge-v3-has-archive-detail" : ""}` }, [
-    t(Yt, { icon: "🗃️", title: "Archive", subtitle: `${v} completed issues${k ? ` matching "${s.trim()}"` : ""} — all PRs merged`, actions: t("div", { class: "forge-v3-toolbar-actions" }, t("button", { type: "button", class: "forge-v3-btn", onClick: () => d(!0), title: "Generate on-call handover report" }, "📋 Handover Report"), t("input", { class: "forge-v3-toolbar-search", type: "search", placeholder: "Search archive…", "aria-label": "Search archive", value: s, onInput: (I) => l(I.target.value) })) }),
+    t(Zt, { icon: "🗃️", title: "Archive", subtitle: `${v} completed issues${k ? ` matching "${s.trim()}"` : ""} — all PRs merged`, actions: t("div", { class: "forge-v3-toolbar-actions" }, t("button", { type: "button", class: "forge-v3-btn", onClick: () => d(!0), title: "Generate on-call handover report" }, "📋 Handover Report"), t("input", { class: "forge-v3-toolbar-search", type: "search", placeholder: "Search archive…", "aria-label": "Search archive", value: s, onInput: (I) => l(I.target.value) })) }),
     t(
       "section",
       { class: "forge-v3-archive-stats forge-v3-stats-strip", "aria-label": "Archive stats" },
@@ -2495,9 +2520,9 @@ function Vi() {
           } },
           t("div", { class: "forge-v3-archive-meta" }, I.linear_id ?? `Issue #${I.id}`, " · ", I.updated_at ?? "merged"),
           t("h2", null, I.title ?? "Untitled issue"),
-          t("div", { class: "forge-v3-archive-meta" }, "PR links", ": ", (D = I.prStack) != null && D.length ? I.prStack.map(($, M) => {
+          t("div", { class: "forge-v3-archive-meta" }, "PR links", ": ", (D = I.prStack) != null && D.length ? I.prStack.map(($, U) => {
             const F = $.pr_number ? `#${$.pr_number}` : $.gt_branch ?? $.branch ?? "pending";
-            return $.url ? t("a", { key: `${F}-${M}`, href: $.url, target: "_blank", rel: "noreferrer", onClick: (q) => q.stopPropagation() }, F) : t("span", { key: `${F}-${M}` }, F);
+            return $.url ? t("a", { key: `${F}-${U}`, href: $.url, target: "_blank", rel: "noreferrer", onClick: (j) => j.stopPropagation() }, F) : t("span", { key: `${F}-${U}` }, F);
           }) : "None"),
           t("div", { class: "forge-v3-archive-meta" }, "Agent runs", ": ", String(I.run_count ?? 0)),
           t("div", { class: "forge-v3-archive-meta" }, "Summary", ": ", I.summaryContent || I.hasSummary ? "available" : "not generated")
@@ -2509,109 +2534,109 @@ function Vi() {
   ]);
 }
 function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onClose: s, onPanelResizeStart: l, onIssueAction: c, onRemoveIssue: p, onLaunchRuntime: f, onStopVm: d, onSyncPrs: h, onSubmitFeedback: k, onResolveDecision: u }) {
-  var Bn, Xn, Kn, Qn, Jn, zn, Yn, Zn, ea, ta;
-  const [y, v] = E(() => Xt().detailTab), [b, S] = E(null), [W, I] = E(!1), [D, $] = E(!1), [M, F] = E(""), [q, te] = E(""), Y = je(0), [U, N] = E(""), [C, j] = E(!1), [L, ne] = E(null), [m, A] = E(""), [x, Q] = E([]), [le, me] = E([]), [ge, he] = E(""), [be, re] = E([]), [We, De] = E([]), [Oe, ke] = E(!1), [Ie, Fe] = E(!1), [P, B] = E("idle"), [ue, oe] = E([]), [tt, lt] = E(""), [ct, nt] = E(""), [Pt, at] = E(!1), [Zt, dt] = E(!1), [en, ut] = E(!1), [Me, _] = E(""), [T, G] = E([]), [V, X] = E(""), [Z, ie] = E(""), ve = je(null);
-  if (z(() => {
+  var Xn, Kn, Qn, Jn, zn, Yn, Zn, ea, ta, na;
+  const [y, v] = E(() => Kt().detailTab), [b, S] = E(null), [W, I] = E(!1), [D, $] = E(!1), [U, F] = E(""), [j, ne] = E(""), Z = je(0), [V, P] = E(""), [C, B] = E(!1), [L, ae] = E(null), [m, A] = E(""), [x, J] = E([]), [le, be] = E([]), [ge, ke] = E(""), [ve, oe] = E([]), [De, Re] = E([]), [Oe, ye] = E(!1), [Ie, Fe] = E(!1), [st, N] = E("idle"), [Q, ce] = E([]), [z, lt] = E(""), [ct, tt] = E(""), [Pt, nt] = E(!1), [en, dt] = E(!1), [tn, ut] = E(!1), [Me, _] = E(""), [T, G] = E([]), [X, M] = E(""), [ee, ie] = E(""), _e = je(null);
+  if (Y(() => {
     var w;
     if (!e) {
-      S(null), I(!1), $(!1), Fe(!1), ke(!1);
+      S(null), I(!1), $(!1), Fe(!1), ye(!1);
       return;
     }
     S(n ? { issue: n } : null);
-    const i = Xt();
-    v(i.detailTab), I(i.panel === "plan"), $(i.panel === "diff" || i.panel === "review"), Fe(i.panel === "listen"), ke(i.panel === "jump"), oe([]), B("idle"), F(""), te(i.panel === "diff" || i.panel === "review" ? "Loading diff…" : ""), N(i.diffPath), j(i.panel === "review"), ne(null), A(""), Q([]), me([]), he(""), re([]), De([]), lt(""), nt(""), at(!1), dt(!1), ut(!1);
+    const i = Kt();
+    v(i.detailTab), I(i.panel === "plan"), $(i.panel === "diff" || i.panel === "review"), Fe(i.panel === "listen"), ye(i.panel === "jump"), ce([]), N("idle"), F(""), ne(i.panel === "diff" || i.panel === "review" ? "Loading diff…" : ""), P(i.diffPath), B(i.panel === "review"), ae(null), A(""), J([]), be([]), ke(""), oe([]), Re([]), lt(""), tt(""), nt(!1), dt(!1), ut(!1);
     const g = Io(e);
-    _(g.input ?? ""), G(g.messages ?? []), X(""), ie(""), (w = ve.current) == null || w.abort(), ve.current = null;
-  }, [e]), z(() => {
+    _(g.input ?? ""), G(g.messages ?? []), M(""), ie(""), (w = _e.current) == null || w.abort(), _e.current = null;
+  }, [e]), Y(() => {
     !e || !n || S((i) => {
       var g;
       return ((g = i == null ? void 0 : i.issue) == null ? void 0 : g.id) !== e ? { issue: n } : { ...i, issue: { ...i.issue, ...n } };
     });
-  }, [e, n == null ? void 0 : n.id, n == null ? void 0 : n.state, n == null ? void 0 : n.updated_at, n == null ? void 0 : n.locked_at, n == null ? void 0 : n.agent_pid, n == null ? void 0 : n.auto_fix_enabled, n == null ? void 0 : n.externally_managed, n == null ? void 0 : n.awaiting_review]), z(() => {
+  }, [e, n == null ? void 0 : n.id, n == null ? void 0 : n.state, n == null ? void 0 : n.updated_at, n == null ? void 0 : n.locked_at, n == null ? void 0 : n.agent_pid, n == null ? void 0 : n.auto_fix_enabled, n == null ? void 0 : n.externally_managed, n == null ? void 0 : n.awaiting_review]), Y(() => {
     if (!e) return;
     let i = !1;
-    return de(`/api/issues/${e}?fast=1`).then((g) => {
+    return ue(`/api/issues/${e}?fast=1`).then((g) => {
       i || S(g);
     }).catch(() => {
       i || S({ issue: { id: e, title: "Unable to load issue" } });
     }), () => {
       i = !0;
     };
-  }, [e, a, n == null ? void 0 : n.state, n == null ? void 0 : n.updated_at]), z(() => {
+  }, [e, a, n == null ? void 0 : n.state, n == null ? void 0 : n.updated_at]), Y(() => {
     if (!e) return;
-    Kt({ view: "queue", issue: e, tab: y === "overview" ? null : y, panel: D ? C ? "review" : "diff" : W ? "plan" : Ie ? "listen" : Oe ? "jump" : null, diffPath: D ? U : null });
-  }, [e, y, W, D, Ie, Oe, C, U]), z(() => {
+    Qt({ view: "queue", issue: e, tab: y === "overview" ? null : y, panel: D ? C ? "review" : "diff" : W ? "plan" : Ie ? "listen" : Oe ? "jump" : null, diffPath: D ? V : null });
+  }, [e, y, W, D, Ie, Oe, C, V]), Y(() => {
     var w;
-    const i = (w = b == null ? void 0 : b.decisions) == null ? void 0 : w.find((R) => R.type === "FIX_APPROVAL"), g = Mt(i).comments ?? [];
-    re(g.map((R, H) => _t(R, H)));
-  }, [b == null ? void 0 : b.decisions]), z(() => {
+    const i = (w = b == null ? void 0 : b.decisions) == null ? void 0 : w.find((R) => R.type === "FIX_APPROVAL"), g = Ut(i).comments ?? [];
+    oe(g.map((R, q) => _t(R, q)));
+  }, [b == null ? void 0 : b.decisions]), Y(() => {
     var i, g, w;
-    at(!!((i = b == null ? void 0 : b.issue) != null && i.auto_fix_enabled)), dt(!!((g = b == null ? void 0 : b.issue) != null && g.externally_managed)), ut(!!((w = b == null ? void 0 : b.issue) != null && w.awaiting_review));
-  }, [(Bn = b == null ? void 0 : b.issue) == null ? void 0 : Bn.auto_fix_enabled, (Xn = b == null ? void 0 : b.issue) == null ? void 0 : Xn.externally_managed, (Kn = b == null ? void 0 : b.issue) == null ? void 0 : Kn.awaiting_review]), z(() => {
+    nt(!!((i = b == null ? void 0 : b.issue) != null && i.auto_fix_enabled)), dt(!!((g = b == null ? void 0 : b.issue) != null && g.externally_managed)), ut(!!((w = b == null ? void 0 : b.issue) != null && w.awaiting_review));
+  }, [(Xn = b == null ? void 0 : b.issue) == null ? void 0 : Xn.auto_fix_enabled, (Kn = b == null ? void 0 : b.issue) == null ? void 0 : Kn.externally_managed, (Qn = b == null ? void 0 : b.issue) == null ? void 0 : Qn.awaiting_review]), Y(() => {
     if (!Ie || !e) return;
     if (ze()) {
-      B("mock live"), oe([{ kind: "text", text: "Mock live agent stream — real issues connect to /api/issues/:id/listen." }]);
+      N("mock live"), ce([{ kind: "text", text: "Mock live agent stream — real issues connect to /api/issues/:id/listen." }]);
       return;
     }
-    B("connecting…"), oe([]);
+    N("connecting…"), ce([]);
     const i = new EventSource(`/api/issues/${e}/listen`);
     return i.addEventListener("meta", (g) => {
       const w = JSON.parse(g.data);
-      B(w.agentType ? `live · ${w.agentType}` : "live");
+      N(w.agentType ? `live · ${w.agentType}` : "live");
     }), i.addEventListener("message", (g) => {
-      const w = JSON.parse(g.data), R = w.kind ?? "text", H = (w.text ?? "").replace(/\x1b\[[\d;]*[A-Za-z]|\x1b[^\[]/g, "");
-      if (!H) return;
-      const J = R === "text_delta" || R === "thinking_delta";
-      oe((fe) => {
+      const w = JSON.parse(g.data), R = w.kind ?? "text", q = (w.text ?? "").replace(/\x1b\[[\d;]*[A-Za-z]|\x1b[^\[]/g, "");
+      if (!q) return;
+      const H = R === "text_delta" || R === "thinking_delta";
+      ce((fe) => {
         const vt = fe[fe.length - 1];
-        return J && vt && vt.kind === R ? [...fe.slice(0, -1), { kind: R, text: vt.text + H }] : [...fe.slice(-200), { kind: R, text: H }];
+        return H && vt && vt.kind === R ? [...fe.slice(0, -1), { kind: R, text: vt.text + q }] : [...fe.slice(-200), { kind: R, text: q }];
       });
     }), i.addEventListener("done", (g) => {
       const w = JSON.parse(g.data);
-      B(w.exitCode === 0 ? "done" : `failed (${w.exitCode ?? "unknown"})`), i.close();
-    }), i.addEventListener("error", () => B("no active agent")), i.onerror = () => B("disconnected"), () => i.close();
-  }, [Ie, e]), z(() => {
-    !e || r <= 0 || (j(!0), $(!0), te("Loading diff…"));
-  }, [r, e]), z(() => {
-    if (!e || !D || q !== "Loading diff…") return;
-    const i = ++Y.current;
-    C && (A("Loading AI tour…"), de(`/api/issues/${e}/tour`).then((g) => {
-      i === Y.current && (ne(g), A(g.generating ? "AI tour is generating…" : g.tour ? "" : "No AI tour yet"));
+      N(w.exitCode === 0 ? "done" : `failed (${w.exitCode ?? "unknown"})`), i.close();
+    }), i.addEventListener("error", () => N("no active agent")), i.onerror = () => N("disconnected"), () => i.close();
+  }, [Ie, e]), Y(() => {
+    !e || r <= 0 || (B(!0), $(!0), ne("Loading diff…"));
+  }, [r, e]), Y(() => {
+    if (!e || !D || j !== "Loading diff…") return;
+    const i = ++Z.current;
+    C && (A("Loading AI tour…"), ue(`/api/issues/${e}/tour`).then((g) => {
+      i === Z.current && (ae(g), A(g.generating ? "AI tour is generating…" : g.tour ? "" : "No AI tour yet"));
     }).catch(() => {
-      i === Y.current && A("Unable to load AI tour");
-    })), de(`/api/issues/${e}/diff`).then((g) => {
-      if (i !== Y.current) return;
-      const w = g.diff ?? "", R = gn(w);
-      F(w), N((H) => {
-        var J;
-        return H || ((J = R[0]) == null ? void 0 : J.path) || "";
-      }), te(g.error ?? "");
+      i === Z.current && A("Unable to load AI tour");
+    })), ue(`/api/issues/${e}/diff`).then((g) => {
+      if (i !== Z.current) return;
+      const w = g.diff ?? "", R = vn(w);
+      F(w), P((q) => {
+        var H;
+        return q || ((H = R[0]) == null ? void 0 : H.path) || "";
+      }), ne(g.error ?? "");
     }).catch(() => {
-      i === Y.current && te("Unable to load diff");
+      i === Z.current && ne("Unable to load diff");
     });
-  }, [D, q, e, C]), z(() => {
+  }, [D, j, e, C]), Y(() => {
     if (!D) return;
     const i = (g) => {
       const w = g.target;
       if (w.tagName === "INPUT" || w.tagName === "TEXTAREA" || w.tagName === "SELECT") return;
-      const R = gn(M);
+      const R = vn(U);
       if (!R.length) return;
-      const H = R.findIndex((J) => J.path === U);
+      const q = R.findIndex((H) => H.path === V);
       if (g.key === "j" || g.key === "J") {
         g.preventDefault();
-        const J = Math.min(H + 1, R.length - 1);
-        N(R[J].path);
+        const H = Math.min(q + 1, R.length - 1);
+        P(R[H].path);
       } else if (g.key === "k" || g.key === "K") {
         g.preventDefault();
-        const J = Math.max(H - 1, 0);
-        N(R[J].path);
-      } else g.key === "r" && C && U ? (g.preventDefault(), Q((J) => J.includes(U) ? J.filter((fe) => fe !== U) : [...J, U])) : g.key === "a" && C && U && (g.preventDefault(), an(U, null));
+        const H = Math.max(q - 1, 0);
+        P(R[H].path);
+      } else g.key === "r" && C && V ? (g.preventDefault(), J((H) => H.includes(V) ? H.filter((fe) => fe !== V) : [...H, V])) : g.key === "a" && C && V && (g.preventDefault(), rn(V, null));
     };
     return window.addEventListener("keydown", i), () => window.removeEventListener("keydown", i);
-  }, [D, M, U, C]), !e) return null;
-  const o = b == null ? void 0 : b.issue, K = ((b == null ? void 0 : b.decisions) ?? []).filter((i) => !i.verdict && !i.resolved_at && !We.includes(i.id)), Re = (b == null ? void 0 : b.prStack) ?? [], ft = o ?? {}, gr = () => Fe(!0), rt = Fo(ft, K), se = or(K), tn = Ho(o == null ? void 0 : o.state), vr = `${Ln(o == null ? void 0 : o.priority)} ${xn(o == null ? void 0 : o.priority)}`, _r = An(b), mr = sr(b), Rt = Bo(b), hr = jo(b) && !["PENDING", "SETTING_UP", "PLANNING"].includes((o == null ? void 0 : o.state) ?? "") || Rt, br = Xo(o == null ? void 0 : o.state), kr = Ko(o == null ? void 0 : o.state), yr = Qo(o), Ir = !["PENDING", "SETTING_UP", "DONE", "IGNORED", "FAILED"].includes((o == null ? void 0 : o.state) ?? ""), Ar = { label: "Plan" }, Wn = async () => {
+  }, [D, U, V, C]), !e) return null;
+  const o = b == null ? void 0 : b.issue, K = ((b == null ? void 0 : b.decisions) ?? []).filter((i) => !i.verdict && !i.resolved_at && !De.includes(i.id)), Se = (b == null ? void 0 : b.prStack) ?? [], ft = o ?? {}, gr = () => Fe(!0), at = Fo(ft, K), se = or(K), nn = Ho(o == null ? void 0 : o.state), vr = `${xn(o == null ? void 0 : o.priority)} ${Gn(o == null ? void 0 : o.priority)}`, _r = wn(b), mr = sr(b), Rt = Bo(b), hr = jo(b) && !["PENDING", "SETTING_UP", "PLANNING"].includes((o == null ? void 0 : o.state) ?? "") || Rt, br = Xo(o == null ? void 0 : o.state), kr = Ko(o == null ? void 0 : o.state), yr = Qo(o), Ir = !["PENDING", "SETTING_UP", "DONE", "IGNORED", "FAILED"].includes((o == null ? void 0 : o.state) ?? ""), Ar = { label: "Plan" }, Dn = async () => {
     if (!(o != null && o.id)) return;
-    const i = await Ae({ title: "Steer issue", message: "Instructions will be read by the next agent run.", label: "Steering instructions", confirmText: "Queue steering" });
+    const i = await he({ title: "Steer issue", message: "Instructions will be read by the next agent run.", label: "Steering instructions", confirmText: "Queue steering" });
     i != null && i.trim() && c(o.id, "steer", { instructions: i.trim() });
   }, wr = async () => {
     !(o != null && o.id) || !await kt({ title: "Clear steering?", message: "Remove queued steering context for this issue.", confirmText: "Clear steering" }) || c(o.id, "clear-steer");
@@ -2619,135 +2644,141 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
     if (!(o != null && o.id)) return;
     const g = o.linear_id ?? `issue #${o.id}`;
     if (i.state === "RETURN_TO_LINEAR") {
-      if (await Ae({ title: "Return issue to Linear", message: `This fully resets ${g}, removes worktree/project artifacts/branches, deletes Forge tracking, and leaves the Linear issue visible in the Linear list.`, label: "Type RETURN to confirm", confirmText: "Return to Linear", danger: !0, requiredText: "RETURN" }) !== "RETURN") return;
-      ke(!1), c(o.id, "return-to-linear"), s();
+      if (await he({ title: "Return issue to Linear", message: `This fully resets ${g}, removes worktree/project artifacts/branches, deletes Forge tracking, and leaves the Linear issue visible in the Linear list.`, label: "Type RETURN to confirm", confirmText: "Return to Linear", danger: !0, requiredText: "RETURN" }) !== "RETURN") return;
+      ye(!1), c(o.id, "return-to-linear"), s();
       return;
     }
-    const w = i.risky ? " This is a risky recovery action and may clear or bypass pending workflow gates." : "";
-    await kt({ title: "Jump workflow state?", message: `Move ${g} to ${i.state}?${w}`, confirmText: "Jump state", danger: i.risky }) && (ke(!1), c(o.id, "advance", { nextState: i.state }));
+    let w = "";
+    if (i.state === "WATCHING_PR") {
+      const H = await he({ title: "Link GitHub PR / Stack", message: `Paste GitHub PR URL(s) for ${g}. You can paste one PR URL (Forge will auto-discover parent/child PRs in the stack) or multiple URLs separated by commas/newlines.`, label: "PR URL(s)", confirmText: "Link and watch" });
+      if (!(H != null && H.trim())) return;
+      w = H.trim();
+    }
+    const R = i.risky ? " This is a risky recovery action and may clear or bypass pending workflow gates." : "";
+    await kt({ title: "Jump workflow state?", message: `Move ${g} to ${i.state}?${R}`, confirmText: "Jump state", danger: i.risky }) && (ye(!1), c(o.id, "advance", { nextState: i.state, prUrl: w }));
   }, Pr = async () => {
     var fe;
     if (!(o != null && o.id)) return;
-    const i = vo(o.state), w = { SETTING_UP: "setup", PLANNING: "planner", AI_PLAN_REVIEWING: "plan-reviewer", WORKING: "coder", AI_REVIEWING: "reviewer", CREATING_PR: "git-agent", FIXING: "fixer", PUSHING: "git-agent", REBASING: "rebaser", SPLIT_PLANNING: "split-planner", SPLITTING: "splitter" }[i] ?? null, R = w ? ` Forge will run the ${w} agent next.` : "", H = (fe = o.state) != null && fe.startsWith("AWAITING") ? " This skips the pending human approval gate." : "";
-    await kt({ title: "Advance workflow state?", message: `Move ${o.linear_id ?? `issue #${o.id}`} from "${et(o)}" to "${et({ state: i })}"?${R}${H}`, confirmText: "Advance" }) && c(o.id, "advance", { nextState: i });
+    const i = vo(o.state), w = { SETTING_UP: "setup", PLANNING: "planner", AI_PLAN_REVIEWING: "plan-reviewer", WORKING: "coder", AI_REVIEWING: "reviewer", CREATING_PR: "git-agent", FIXING: "fixer", PUSHING: "git-agent", REBASING: "rebaser", SPLIT_PLANNING: "split-planner", SPLITTING: "splitter" }[i] ?? null, R = w ? ` Forge will run the ${w} agent next.` : "", q = (fe = o.state) != null && fe.startsWith("AWAITING") ? " This skips the pending human approval gate." : "";
+    await kt({ title: "Advance workflow state?", message: `Move ${o.linear_id ?? `issue #${o.id}`} from "${et(o)}" to "${et({ state: i })}"?${R}${q}`, confirmText: "Advance" }) && c(o.id, "advance", { nextState: i });
   }, Rr = async () => {
-    !(o != null && o.id) || await Ae({ title: "Full reset issue", message: `This fully resets ${o.linear_id ?? `issue #${o.id}`}, removes worktree/project artifacts, and restarts from PENDING.`, label: "Type RESET to confirm", confirmText: "Reset issue", danger: !0, requiredText: "RESET" }) !== "RESET" || c(o.id, "reset");
+    !(o != null && o.id) || await he({ title: "Full reset issue", message: `This fully resets ${o.linear_id ?? `issue #${o.id}`}, removes worktree/project artifacts, and restarts from PENDING.`, label: "Type RESET to confirm", confirmText: "Reset issue", danger: !0, requiredText: "RESET" }) !== "RESET" || c(o.id, "reset");
   }, Sr = async () => {
-    !(o != null && o.id) || await Ae({ title: "Remove issue", message: `Remove ${o.linear_id ?? `issue #${o.id}`} from Forge.`, label: "Type DELETE to confirm", confirmText: "Remove issue", danger: !0, requiredText: "DELETE" }) !== "DELETE" || p(o.id);
+    !(o != null && o.id) || await he({ title: "Remove issue", message: `Remove ${o.linear_id ?? `issue #${o.id}`} from Forge.`, label: "Type DELETE to confirm", confirmText: "Remove issue", danger: !0, requiredText: "DELETE" }) !== "DELETE" || p(o.id);
   }, Tr = () => {
-    o != null && o.id && (nt("Launching runtime…"), f(o.id).then((i) => nt(`Runtime launch complete${typeof i == "object" && i && "launchRef" in i ? ` · ${i.launchRef ?? "started"}` : ""}`)).catch((i) => nt(`Runtime launch failed: ${i.message}`)));
+    o != null && o.id && (tt("Launching runtime…"), f(o.id).then((i) => tt(`Runtime launch complete${typeof i == "object" && i && "launchRef" in i ? ` · ${i.launchRef ?? "started"}` : ""}`)).catch((i) => tt(`Runtime launch failed: ${i.message}`)));
   }, Cr = (i) => {
     if (!(o != null && o.id)) return;
     const g = Pt;
-    at(i), c(o.id, "set-auto-fix", { enabled: i }), window.setTimeout(() => {
+    nt(i), c(o.id, "set-auto-fix", { enabled: i }), window.setTimeout(() => {
       var w;
-      !ze() && ((w = b == null ? void 0 : b.issue) == null ? void 0 : w.auto_fix_enabled) === g && at(g);
+      !ze() && ((w = b == null ? void 0 : b.issue) == null ? void 0 : w.auto_fix_enabled) === g && nt(g);
     }, 2e3);
   }, Lr = (i) => {
     o != null && o.id && (dt(i), c(o.id, i ? "mark-external" : "unmark-external"));
   }, xr = (i) => {
     o != null && o.id && (ut(i), c(o.id, i ? "mark-awaiting-review" : "unmark-awaiting-review"));
   }, Gr = async () => {
-    var H;
+    var q;
     if (!(o != null && o.id)) return;
-    const i = Re.filter((J) => J.pr_number).map((J) => String(J.pr_number)), g = i.length ? await Ae({ title: "Target PR", message: `Choose a PR number (${i.join(", ")}).`, label: "PR number", initialValue: i[0], confirmText: "Continue" }) : null, w = g != null && g.trim() ? Number(g.trim().replace(/^#/, "")) : null, R = (H = await Ae({ title: "Add PR feedback", message: "Feedback will be sent to the fixer agent.", label: "Feedback", confirmText: "Add feedback" })) == null ? void 0 : H.trim();
+    const i = Se.filter((H) => H.pr_number).map((H) => String(H.pr_number)), g = i.length ? await he({ title: "Target PR", message: `Choose a PR number (${i.join(", ")}).`, label: "PR number", initialValue: i[0], confirmText: "Continue" }) : null, w = g != null && g.trim() ? Number(g.trim().replace(/^#/, "")) : null, R = (q = await he({ title: "Add PR feedback", message: "Feedback will be sent to the fixer agent.", label: "Feedback", confirmText: "Add feedback" })) == null ? void 0 : q.trim();
     R && k(o.id, R, Number.isFinite(w) ? w : null);
   }, $r = (i = !1) => {
     if (!(o != null && o.id)) return;
     A(i ? "Regenerating AI tour…" : "Generating AI tour…");
     const g = () => Ee(`/api/issues/${o.id}/generate-tour`, {});
     (i ? Ee(`/api/issues/${o.id}/tour`, {}, "DELETE").then(g) : g()).then((w) => {
-      ne(w), A(w.tour ? "" : "AI tour is generating…");
+      ae(w), A(w.tour ? "" : "AI tour is generating…");
     }).catch(() => A("Unable to start AI tour generation"));
-  }, nn = (i = "diff") => {
-    o != null && o.id && (Y.current += 1, j(i === "review"), ne(null), A(i === "review" ? "Loading AI tour…" : ""), F(""), N(""), $(!0), te("Loading diff…"));
-  }, St = gn(M), _e = St.find((i) => i.path === U) ?? St[0], Ue = K.find((i) => i.type === "PLAN_REVIEW") ?? (se === "plan" ? K[0] : void 0), pt = K.find((i) => i.type === "CODE_REVIEW") ?? (se === "code" ? K[0] : void 0), Se = K.find((i) => i.type === "FIX_APPROVAL") ?? (se === "fix" ? K[0] : void 0), Tt = K.find((i) => i.type === "FIX_REVIEW") ?? (se === "fix-review" ? K[0] : void 0), Te = K.find((i) => i.type === "SPLIT_APPROVAL") ?? (se === "split" ? K[0] : void 0), gt = Mt(Se).comments ?? [], Wr = Mt(Te), Ct = xo(Te, Wr, b), Dn = Ct.stack, On = Oo(o == null ? void 0 : o.state), Fn = On ? K.filter((i) => i.type && i.type !== On) : K.filter((i) => i.type), an = async (i, g) => {
+  }, an = (i = "diff") => {
+    o != null && o.id && (Z.current += 1, B(i === "review"), ae(null), A(i === "review" ? "Loading AI tour…" : ""), F(""), P(""), $(!0), ne("Loading diff…"));
+  }, St = vn(U), me = St.find((i) => i.path === V) ?? St[0], Ue = K.find((i) => i.type === "PLAN_REVIEW") ?? (se === "plan" ? K[0] : void 0), pt = K.find((i) => i.type === "CODE_REVIEW") ?? (se === "code" ? K[0] : void 0), Te = K.find((i) => i.type === "FIX_APPROVAL") ?? (se === "fix" ? K[0] : void 0), Tt = K.find((i) => i.type === "FIX_REVIEW") ?? (se === "fix-review" ? K[0] : void 0), Ce = K.find((i) => i.type === "SPLIT_APPROVAL") ?? (se === "split" ? K[0] : void 0), gt = Ut(Te).comments ?? [], Wr = Ut(Ce), Ct = xo(Ce, Wr, b), On = Ct.stack, Fn = Oo(o == null ? void 0 : o.state), Mn = Fn ? K.filter((i) => i.type && i.type !== Fn) : K.filter((i) => i.type), rn = async (i, g) => {
     var R;
-    const w = (R = await Ae({ title: "Add review comment", message: g === null ? `Comment on ${i}` : `Comment on ${i}:${g}`, label: "Comment", confirmText: "Add comment" })) == null ? void 0 : R.trim();
-    w && me((H) => [...H, { id: `${Date.now()}-${H.length}`, file: i, line: g, body: w }]);
-  }, Mn = (i) => Q((g) => g.includes(i) ? g.filter((w) => w !== i) : [...g, i]), Ne = (i, g, w) => {
-    De((R) => R.includes(i) ? R : [...R, i]), u(i, g, w);
-  }, Un = async () => {
+    const w = (R = await he({ title: "Add review comment", message: g === null ? `Comment on ${i}` : `Comment on ${i}:${g}`, label: "Comment", confirmText: "Add comment" })) == null ? void 0 : R.trim();
+    w && be((q) => [...q, { id: `${Date.now()}-${q.length}`, file: i, line: g, body: w }]);
+  }, Un = (i) => J((g) => g.includes(i) ? g.filter((w) => w !== i) : [...g, i]), Ne = (i, g, w) => {
+    Re((R) => R.includes(i) ? R : [...R, i]), u(i, g, w);
+  }, Vn = async () => {
     var g;
     if (!Ue) return;
-    const i = (g = await Ae({ title: "Approve plan", message: "Optional steering/commentary for the coder agent.", label: "Steering commentary", confirmText: "Approve plan" })) == null ? void 0 : g.trim();
+    const i = (g = await he({ title: "Approve plan", message: "Optional steering/commentary for the coder agent.", label: "Steering commentary", confirmText: "Approve plan" })) == null ? void 0 : g.trim();
     Ne(Ue.id, "approved", i ? { steeringComment: i } : void 0);
   }, Xe = async (i, g) => {
-    const w = await Ae({ title: `Request ${g} changes`, message: "Feedback will be sent to the agent.", label: "Feedback", confirmText: "Request changes", danger: !0 });
+    const w = await he({ title: `Request ${g} changes`, message: "Feedback will be sent to the agent.", label: "Feedback", confirmText: "Request changes", danger: !0 });
     w != null && w.trim() && Ne(i.id, "rejected", { reason: w.trim() });
-  }, Dr = (i) => re((g) => g.includes(i) ? g.filter((w) => w !== i) : [...g, i]), rn = () => {
-    if (!Se) return;
+  }, Dr = (i) => oe((g) => g.includes(i) ? g.filter((w) => w !== i) : [...g, i]), on = () => {
+    if (!Te) return;
     const i = gt.map((g, w) => _t(g, w));
-    re([]), Ne(Se.id, "rejected", { skippedIds: i, reason: "Skipped all PR comments" });
-  }, Vn = () => {
-    if (!Se) return;
-    const i = gt.map((R, H) => _t(R, H)), g = be;
+    oe([]), Ne(Te.id, "rejected", { skippedIds: i, reason: "Skipped all PR comments" });
+  }, Hn = () => {
+    if (!Te) return;
+    const i = gt.map((R, q) => _t(R, q)), g = ve;
     if (!g.length) {
-      rn();
+      on();
       return;
     }
     const w = i.filter((R) => !g.includes(R));
-    Ne(Se.id, "approved", { approvedIds: g, skippedIds: w });
-  }, Hn = (i) => {
+    Ne(Te.id, "approved", { approvedIds: g, skippedIds: w });
+  }, qn = (i) => {
     pt && (Ne(pt.id, i, {
       kind: "code-review",
       summary: ge.trim(),
       reviewedFiles: x,
       comments: le.map(({ file: g, line: w, body: R }) => ({ file: g, line: w, body: R }))
-    }), he(""));
-  }, qn = (i, g) => {
+    }), ke(""));
+  }, jn = (i, g) => {
     const w = o == null ? void 0 : o.id;
     G((R) => {
-      const H = i(R).slice(-tr);
-      return w && wa(w, { messages: H, input: g ?? Me }), H;
+      const q = i(R).slice(-tr);
+      return w && Ea(w, { messages: q, input: g ?? Me }), q;
     });
-  }, on = (i) => {
-    _(i), o != null && o.id && wa(o.id, { messages: T, input: i });
-  }, jn = () => {
-    if (!(o != null && o.id) || !Me.trim() || V === "thinking") return;
+  }, sn = (i) => {
+    _(i), o != null && o.id && Ea(o.id, { messages: T, input: i });
+  }, Bn = () => {
+    if (!(o != null && o.id) || !Me.trim() || X === "thinking") return;
     const i = Me.trim(), g = T.filter((R) => R.text.trim()).slice(-12);
-    on(""), X("thinking"), ie("Gathering issue context…"), qn((R) => [...R, { role: "user", text: i }, { role: "assistant", text: "" }], "");
+    sn(""), M("thinking"), ie("Gathering issue context…"), jn((R) => [...R, { role: "user", text: i }, { role: "assistant", text: "" }], "");
     const w = new AbortController();
-    ve.current = w, fetch(`/api/issues/${o.id}/ask`, {
+    _e.current = w, fetch(`/api/issues/${o.id}/ask`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question: i, history: g }),
       signal: w.signal
     }).then(async (R) => {
       if (!R.ok || !R.body) throw new Error(`Ask failed (${R.status})`);
-      const H = R.body.getReader(), J = new TextDecoder();
+      const q = R.body.getReader(), H = new TextDecoder();
       let fe = "";
-      const vt = (Ce) => qn((Le) => {
-        const Ve = [...Le].map((xe) => xe.role).lastIndexOf("assistant");
-        return Ve < 0 ? [...Le, { role: "assistant", text: Ce }] : Le.map((xe, Pe) => Pe === Ve ? { ...xe, text: xe.text + Ce } : xe);
-      }), Lt = (Ce) => ie(Ce), Or = (Ce) => {
-        const Le = Ce.split(`
-`).find((sn) => sn.startsWith("event:")), Ve = Ce.split(`
-`).find((sn) => sn.startsWith("data:"));
+      const vt = (Le) => jn((xe) => {
+        const Ve = [...xe].map((Ge) => Ge.role).lastIndexOf("assistant");
+        return Ve < 0 ? [...xe, { role: "assistant", text: Le }] : xe.map((Ge, Pe) => Pe === Ve ? { ...Ge, text: Ge.text + Le } : Ge);
+      }), Lt = (Le) => ie(Le), Or = (Le) => {
+        const xe = Le.split(`
+`).find((ln) => ln.startsWith("event:")), Ve = Le.split(`
+`).find((ln) => ln.startsWith("data:"));
         if (!Ve) return;
-        const xe = (Le == null ? void 0 : Le.replace(/^event:\s*/, "")) ?? "message", Pe = JSON.parse(Ve.replace(/^data:\s*/, ""));
-        if (xe === "done") {
-          X(""), ie("");
+        const Ge = (xe == null ? void 0 : xe.replace(/^event:\s*/, "")) ?? "message", Pe = JSON.parse(Ve.replace(/^data:\s*/, ""));
+        if (Ge === "done") {
+          M(""), ie("");
           return;
         }
-        if (xe === "meta") {
+        if (Ge === "meta") {
           Lt("Gathered issue context. Starting assistant…");
           return;
         }
-        xe === "message" && ((Pe.kind === "text_delta" || Pe.kind === "text") && vt(Pe.text ?? ""), Pe.kind === "thinking_delta" && Lt("Thinking…"), Pe.kind === "tool" && Lt((Pe.text ?? "").trim()), Pe.kind === "error" && Lt(`Error: ${(Pe.text ?? "").trim()}`));
+        Ge === "message" && ((Pe.kind === "text_delta" || Pe.kind === "text") && vt(Pe.text ?? ""), Pe.kind === "thinking_delta" && Lt("Thinking…"), Pe.kind === "tool" && Lt((Pe.text ?? "").trim()), Pe.kind === "error" && Lt(`Error: ${(Pe.text ?? "").trim()}`));
       };
       for (; ; ) {
-        const { value: Ce, done: Le } = await H.read();
-        if (Le) break;
-        fe += J.decode(Ce, { stream: !0 });
+        const { value: Le, done: xe } = await q.read();
+        if (xe) break;
+        fe += H.decode(Le, { stream: !0 });
         const Ve = fe.split(`
 
 `);
         fe = Ve.pop() ?? "", Ve.forEach(Or);
       }
-      X(""), ie("");
+      M(""), ie("");
     }).catch((R) => {
-      w.signal.aborted || (X(""), ie(R.message));
+      w.signal.aborted || (M(""), ie(R.message));
     });
   };
   return t(
@@ -2781,21 +2812,21 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
           { class: "forge-v3-ds" },
           t(
             "div",
-            { class: `forge-v3-state-banner ${rt.tone}` },
-            rt.icon === "spinner" ? t("span", { class: "forge-v3-spinner forge-v3-state-spinner", "aria-hidden": "true" }) : t("span", { class: "forge-v3-state-icon", "aria-hidden": "true" }, rt.icon),
-            t("div", { class: "forge-v3-sb-text" }, t("strong", null, rt.title), t("br", null), rt.text),
-            rt.live ? t("span", { class: "forge-v3-live-badge" }, "Live") : null
+            { class: `forge-v3-state-banner ${at.tone}` },
+            at.icon === "spinner" ? t("span", { class: "forge-v3-spinner forge-v3-state-spinner", "aria-hidden": "true" }) : t("span", { class: "forge-v3-state-icon", "aria-hidden": "true" }, at.icon),
+            t("div", { class: "forge-v3-sb-text" }, t("strong", null, at.title), t("br", null), at.text),
+            at.live ? t("span", { class: "forge-v3-live-badge" }, "Live") : null
           ),
           t(
             "div",
             { class: "forge-v3-phase-track", "aria-label": "Workflow phase track" },
-            Pa.map((i, g) => {
+            Ra.map((i, g) => {
               const w = Vo(i, b);
               return [
                 t(
                   "div",
                   { key: i, class: "forge-v3-phase-node", tabIndex: 0, "aria-label": `${w.title}: ${w.summary} ${w.stats.join(". ")}` },
-                  t("div", { class: `forge-v3-phase-dot ${g < tn || (o == null ? void 0 : o.state) === "DONE" ? "done" : g === tn ? qo(o == null ? void 0 : o.state) ? "wait" : "active" : ""}` }),
+                  t("div", { class: `forge-v3-phase-dot ${g < nn || (o == null ? void 0 : o.state) === "DONE" ? "done" : g === nn ? qo(o == null ? void 0 : o.state) ? "wait" : "active" : ""}` }),
                   t("div", { class: "forge-v3-phase-label" }, i),
                   t(
                     "div",
@@ -2805,7 +2836,7 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
                     t("ul", null, w.stats.map((R) => t("li", { key: R }, R)))
                   )
                 ),
-                g < Pa.length - 1 ? t("div", { key: `${i}-line`, class: `forge-v3-phase-line ${g < tn ? "done" : ""}` }) : null
+                g < Ra.length - 1 ? t("div", { key: `${i}-line`, class: `forge-v3-phase-line ${g < nn ? "done" : ""}` }) : null
               ];
             })
           )
@@ -2820,22 +2851,22 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
             t(
               "div",
               null,
-              t("strong", null, `${((Qn = b.failureContext.run) == null ? void 0 : Qn.agent_type) ?? "Agent"} crashed`),
+              t("strong", null, `${((Jn = b.failureContext.run) == null ? void 0 : Jn.agent_type) ?? "Agent"} crashed`),
               t(
                 "span",
                 { class: "forge-v3-failure-meta" },
-                ` · exit ${((Jn = b.failureContext.run) == null ? void 0 : Jn.exit_code) ?? "?"} · `,
-                (zn = b.failureContext.run) != null && zn.started_at ? `${we(b.failureContext.run.started_at)} ago` : "recently"
+                ` · exit ${((zn = b.failureContext.run) == null ? void 0 : zn.exit_code) ?? "?"} · `,
+                (Yn = b.failureContext.run) != null && Yn.started_at ? `${we(b.failureContext.run.started_at)} ago` : "recently"
               )
             ),
-            (Yn = b.failureContext.run) != null && Yn.id ? t("a", { class: "forge-v3-failure-log-link", href: bt(b.failureContext.run.id) ?? "#", target: "_blank", rel: "noreferrer" }, "Full log ↗") : null
+            (Zn = b.failureContext.run) != null && Zn.id ? t("a", { class: "forge-v3-failure-log-link", href: bt(b.failureContext.run.id) ?? "#", target: "_blank", rel: "noreferrer" }, "Full log ↗") : null
           ),
           b.failureContext.logTail ? t("pre", { class: "forge-v3-failure-log" }, b.failureContext.logTail) : t("p", { class: "forge-v3-empty forge-v3-compact-empty" }, "No log output captured."),
           t(
             "div",
             { class: "forge-v3-dp-actions" },
             t("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !(o != null && o.id), onClick: () => o != null && o.id ? c(o.id, "retry") : void 0 }, "Retry"),
-            t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !(o != null && o.id), onClick: Wn }, "Steer before retry")
+            t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !(o != null && o.id), onClick: Dn }, "Steer before retry")
           )
         ) : null,
         t(
@@ -2845,28 +2876,28 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
           t(
             "div",
             { class: "forge-v3-dp-actions" },
-            ye(ft) ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", onClick: gr }, "Listen live") : null,
-            se === "plan" && Ue ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: Un }, "✓ Approve plan") : null,
+            Ae(ft) ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", onClick: gr }, "Listen live") : null,
+            se === "plan" && Ue ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: Vn }, "✓ Approve plan") : null,
             se === "plan" && Ue ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => I(!0) }, "✗ Request changes") : null,
-            se === "code" && pt ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", onClick: () => nn("review") }, "Review code") : null,
-            se === "fix" && Se ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: Vn }, `✓ Fix selected (${be.length})`) : null,
-            se === "fix" && Se ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: rn }, "Skip all") : null,
+            se === "code" && pt ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", onClick: () => an("review") }, "Review code") : null,
+            se === "fix" && Te ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: Hn }, `✓ Fix selected (${ve.length})`) : null,
+            se === "fix" && Te ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: on }, "Skip all") : null,
             se === "fix-review" && Tt ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: () => Ne(Tt.id, "approved") }, "✓ Approve fix & push") : null,
             se === "fix-review" && Tt ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => Xe(Tt, "Fix review") }, "✗ Send back to fixer") : null,
-            se === "fix-review" ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => nn("diff") }, "Review diff") : null,
-            se === "split" && Te ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: () => Ne(Te.id, "approved") }, "✓ Approve split plan") : null,
-            se === "split" && Te ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => Xe(Te, "Split plan") }, "✗ Revise split") : null,
+            se === "fix-review" ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => an("diff") }, "Review diff") : null,
+            se === "split" && Ce ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: () => Ne(Ce.id, "approved") }, "✓ Approve split plan") : null,
+            se === "split" && Ce ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => Xe(Ce, "Split plan") }, "✗ Revise split") : null,
             se === "generic" && K[0] ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: () => Ne(K[0].id, "approved") }, "✓ Approve") : null,
             se === "generic" && K[0] ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => Xe(K[0], "Decision") }, "✗ Request changes") : null,
             hr ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => I(!0) }, Rt ? "View plan / handoff" : "View plan") : null,
-            br ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => nn("diff") }, "View diff") : null,
-            Ir ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !(o != null && o.id), onClick: Wn }, "Steer") : null,
+            br ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => an("diff") }, "View diff") : null,
+            Ir ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !(o != null && o.id), onClick: Dn }, "Steer") : null,
             t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !(o != null && o.id), onClick: Pr }, "Advance state"),
-            t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !(o != null && o.id) || (o == null ? void 0 : o.state) === "DONE", onClick: () => ke(!0) }, "Jump to state"),
+            t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !(o != null && o.id) || (o == null ? void 0 : o.state) === "DONE", onClick: () => ye(!0) }, "Jump to state"),
             kr ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !(o != null && o.id), onClick: async () => {
               var g;
               if (!(o != null && o.id)) return;
-              const i = (g = await Ae({ title: "Split PR stack", message: "Optional instructions for the split planner.", label: "Split instructions", confirmText: "Request split" })) == null ? void 0 : g.trim();
+              const i = (g = await he({ title: "Split PR stack", message: "Optional instructions for the split planner.", label: "Split instructions", confirmText: "Request split" })) == null ? void 0 : g.trim();
               c(o.id, "split-pr-stack", i ? { instructions: i } : {});
             } }, "Split PR") : null,
             yr ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !(o != null && o.id), onClick: async () => {
@@ -2877,50 +2908,50 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
             (o == null ? void 0 : o.state) === "PAUSED" ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !(o != null && o.id), onClick: () => o != null && o.id ? c(o.id, "unpause") : void 0 }, "Resume") : null,
             (o == null ? void 0 : o.state) === "IGNORED" ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !(o != null && o.id), onClick: () => o != null && o.id ? c(o.id, "unignore") : void 0 }, "Unignore") : null,
             ["WATCHING_PR", "IN_MERGE_QUEUE", "AWAITING_FIX_APPROVAL", "AWAITING_FIX_REVIEW"].includes((o == null ? void 0 : o.state) ?? "") ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !(o != null && o.id), onClick: Gr }, "Add PR feedback") : null,
-            ye(ft) ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !(o != null && o.id), onClick: () => o != null && o.id ? c(o.id, "pause") : void 0 }, "Pause") : null
+            Ae(ft) ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !(o != null && o.id), onClick: () => o != null && o.id ? c(o.id, "pause") : void 0 }, "Pause") : null
           )
         ),
-        Fn.length ? t(
+        Mn.length ? t(
           "section",
           { class: "forge-v3-ds forge-v3-stale-decisions" },
           t("div", { class: "forge-v3-ds-label" }, "Stale pending decision"),
           t("p", null, "This issue has pending decision records that do not match the current workflow state. Review safely before approving."),
-          Fn.map((i) => t("div", { class: "forge-v3-stale-decision-row", key: i.id }, t("span", null, i.type ?? "Decision"), t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => Xe(i, "Stale decision") }, "Reject with feedback")))
+          Mn.map((i) => t("div", { class: "forge-v3-stale-decision-row", key: i.id }, t("span", null, i.type ?? "Decision"), t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => Xe(i, "Stale decision") }, "Reject with feedback")))
         ) : null,
-        Se ? t(
+        Te ? t(
           "section",
           { class: "forge-v3-ds forge-v3-fix-approval" },
-          t("div", { class: "forge-v3-pr-head" }, t("div", { class: "forge-v3-ds-label" }, "Fix approval"), t("div", { class: "forge-v3-dp-actions" }, t("button", { type: "button", class: "forge-v3-col-head-btn", onClick: () => re(gt.map((i, g) => _t(i, g))) }, "Select all"), t("button", { type: "button", class: "forge-v3-col-head-btn", onClick: () => re([]) }, "None"))),
+          t("div", { class: "forge-v3-pr-head" }, t("div", { class: "forge-v3-ds-label" }, "Fix approval"), t("div", { class: "forge-v3-dp-actions" }, t("button", { type: "button", class: "forge-v3-col-head-btn", onClick: () => oe(gt.map((i, g) => _t(i, g))) }, "Select all"), t("button", { type: "button", class: "forge-v3-col-head-btn", onClick: () => oe([]) }, "None"))),
           gt.length ? t("div", { class: "forge-v3-fix-comment-list" }, gt.map((i, g) => {
-            const w = _t(i, g), R = i.path ? `${i.path}${i.line ? `:${i.line}` : ""}` : "general", J = ir(i) ? Go(i, Re) : null;
+            const w = _t(i, g), R = i.path ? `${i.path}${i.line ? `:${i.line}` : ""}` : "general", H = ir(i) ? Go(i, Se) : null;
             return t(
               "label",
-              { class: `forge-v3-fix-comment-card ${be.includes(w) ? "selected" : ""}`, key: w },
-              t("input", { type: "checkbox", checked: be.includes(w), onChange: () => Dr(w) }),
+              { class: `forge-v3-fix-comment-card ${ve.includes(w) ? "selected" : ""}`, key: w },
+              t("input", { type: "checkbox", checked: ve.includes(w), onChange: () => Dr(w) }),
               t(
                 "div",
                 null,
-                t("div", { class: "forge-v3-fix-comment-meta" }, t("strong", null, i.author ?? "Reviewer"), J ? [" · ", t("span", { class: "forge-v3-fix-comment-pr" }, J)] : null, " · ", R),
+                t("div", { class: "forge-v3-fix-comment-meta" }, t("strong", null, i.author ?? "Reviewer"), H ? [" · ", t("span", { class: "forge-v3-fix-comment-pr" }, H)] : null, " · ", R),
                 Do(i.body),
-                t("div", { class: "forge-v3-fix-comment-badges" }, [i.reviewState ?? i.state, i.source, J].filter(Boolean).map((fe) => t("span", null, fe)))
+                t("div", { class: "forge-v3-fix-comment-badges" }, [i.reviewState ?? i.state, i.source, H].filter(Boolean).map((fe) => t("span", null, fe)))
               )
             );
           })) : t("p", { class: "forge-v3-empty forge-v3-compact-empty" }, "No review comments were attached to this fix approval."),
-          t("div", { class: "forge-v3-dp-actions" }, t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: Vn }, be.length ? `Approve ${be.length} selected` : "Skip all comments"), be.length ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: rn }, "Skip all") : null, t("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => Xe(Se, "Fix approval") }, "Request different fixes"))
+          t("div", { class: "forge-v3-dp-actions" }, t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: Hn }, ve.length ? `Approve ${ve.length} selected` : "Skip all comments"), ve.length ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: on }, "Skip all") : null, t("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => Xe(Te, "Fix approval") }, "Request different fixes"))
         ) : null,
-        Te ? t(
+        Ce ? t(
           "section",
           { class: "forge-v3-ds forge-v3-split-approval" },
           t("div", { class: "forge-v3-ds-label" }, "Split approval"),
           t("p", null, Ct.summary),
-          Dn.length ? t("div", { class: "forge-v3-split-stack" }, Dn.map((i, g) => t("div", { class: "forge-v3-split-row", key: `${i.branch}-${g}` }, t("span", null, String(g + 1)), t("strong", null, i.title ?? i.branch ?? `PR ${g + 1}`), t("small", null, i.summary ?? i.branch ?? "pending branch")))) : null,
+          On.length ? t("div", { class: "forge-v3-split-stack" }, On.map((i, g) => t("div", { class: "forge-v3-split-row", key: `${i.branch}-${g}` }, t("span", null, String(g + 1)), t("strong", null, i.title ?? i.branch ?? `PR ${g + 1}`), t("small", null, i.summary ?? i.branch ?? "pending branch")))) : null,
           Ct.markdown ? t(
             "details",
             { class: "forge-v3-split-plan-preview" },
             t("summary", null, "Full split plan"),
             t("div", { class: "forge-v3-md-viewer", dangerouslySetInnerHTML: { __html: Qe(Ct.markdown) } })
           ) : null,
-          t("div", { class: "forge-v3-dp-actions" }, t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: () => Ne(Te.id, "approved") }, "Approve split plan"), t("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => Xe(Te, "Split plan") }, "Request split changes"))
+          t("div", { class: "forge-v3-dp-actions" }, t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: () => Ne(Ce.id, "approved") }, "Approve split plan"), t("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => Xe(Ce, "Split plan") }, "Request split changes"))
         ) : null,
         t(
           "section",
@@ -2932,7 +2963,7 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
             t("div", { class: "forge-v3-ig-label" }, "Source"),
             t("div", { class: "forge-v3-ig-value" }, o != null && o.linear_id ? t("a", { href: `https://linear.app/issue/${o.linear_id}`, target: "_blank", rel: "noreferrer" }, o.linear_id, " ↗") : `Issue #${e}`),
             t("div", { class: "forge-v3-ig-label" }, "Priority"),
-            t("div", { class: `forge-v3-ig-value ${Gn(o == null ? void 0 : o.priority)}` }, vr),
+            t("div", { class: `forge-v3-ig-value ${$n(o == null ? void 0 : o.priority)}` }, vr),
             t("div", { class: "forge-v3-ig-label" }, "Branch"),
             t("div", { class: "forge-v3-ig-value forge-v3-copyable" }, (o == null ? void 0 : o.branch) ?? "—", o != null && o.branch ? t("button", { type: "button", class: "forge-v3-copy-btn", title: "Copy branch name", "aria-label": "Copy branch name", onClick: () => {
               var i;
@@ -2962,19 +2993,19 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
           t(
             "div",
             { class: "forge-v3-pr-stack-list" },
-            Re.length ? Re.map((i, g) => {
-              const w = i.pr_number, R = i.url ?? null, H = i.branch ?? i.gt_branch ?? "pending", J = Number(i.checksFailed ?? 0) > 0 ? "bad" : Number(i.checksPending ?? 0) > 0 ? "pending" : "ok";
+            Se.length ? Se.map((i, g) => {
+              const w = i.pr_number, R = i.url ?? null, q = i.branch ?? i.gt_branch ?? "pending", H = Number(i.checksFailed ?? 0) > 0 ? "bad" : Number(i.checksPending ?? 0) > 0 ? "pending" : "ok";
               return t(
                 "div",
-                { class: "forge-v3-pr-row", key: `${H}-${w ?? g}` },
+                { class: "forge-v3-pr-row", key: `${q}-${w ?? g}` },
                 t("span", { class: "forge-v3-pr-pos" }, String(g + 1)),
-                t("span", { class: "forge-v3-pr-branch" }, H),
+                t("span", { class: "forge-v3-pr-branch" }, q),
                 R ? t("a", { class: "forge-v3-pr-badge", href: R, target: "_blank", rel: "noreferrer" }, `#${w} ↗`) : t("span", { class: "forge-v3-pr-badge" }, "no PR"),
                 t("span", { class: `forge-v3-ci-badge ${i.isInMergeQueue ? "merge-queue" : ""}` }, i.isInMergeQueue ? "MERGE QUEUE" : i.liveState ?? i.status ?? "unknown"),
                 i.isInMergeQueue ? t("span", { class: "forge-v3-pr-meta-badge merge-queue" }, i.mergeQueuePosition ? `Queue #${i.mergeQueuePosition}` : "Queued") : null,
                 i.reviewDecision ? t("span", { class: "forge-v3-pr-meta-badge" }, i.reviewDecision) : null,
                 i.mergeable ? t("span", { class: "forge-v3-pr-meta-badge" }, i.mergeable) : null,
-                i.checksTotal != null ? t("span", { class: `forge-v3-pr-meta-badge checks-${J}` }, `${i.checksFailed ?? 0} failed · ${i.checksPending ?? 0} pending · ${i.checksTotal ?? 0} checks`) : null
+                i.checksTotal != null ? t("span", { class: `forge-v3-pr-meta-badge checks-${H}` }, `${i.checksFailed ?? 0} failed · ${i.checksPending ?? 0} pending · ${i.checksTotal ?? 0} checks`) : null
               );
             }) : t("p", { class: "forge-v3-empty forge-v3-compact-empty" }, "No PRs yet — will be created after code review")
           )
@@ -2983,8 +3014,8 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
           "section",
           { class: "forge-v3-ds" },
           t("div", { class: "forge-v3-auto-fix-row" }, t("div", null, t("h4", null, "Auto-fix"), t("p", null, "Automatically send new PR comments and CI failures to the fixer agent.")), t("label", { class: "forge-v3-switch" }, t("input", { type: "checkbox", checked: Pt, disabled: !(o != null && o.id), onChange: (i) => Cr(i.target.checked) }), t("span", null))),
-          t("div", { class: "forge-v3-auto-fix-row" }, t("div", null, t("h4", null, "👤 Externally managed"), t("p", null, "Mark this issue as managed outside Forge (e.g. Cursor). Forge will not schedule agents for it while this is enabled.")), t("label", { class: "forge-v3-switch" }, t("input", { type: "checkbox", checked: Zt, disabled: !(o != null && o.id), onChange: (i) => Lr(i.target.checked) }), t("span", null))),
-          t("div", { class: "forge-v3-auto-fix-row" }, t("div", null, t("h4", null, "👀 Awaiting review"), t("p", null, "Flag this issue as waiting for a reviewer. Auto-set by Forge when CI passes, all comments are addressed, and no approvals exist yet.")), t("label", { class: "forge-v3-switch" }, t("input", { type: "checkbox", checked: en, disabled: !(o != null && o.id), onChange: (i) => xr(i.target.checked) }), t("span", null)))
+          t("div", { class: "forge-v3-auto-fix-row" }, t("div", null, t("h4", null, "👤 Externally managed"), t("p", null, "Mark this issue as managed outside Forge (e.g. Cursor). Forge will not schedule agents for it while this is enabled.")), t("label", { class: "forge-v3-switch" }, t("input", { type: "checkbox", checked: en, disabled: !(o != null && o.id), onChange: (i) => Lr(i.target.checked) }), t("span", null))),
+          t("div", { class: "forge-v3-auto-fix-row" }, t("div", null, t("h4", null, "👀 Awaiting review"), t("p", null, "Flag this issue as waiting for a reviewer. Auto-set by Forge when CI passes, all comments are addressed, and no approvals exist yet.")), t("label", { class: "forge-v3-switch" }, t("input", { type: "checkbox", checked: tn, disabled: !(o != null && o.id), onChange: (i) => xr(i.target.checked) }), t("span", null)))
         )
       ),
       y === "activity" && ti(b, ft),
@@ -2996,37 +3027,37 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
           { class: "forge-v3-ds forge-v3-ask-intro" },
           t("div", { class: "forge-v3-ds-label" }, "Ask Forge"),
           t("p", null, "Ask about this issue's branch, changed files, plan, handoff, PR stack, and recent agent history. Forge can inspect the worktree if it needs code details."),
-          t("div", { class: "forge-v3-ask-prompts" }, ["Summarize changes vs plan", "What should I review first?", "What risks or tests matter?"].map((i) => t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => on(i) }, i)))
+          t("div", { class: "forge-v3-ask-prompts" }, ["Summarize changes vs plan", "What should I review first?", "What risks or tests matter?"].map((i) => t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => sn(i) }, i)))
         ),
         t(
           "section",
           { class: "forge-v3-ask-thread", ref: (i) => {
             i && (i.scrollTop = i.scrollHeight);
           } },
-          T.length || V === "thinking" || Z ? [
+          T.length || X === "thinking" || ee ? [
             ...T.filter((i) => i.role === "user" || i.text.trim()).map((i, g) => t(
               "div",
               { key: `${g}-${i.role}`, class: `forge-v3-ask-msg ${i.role}` },
               t("span", null, i.role === "user" ? "You" : "Forge"),
               t("pre", null, i.text)
             )),
-            V === "thinking" ? t("div", { class: "forge-v3-ask-thinking", role: "status" }, t("span", { class: "forge-v3-spinner", "aria-hidden": "true" }), t("span", null, "Thinking"), t("i", null, "."), t("i", null, "."), t("i", null, ".")) : null,
-            Z ? t("div", { class: "forge-v3-ask-current-status" }, Z) : null
+            X === "thinking" ? t("div", { class: "forge-v3-ask-thinking", role: "status" }, t("span", { class: "forge-v3-spinner", "aria-hidden": "true" }), t("span", null, "Thinking"), t("i", null, "."), t("i", null, "."), t("i", null, ".")) : null,
+            ee ? t("div", { class: "forge-v3-ask-current-status" }, ee) : null
           ] : t("p", { class: "forge-v3-empty forge-v3-compact-empty" }, "No questions yet.")
         ),
         t(
           "section",
           { class: "forge-v3-ask-compose" },
-          t("textarea", { rows: 3, placeholder: "Ask about this issue…", value: Me, onInput: (i) => on(i.target.value), onKeyDown: (i) => {
-            (i.metaKey || i.ctrlKey) && i.key === "Enter" && jn();
+          t("textarea", { rows: 3, placeholder: "Ask about this issue…", value: Me, onInput: (i) => sn(i.target.value), onKeyDown: (i) => {
+            (i.metaKey || i.ctrlKey) && i.key === "Enter" && Bn();
           } }),
           t(
             "div",
             { class: "forge-v3-dp-actions" },
-            t("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !Me.trim() || V === "thinking", onClick: jn }, V === "thinking" ? "Asking…" : "Ask"),
-            V === "thinking" ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => {
+            t("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !Me.trim() || X === "thinking", onClick: Bn }, X === "thinking" ? "Asking…" : "Ask"),
+            X === "thinking" ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => {
               var i;
-              (i = ve.current) == null || i.abort(), X(""), ie("");
+              (i = _e.current) == null || i.abort(), M(""), ie("");
             } }, "Stop") : null,
             t("span", { class: "forge-v3-ask-hint" }, "⌘/Ctrl + Enter")
           )
@@ -3064,12 +3095,12 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
         t(
           "footer",
           null,
-          t("textarea", { placeholder: "Feedback for requested changes…", rows: 3, value: tt, onInput: (i) => lt(i.target.value) }),
+          t("textarea", { placeholder: "Feedback for requested changes…", rows: 3, value: z, onInput: (i) => lt(i.target.value) }),
           t(
             "div",
             { class: "forge-v3-dp-actions" },
-            Ue ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: Un }, "✓ Approve plan") : null,
-            Ue ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => tt.trim() ? Ne(Ue.id, "rejected", { reason: tt.trim() }) : Xe(Ue, "Plan review") }, "✗ Request changes") : null,
+            Ue ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: Vn }, "✓ Approve plan") : null,
+            Ue ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => z.trim() ? Ne(Ue.id, "rejected", { reason: z.trim() }) : Xe(Ue, "Plan review") }, "✗ Request changes") : null,
             t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => I(!1) }, "Close")
           )
         )
@@ -3092,20 +3123,20 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
           { class: "forge-v3-plan-modal-body forge-v3-live-output", ref: (i) => {
             i && (i.scrollTop = i.scrollHeight);
           } },
-          t("div", { class: "forge-v3-live-output-status" }, t("span", { class: "forge-v3-live-dot", "aria-hidden": "true" }), P),
+          t("div", { class: "forge-v3-live-output-status" }, t("span", { class: "forge-v3-live-dot", "aria-hidden": "true" }), st),
           t(
             "div",
             { class: "forge-v3-live-feed forge-v3-af-feed" },
-            ue.length ? ue.map((i, g) => {
-              const w = i.kind === "thinking_delta" || i.kind === "thinking", R = i.kind === "error" ? "err" : i.kind === "tool" ? "ok" : w ? "me" : "live", H = i.kind === "tool" ? "tool" : w ? "thinking" : i.kind === "prompt" ? "prompt" : i.kind === "error" ? "error" : "assistant";
+            Q.length ? Q.map((i, g) => {
+              const w = i.kind === "thinking_delta" || i.kind === "thinking", R = i.kind === "error" ? "err" : i.kind === "tool" ? "ok" : w ? "me" : "live", q = i.kind === "tool" ? "tool" : w ? "thinking" : i.kind === "prompt" ? "prompt" : i.kind === "error" ? "error" : "assistant";
               return t(
                 "div",
                 { key: `${g}-${i.kind}`, class: `forge-v3-live-line forge-v3-af-item kind-${i.kind}` },
-                t("div", { class: "forge-v3-af-dc" }, t("div", { class: `forge-v3-af-dot ${R}` }), g < ue.length - 1 ? t("div", { class: "forge-v3-af-line" }) : null),
+                t("div", { class: "forge-v3-af-dc" }, t("div", { class: `forge-v3-af-dot ${R}` }), g < Q.length - 1 ? t("div", { class: "forge-v3-af-line" }) : null),
                 t(
                   "div",
                   { class: "forge-v3-af-content" },
-                  t("div", { class: "forge-v3-af-row" }, t("span", { class: `forge-v3-af-actor ${R === "me" ? "me" : "ag"}` }, H), t("span", { class: "forge-v3-af-time" }, `#${g + 1}`)),
+                  t("div", { class: "forge-v3-af-row" }, t("span", { class: `forge-v3-af-actor ${R === "me" ? "me" : "ag"}` }, q), t("span", { class: "forge-v3-af-time" }, `#${g + 1}`)),
                   t("pre", { class: "forge-v3-af-snippet forge-v3-live-snippet" }, i.text)
                 )
               );
@@ -3133,49 +3164,49 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
             "div",
             null,
             t("strong", null, "AI tour"),
-            t("p", null, ((Zn = L == null ? void 0 : L.tour) == null ? void 0 : Zn.summary) ?? m ?? "Tour summary unavailable")
+            t("p", null, ((ea = L == null ? void 0 : L.tour) == null ? void 0 : ea.summary) ?? m ?? "Tour summary unavailable")
           ),
           t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => $r(!!(L != null && L.tour)) }, L != null && L.tour ? "Regenerate tour" : "Generate tour"),
-          (ta = (ea = L == null ? void 0 : L.tour) == null ? void 0 : ea.highlights) != null && ta.length ? t("ul", null, L.tour.highlights.map((i) => t("li", null, typeof i == "string" ? i : [i.title ? t("b", null, i.title, ": ") : null, i.text ?? i.file ?? "Highlight", i.file ? ` (${i.file}${i.line ? `:${i.line}` : ""})` : ""]))) : null
+          (na = (ta = L == null ? void 0 : L.tour) == null ? void 0 : ta.highlights) != null && na.length ? t("ul", null, L.tour.highlights.map((i) => t("li", null, typeof i == "string" ? i : [i.title ? t("b", null, i.title, ": ") : null, i.text ?? i.file ?? "Highlight", i.file ? ` (${i.file}${i.line ? `:${i.line}` : ""})` : ""]))) : null
         ) : null,
         t(
           "div",
           { class: "forge-v3-plan-modal-body forge-v3-diff-review" },
-          q === "Loading diff…" ? t("div", { class: "forge-v3-diff-loading", role: "status" }, t("span", { class: "forge-v3-spinner", "aria-hidden": "true" }), t("span", null, "Loading diff…")) : q ? t("p", { class: "forge-v3-empty forge-v3-diff-error" }, q) : St.length === 0 ? t("p", { class: "forge-v3-empty" }, "No diff available.") : [
+          j === "Loading diff…" ? t("div", { class: "forge-v3-diff-loading", role: "status" }, t("span", { class: "forge-v3-spinner", "aria-hidden": "true" }), t("span", null, "Loading diff…")) : j ? t("p", { class: "forge-v3-empty forge-v3-diff-error" }, j) : St.length === 0 ? t("p", { class: "forge-v3-empty" }, "No diff available.") : [
             t(
               "aside",
               { class: "forge-v3-diff-file-list", "aria-label": "Changed files" },
               t("div", { class: "forge-v3-diff-side-label" }, "Files"),
               St.map((i) => t(
                 "button",
-                { key: i.path, type: "button", class: (_e == null ? void 0 : _e.path) === i.path ? "active" : "", title: i.path, onClick: () => N(i.path) },
-                t("span", null, C ? t("span", { class: "forge-v3-reviewed-file" }, t("input", { type: "checkbox", checked: x.includes(i.path), onClick: (g) => g.stopPropagation(), onChange: () => Mn(i.path) }), Ra(i.path)) : Ra(i.path)),
+                { key: i.path, type: "button", class: (me == null ? void 0 : me.path) === i.path ? "active" : "", title: i.path, onClick: () => P(i.path) },
+                t("span", null, C ? t("span", { class: "forge-v3-reviewed-file" }, t("input", { type: "checkbox", checked: x.includes(i.path), onClick: (g) => g.stopPropagation(), onChange: () => Un(i.path) }), Sa(i.path)) : Sa(i.path)),
                 t("small", { class: "forge-v3-diff-file-counts" }, t("span", { class: "add" }, `+${i.additions}`), " ", t("span", { class: "del" }, `−${i.deletions}`), le.some((g) => g.file === i.path) ? " · comments" : "")
               ))
             ),
             t(
               "section",
               { class: "forge-v3-diff-main" },
-              _e ? t(
+              me ? t(
                 "article",
                 { class: "forge-v3-diff-file" },
-                t("header", null, t("strong", { title: _e.path }, _e.path), t("span", null, `+${_e.additions} −${_e.deletions}`), C ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => Mn(_e.path) }, x.includes(_e.path) ? "Reviewed ✓" : "Mark reviewed") : null),
+                t("header", null, t("strong", { title: me.path }, me.path), t("span", null, `+${me.additions} −${me.deletions}`), C ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => Un(me.path) }, x.includes(me.path) ? "Reviewed ✓" : "Mark reviewed") : null),
                 t(
                   "div",
                   { class: "forge-v3-diff-table-wrap" },
                   t(
                     "table",
                     { class: "forge-v3-diff-table" },
-                    t("tbody", null, _e.hunks.map((i, g) => t(
+                    t("tbody", null, me.hunks.map((i, g) => t(
                       "tr",
                       { key: `${g}-${i.slice(0, 12)}`, class: `forge-v3-diff-line ${Jo(i)}` },
-                      t("td", { class: "forge-v3-diff-ln" }, C ? t("button", { type: "button", title: "Add line comment", onClick: () => an(_e.path, g + 1) }, String(g + 1)) : String(g + 1)),
+                      t("td", { class: "forge-v3-diff-ln" }, C ? t("button", { type: "button", title: "Add line comment", onClick: () => rn(me.path, g + 1) }, String(g + 1)) : String(g + 1)),
                       t("td", { class: "forge-v3-diff-sign" }, zo(i)),
                       t("td", { class: "forge-v3-diff-content" }, t("code", null, i.replace(/^[+-]/, "")))
                     )))
                   )
                 ),
-                C ? t("button", { type: "button", class: "forge-v3-inline-comment-button", onClick: () => an(_e.path, null) }, "+ Add file comment") : null
+                C ? t("button", { type: "button", class: "forge-v3-inline-comment-button", onClick: () => rn(me.path, null) }, "+ Add file comment") : null
               ) : null
             )
           ]
@@ -3187,14 +3218,14 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
             "div",
             { class: "forge-v3-review-feedback" },
             t("label", null, "General feedback for the agent"),
-            t("textarea", { rows: 3, placeholder: "Summarize concerns, test asks, or approval notes…", value: ge, onInput: (i) => he(i.target.value) }),
+            t("textarea", { rows: 3, placeholder: "Summarize concerns, test asks, or approval notes…", value: ge, onInput: (i) => ke(i.target.value) }),
             le.length ? t("div", { class: "forge-v3-review-comments" }, le.map((i) => t("span", { key: i.id }, `${i.file}${i.line ? `:${i.line}` : ""} — ${i.body}`))) : null
           ) : null,
           t(
             "div",
             { class: "forge-v3-dp-actions" },
-            C && pt ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: () => Hn("approved") }, "✓ Approve code") : null,
-            C && pt ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => Hn("rejected") }, "✗ Request changes") : null,
+            C && pt ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-success", onClick: () => qn("approved") }, "✓ Approve code") : null,
+            C && pt ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", onClick: () => qn("rejected") }, "✗ Request changes") : null,
             t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => $(!1) }, "Close")
           )
         )
@@ -3210,7 +3241,7 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
           "header",
           null,
           t("div", null, t("div", { class: "forge-v3-issue-meta" }, "Admin recovery · ", (o == null ? void 0 : o.linear_id) ?? `Issue #${e}`), t("h2", null, "Jump to state")),
-          t("button", { type: "button", onClick: () => ke(!1), "aria-label": "Close jump to state" }, "×")
+          t("button", { type: "button", onClick: () => ye(!1), "aria-label": "Close jump to state" }, "×")
         ),
         t(
           "div",
@@ -3229,7 +3260,7 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
             ))
           )
         ),
-        t("footer", null, t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => ke(!1) }, "Cancel"))
+        t("footer", null, t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: () => ye(!1) }, "Cancel"))
       )
     ) : null,
     t(
@@ -3252,7 +3283,7 @@ function Hi({ issueId: e, issuePreview: n, reloadKey: a, autoOpenDiffKey: r, onC
             o != null && o.steering_context ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", onClick: wr }, "Clear steering") : null,
             (o == null ? void 0 : o.state) === "IGNORED" ? t("button", { type: "button", class: "forge-v3-da forge-v3-da-primary", disabled: !(o != null && o.id), onClick: () => o != null && o.id ? c(o.id, "unignore") : void 0 }, "Unignore") : t("button", { type: "button", class: "forge-v3-da forge-v3-da-ghost", disabled: !(o != null && o.id) || (o == null ? void 0 : o.state) === "DONE", onClick: () => o != null && o.id ? c(o.id, "ignore") : void 0 }, "Ignore"),
             t("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", disabled: !(o != null && o.id) || (o == null ? void 0 : o.state) === "DONE", onClick: Rr }, "Full reset"),
-            t("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", disabled: !(o != null && o.id) || ye(ft), onClick: Sr }, "Remove issue")
+            t("button", { type: "button", class: "forge-v3-da forge-v3-da-danger", disabled: !(o != null && o.id) || Ae(ft), onClick: Sr }, "Remove issue")
           )
         )
       )
@@ -3269,170 +3300,170 @@ function Bi() {
 }
 function Xi() {
   var Me;
-  const e = Xt(), [n, a] = E(Aa), [r, s] = E({ issues: [], decisions: [], runningAgents: [] }), [l, c] = E([]), [p, f] = E(e.view === "queue" ? e.issueId : null), [d, h] = E(0), [k, u] = E(e.view), [y, v] = E(!1), [b, S] = E(""), [W, I] = E(null), D = je(/* @__PURE__ */ new Map()), [$, M] = E(0), [F, q] = E(e.addIssue), [te, Y] = E(!1), [U, N] = E(Bi), [C, j] = E("connecting"), [L, ne] = E(!1), [m, A] = E(() => Ei()), x = je(!1), Q = je(/* @__PURE__ */ new Set()), le = je(p), me = je({ issues: [], decisions: [], runningAgents: [] }), ge = (_, T) => {
+  const e = Kt(), [n, a] = E(wa), [r, s] = E({ issues: [], decisions: [], runningAgents: [] }), [l, c] = E([]), [p, f] = E(e.view === "queue" ? e.issueId : null), [d, h] = E(0), [k, u] = E(e.view), [y, v] = E(!1), [b, S] = E(""), [W, I] = E(null), D = je(/* @__PURE__ */ new Map()), [$, U] = E(0), [F, j] = E(e.addIssue), [ne, Z] = E(!1), [V, P] = E(Bi), [C, B] = E("connecting"), [L, ae] = E(!1), [m, A] = E(() => Ei()), x = je(!1), J = je(/* @__PURE__ */ new Set()), le = je(p), be = je({ issues: [], decisions: [], runningAgents: [] }), ge = (_, T) => {
     if (!T) return "";
-    const G = _.issues.find((X) => X.id === T), V = _.decisions.filter((X) => X.issue_id === T).map((X) => [X.id, X.type, X.created_at, X.resolved_at, X.artifact_ref].join(":")).sort().join(",");
-    return `${(G == null ? void 0 : G.state) ?? ""}|${(G == null ? void 0 : G.updated_at) ?? ""}|${V}`;
-  }, he = (_ = !1) => {
+    const G = _.issues.find((M) => M.id === T), X = _.decisions.filter((M) => M.issue_id === T).map((M) => [M.id, M.type, M.created_at, M.resolved_at, M.artifact_ref].join(":")).sort().join(",");
+    return `${(G == null ? void 0 : G.state) ?? ""}|${(G == null ? void 0 : G.updated_at) ?? ""}|${X}`;
+  }, ke = (_ = !1) => {
     const T = [
-      de("/api/overview"),
-      de("/api/settings"),
-      _ ? de("/api/archive").catch(() => []) : Promise.resolve([])
+      ue("/api/overview"),
+      ue("/api/settings"),
+      _ ? ue("/api/archive").catch(() => []) : Promise.resolve([])
     ];
-    return Promise.all(T).then(([G, V, X]) => {
-      const Z = pi(G), ie = D.current;
-      for (const K of Z.issues) {
-        const Re = ie.get(K.id);
-        Re && Re !== "DONE" && K.state === "DONE" && (I(K), setTimeout(() => I(null), 6e3)), ie.set(K.id, K.state ?? "");
+    return Promise.all(T).then(([G, X, M]) => {
+      const ee = pi(G), ie = D.current;
+      for (const K of ee.issues) {
+        const Se = ie.get(K.id);
+        Se && Se !== "DONE" && K.state === "DONE" && (I(K), setTimeout(() => I(null), 6e3)), ie.set(K.id, K.state ?? "");
       }
-      const ve = le.current;
-      ve && ge(Z, ve) !== ge(me.current, ve) && M((K) => K + 1), me.current = Z, s(Z);
-      const o = _ ? X.length : n.archiveCount;
-      return a({ ...Pi(Z, V), archiveCount: o }), Z.decisions.forEach((K) => {
-        Q.current.has(K.id) || (Q.current.add(K.id), Ni(K, Z.issues.find((Re) => Re.id === K.issue_id), x.current).catch(() => {
+      const _e = le.current;
+      _e && ge(ee, _e) !== ge(be.current, _e) && U((K) => K + 1), be.current = ee, s(ee);
+      const o = _ ? M.length : n.archiveCount;
+      return a({ ...Pi(ee, X), archiveCount: o }), ee.decisions.forEach((K) => {
+        J.current.has(K.id) || (J.current.add(K.id), Ni(K, ee.issues.find((Se) => Se.id === K.issue_id), x.current).catch(() => {
         }));
-      }), Z;
+      }), ee;
     });
-  }, be = je(/* @__PURE__ */ (() => {
+  }, ve = je(/* @__PURE__ */ (() => {
     let _ = null;
     return () => {
-      _ && clearTimeout(_), _ = setTimeout(() => he(), 300);
+      _ && clearTimeout(_), _ = setTimeout(() => ke(), 300);
     };
-  })()), re = (_, T) => {
-    S(`${_}…`), T().then(() => he()).then(() => {
-      M((G) => G + 1), S(`${_} complete`);
+  })()), oe = (_, T) => {
+    S(`${_}…`), T().then(() => ke()).then(() => {
+      U((G) => G + 1), S(`${_} complete`);
     }).catch((G) => {
       S(`${_} failed`);
-      const V = G instanceof Error ? G.message : String(G);
-      Ri({ title: `${_} failed`, message: V });
+      const X = G instanceof Error ? G.message : String(G);
+      Ri({ title: `${_} failed`, message: X });
     });
-  }, We = (_, T, G) => {
-    const V = {
+  }, De = (_, T, G) => {
+    const X = {
       approved: { PLAN_REVIEW: "WORKING", CODE_REVIEW: "CREATING_PR", FIX_APPROVAL: "FIXING", SPLIT_APPROVAL: "SPLITTING" },
       rejected: { PLAN_REVIEW: "PLANNING", CODE_REVIEW: "WORKING", FIX_APPROVAL: "WATCHING_PR", SPLIT_APPROVAL: "WATCHING_PR" }
     };
-    s((X) => {
-      var ve;
-      const Z = X.decisions.find((o) => o.id === _), ie = Z != null && Z.type ? (ve = V[T]) == null ? void 0 : ve[Z.type] : void 0;
+    s((M) => {
+      var _e;
+      const ee = M.decisions.find((o) => o.id === _), ie = ee != null && ee.type ? (_e = X[T]) == null ? void 0 : _e[ee.type] : void 0;
       return {
-        ...X,
-        decisions: X.decisions.filter((o) => o.id !== _),
-        issues: ie && Z ? X.issues.map((o) => o.id === Z.issue_id ? { ...o, state: ie } : o) : X.issues
+        ...M,
+        decisions: M.decisions.filter((o) => o.id !== _),
+        issues: ie && ee ? M.issues.map((o) => o.id === ee.issue_id ? { ...o, state: ie } : o) : M.issues
       };
-    }), re(
+    }), oe(
       T === "approved" ? "Decision approved" : "Decision changes requested",
-      () => vi(_, T, G).catch((X) => {
-        const Z = X instanceof Error ? X.message : String(X);
-        if (!(Z.includes("409") || Z.toLowerCase().includes("already resolved")))
+      () => vi(_, T, G).catch((M) => {
+        const ee = M instanceof Error ? M.message : String(M);
+        if (!(ee.includes("409") || ee.toLowerCase().includes("already resolved")))
           throw s((ie) => ({
             ...ie,
-            decisions: ie.decisions.some((ve) => ve.id === _) ? ie.decisions : [...ie.decisions, { id: _ }]
-          })), X;
+            decisions: ie.decisions.some((_e) => _e.id === _) ? ie.decisions : [...ie.decisions, { id: _ }]
+          })), M;
       })
     );
-  }, De = (_, T, G) => re(`Issue ${T}`, () => _i(_, T, G)), Oe = (_) => re("Issue removed", () => mi(_).then(() => ue())), ke = (_) => hi(_), Ie = async () => {
-    await kt({ title: "Stop VM runtime?", message: "Stop the VM/runtime used by Forge. Running app processes may be terminated.", confirmText: "Stop VM", danger: !0 }) && re("VM runtime stopped", () => bi());
-  }, Fe = (_) => re("PR stack synced", () => ki(_)), P = (_, T, G) => re("PR feedback added", () => yi(_, T, G)), B = (_) => {
-    f(_), u("queue"), window.requestAnimationFrame(() => ot("queue", { issueId: _ }));
-  }, ue = () => {
-    f(null), ot("queue");
-  }, oe = (_, T) => {
-    f(_), u("queue"), h((G) => G + 1), ot("queue", { issueId: _ });
-  }, tt = () => {
+  }, Re = (_, T, G) => oe(`Issue ${T}`, () => _i(_, T, G)), Oe = (_) => oe("Issue removed", () => mi(_).then(() => Q())), ye = (_) => hi(_), Ie = async () => {
+    await kt({ title: "Stop VM runtime?", message: "Stop the VM/runtime used by Forge. Running app processes may be terminated.", confirmText: "Stop VM", danger: !0 }) && oe("VM runtime stopped", () => bi());
+  }, Fe = (_) => oe("PR stack synced", () => ki(_)), st = (_, T, G) => oe("PR feedback added", () => yi(_, T, G)), N = (_) => {
+    f(_), u("queue"), window.requestAnimationFrame(() => rt("queue", { issueId: _ }));
+  }, Q = () => {
+    f(null), rt("queue");
+  }, ce = (_, T) => {
+    f(_), u("queue"), h((G) => G + 1), rt("queue", { issueId: _ });
+  }, z = () => {
     const _ = fi(r.decisions, r.issues);
-    _ && oe(_.issue_id, _.id);
+    _ && ce(_.issue_id, _.id);
   }, lt = () => {
-    u("queue"), q(!0), Kt({ view: "queue", add: "issue" }, !1);
+    u("queue"), j(!0), Qt({ view: "queue", add: "issue" }, !1);
   }, ct = () => {
-    q(!1), Kt({ add: null });
-  }, nt = () => re("Linear backlog refreshed", () => de("/api/linear/issues").then((_) => c(Array.isArray(_) ? _ : []))), Pt = (_, T = "", G) => re("Manual issue created", () => Ii(_, T, G).then((V) => {
-    V.issueId && B(V.issueId);
-  })), at = (_, T = "", G) => re(`Enqueued ${_}`, () => Ai(_, T, G).then((V) => {
-    V.issueId && B(V.issueId);
-  }).then(() => de("/api/linear/issues")).then((V) => c(Array.isArray(V) ? V : []))), Zt = () => {
+    j(!1), Qt({ add: null });
+  }, tt = () => oe("Linear backlog refreshed", () => ue("/api/linear/issues").then((_) => c(Array.isArray(_) ? _ : []))), Pt = (_, T = "", G) => oe("Manual issue created", () => Ii(_, T, G).then((X) => {
+    X.issueId && N(X.issueId);
+  })), nt = (_, T = "", G, X) => oe(X ? `Watching PR for ${_}` : `Enqueued ${_}`, () => Ai(_, T, G, X).then((M) => {
+    M.issueId && N(M.issueId);
+  }).then(() => ue("/api/linear/issues")).then((M) => c(Array.isArray(M) ? M : []))), en = () => {
     if (L) {
       S("Sending desktop companion notification…"), cr("Forge notifications enabled", "Desktop companion notifications are available", "forge-desktop-test").then(() => S("Desktop companion notification sent")).catch(() => S("Desktop companion notification failed"));
       return;
     }
-    if (!$n()) {
+    if (!Wn()) {
       A("unsupported");
       return;
     }
     window.Notification.requestPermission().then((_) => A(_));
   }, dt = (_) => {
-    u(_), f(null), ot(_);
-  }, en = (_) => {
+    u(_), f(null), rt(_);
+  }, tn = (_) => {
     _.preventDefault(), document.body.classList.add("forge-v3-resizing-detail");
-    const T = (V) => N(pr(window.innerWidth - V.clientX)), G = () => {
+    const T = (X) => P(pr(window.innerWidth - X.clientX)), G = () => {
       document.body.classList.remove("forge-v3-resizing-detail"), window.removeEventListener("pointermove", T), window.removeEventListener("pointerup", G), window.removeEventListener("pointercancel", G);
     };
     window.addEventListener("pointermove", T), window.addEventListener("pointerup", G), window.addEventListener("pointercancel", G);
   };
-  z(() => {
-    document.documentElement.style.setProperty("--panel-w", `${U}px`), window.localStorage.setItem(fr, String(U));
-  }, [U]), z(() => {
+  Y(() => {
+    document.documentElement.style.setProperty("--panel-w", `${V}px`), window.localStorage.setItem(fr, String(V));
+  }, [V]), Y(() => {
     le.current = p;
-  }, [p]), z(() => {
+  }, [p]), Y(() => {
     if (!b || b.endsWith("…")) return;
     const _ = window.setTimeout(() => S(""), 3500);
     return () => window.clearTimeout(_);
-  }, [b]), z(() => {
+  }, [b]), Y(() => {
     let _ = !1;
     return wi().then((T) => {
       if (_) return;
       const G = !!T.notifications;
-      x.current = G, ne(G);
+      x.current = G, ae(G);
     }).catch(() => {
-      _ || (x.current = !1, ne(!1));
+      _ || (x.current = !1, ae(!1));
     }), () => {
       _ = !0;
     };
-  }, []), z(() => {
+  }, []), Y(() => {
     const _ = (T) => {
       (T.metaKey || T.ctrlKey) && T.key.toLowerCase() === "k" && (T.preventDefault(), v((G) => !G)), T.key === "Escape" && v(!1);
     };
     return window.addEventListener("keydown", _), () => window.removeEventListener("keydown", _);
-  }, []), z(() => {
+  }, []), Y(() => {
     const _ = () => {
-      const T = Xt();
-      u(T.view), f(T.issueId), q(T.addIssue), (T.decisionId || T.panel === "review") && h((G) => G + 1);
+      const T = Kt();
+      u(T.view), f(T.issueId), j(T.addIssue), (T.decisionId || T.panel === "review") && h((G) => G + 1);
     };
     return window.addEventListener("hashchange", _), window.addEventListener("popstate", _), () => {
       window.removeEventListener("hashchange", _), window.removeEventListener("popstate", _);
     };
-  }, []), z(() => {
+  }, []), Y(() => {
     let _ = !1;
     const T = () => {
-      he(!0).catch(() => {
-        _ || a(Aa);
+      ke(!0).catch(() => {
+        _ || a(wa);
       });
     };
-    T(), de("/api/linear/issues").then((V) => {
-      _ || c(Array.isArray(V) ? V : []);
+    T(), ue("/api/linear/issues").then((X) => {
+      _ || c(Array.isArray(X) ? X : []);
     }).catch(() => {
     });
     const G = window.setInterval(T, C === "offline" ? 1e4 : 3e4);
     return () => {
       _ = !0, window.clearInterval(G);
     };
-  }, [C]), z(() => {
+  }, [C]), Y(() => {
     if (ze()) return;
     let _ = !1;
-    const T = new EventSource("/api/events"), G = (V) => {
-      const X = V.type === "issue_updated" || V.type === "issue_removed";
-      if (V.type === "tick") {
-        be.current();
+    const T = new EventSource("/api/events"), G = (X) => {
+      const M = X.type === "issue_updated" || X.type === "issue_removed";
+      if (X.type === "tick") {
+        ve.current();
         return;
       }
-      he(X).catch(() => {
+      ke(M).catch(() => {
       });
     };
     return T.onopen = () => {
-      _ || j("live");
+      _ || B("live");
     }, T.onerror = () => {
-      _ || j("offline");
-    }, ["tick", "issue_added", "issue_removed", "issue_updated", "decision_resolved"].forEach((V) => {
-      T.addEventListener(V, G);
+      _ || B("offline");
+    }, ["tick", "issue_added", "issue_removed", "issue_updated", "decision_resolved"].forEach((X) => {
+      T.addEventListener(X, G);
     }), () => {
       _ = !0, T.close();
     };
@@ -3458,7 +3489,7 @@ function Xi() {
           (_) => t(
             "button",
             { key: _.key, type: "button", class: `forge-v3-nav-item ${k === _.key ? "active" : ""}`, "data-view": _.key, onClick: () => {
-              u(_.key), f(null), ot(_.key);
+              u(_.key), f(null), rt(_.key);
             } },
             t("span", { class: "forge-v3-nav-icon", "aria-hidden": "true" }, _.icon),
             t("span", { class: "forge-v3-nav-label" }, _.label),
@@ -3467,12 +3498,12 @@ function Xi() {
         ),
         t("div", { class: "forge-v3-nav-section" }, "TOOLS"),
         t("button", { type: "button", class: "forge-v3-nav-item", onClick: () => v(!0) }, t("span", { class: "forge-v3-nav-icon" }, "⌘"), t("span", { class: "forge-v3-nav-label" }, "Command palette"), t("kbd", null, "⌘K")),
-        t("button", { type: "button", class: "forge-v3-nav-item", onClick: () => Y(!0) }, t("span", { class: "forge-v3-nav-icon" }, "📋"), t("span", { class: "forge-v3-nav-label" }, "Handover report")),
+        t("button", { type: "button", class: "forge-v3-nav-item", onClick: () => Z(!0) }, t("span", { class: "forge-v3-nav-icon" }, "📋"), t("span", { class: "forge-v3-nav-label" }, "Handover report")),
         It.slice(2).map(
           (_) => t(
             "button",
             { key: _.key, type: "button", class: `forge-v3-nav-item ${k === _.key ? "active" : ""}`, "data-view": _.key, onClick: () => {
-              u(_.key), f(null), ot(_.key);
+              u(_.key), f(null), rt(_.key);
             } },
             t("span", { class: "forge-v3-nav-icon", "aria-hidden": "true" }, _.icon),
             t("span", { class: "forge-v3-nav-label" }, _.label),
@@ -3503,7 +3534,7 @@ function Xi() {
           t("div", null, t("strong", null, String(n.failedCount)), t("span", null, "FAILED"))
         ),
         t("div", { class: `forge-v3-session-chip event-${C}` }, C === "live" ? "● Live events" : C === "offline" ? "○ Events offline · polling" : "◌ Connecting events"),
-        t("button", { type: "button", class: `forge-v3-notification-toggle ${L ? "desktop" : "browser"}`, disabled: !L && (m === "unsupported" || m === "denied" || m === "granted"), onClick: Zt }, L ? "🔔 Desktop companion" : m === "granted" ? "🔔 Browser notifications on" : m === "denied" ? "🔕 Notifications blocked" : m === "unsupported" ? "🔕 Notifications unavailable" : "🔔 Enable browser notifications"),
+        t("button", { type: "button", class: `forge-v3-notification-toggle ${L ? "desktop" : "browser"}`, disabled: !L && (m === "unsupported" || m === "denied" || m === "granted"), onClick: en }, L ? "🔔 Desktop companion" : m === "granted" ? "🔔 Browser notifications on" : m === "denied" ? "🔕 Notifications blocked" : m === "unsupported" ? "🔕 Notifications unavailable" : "🔔 Enable browser notifications"),
         t("div", { class: "forge-v3-session-chip" }, L ? "● Native notifications available" : "○ Browser notification fallback"),
         t("div", { class: "forge-v3-session-chip" }, "● Workspace · ", n.model),
         t("div", { class: "forge-v3-model-row" }, "🤖 ", n.backend)
@@ -3511,10 +3542,10 @@ function Xi() {
     ),
     b ? t("div", { class: "forge-v3-action-status", role: "status" }, b) : null,
     W ? t("div", { class: "forge-v3-celebration", role: "status" }, t("strong", null, "🎉 ", W.linear_id ?? `Issue #${W.id}`, " completed!"), t("small", null, W.title ?? "Issue merged and archived")) : null,
-    k === "queue" ? t(xi, { issues: r.issues, decisions: r.decisions, linearBacklog: l, selectedIssueId: p, addIssueOpen: F, onOpenIssue: B, onIssueAction: De, onResolveDecision: We, onReviewNext: tt, onReviewIssue: oe, onAddIssue: lt, onCloseAddIssue: ct, onRefreshLinear: nt, onCreateManualIssue: Pt, onEnqueueLinear: at }) : k === "archive" ? t(Vi, null) : k === "settings" ? t(Wi, null) : k === "prompts" ? t(Oi, null) : k === "learnings" ? t(Di, null) : t("main", { class: "forge-v3-main", "data-active-view": k }, t("h1", null, ((Me = It.find((_) => _.key === k)) == null ? void 0 : Me.label) ?? "Dashboard"), t("p", { class: "forge-v3-empty" }, "This v3 view will migrate in a later phase.")),
-    t(Hi, { issueId: k === "queue" ? p : null, issuePreview: ut, reloadKey: $, autoOpenDiffKey: d, onClose: ue, onPanelResizeStart: en, onIssueAction: De, onRemoveIssue: Oe, onLaunchRuntime: ke, onStopVm: Ie, onSyncPrs: Fe, onSubmitFeedback: P, onResolveDecision: We }),
-    t(Li, { open: y, decisions: r.decisions, onClose: () => v(!1), onNavigate: dt, onRefresh: () => he(), onOpenIssue: B, onReviewNext: tt, onAddIssue: lt, onStopVm: Ie, onHandoverReport: () => Y(!0) }),
-    te ? t(ur, { onClose: () => Y(!1) }) : null,
+    k === "queue" ? t(xi, { issues: r.issues, decisions: r.decisions, linearBacklog: l, selectedIssueId: p, addIssueOpen: F, onOpenIssue: N, onIssueAction: Re, onResolveDecision: De, onReviewNext: z, onReviewIssue: ce, onAddIssue: lt, onCloseAddIssue: ct, onRefreshLinear: tt, onCreateManualIssue: Pt, onEnqueueLinear: nt }) : k === "archive" ? t(Vi, null) : k === "settings" ? t(Wi, null) : k === "prompts" ? t(Oi, null) : k === "learnings" ? t(Di, null) : t("main", { class: "forge-v3-main", "data-active-view": k }, t("h1", null, ((Me = It.find((_) => _.key === k)) == null ? void 0 : Me.label) ?? "Dashboard"), t("p", { class: "forge-v3-empty" }, "This v3 view will migrate in a later phase.")),
+    t(Hi, { issueId: k === "queue" ? p : null, issuePreview: ut, reloadKey: $, autoOpenDiffKey: d, onClose: Q, onPanelResizeStart: tn, onIssueAction: Re, onRemoveIssue: Oe, onLaunchRuntime: ye, onStopVm: Ie, onSyncPrs: Fe, onSubmitFeedback: st, onResolveDecision: De }),
+    t(Li, { open: y, decisions: r.decisions, onClose: () => v(!1), onNavigate: dt, onRefresh: () => ke(), onOpenIssue: N, onReviewNext: z, onAddIssue: lt, onStopVm: Ie, onHandoverReport: () => Z(!0) }),
+    ne ? t(ur, { onClose: () => Z(!1) }) : null,
     n.runningAgentsCount > 0 ? t(Ci, { status: n, onStopVm: Ie }) : null
   );
 }
@@ -3547,5 +3578,5 @@ function Xi() {
     }
   }, !0);
 })();
-const vn = document.getElementById("forge-react-root");
-vn && (Je(t(Xi, null), vn), vn.dataset.reactiveDashboardMounted = "true");
+const _n = document.getElementById("forge-react-root");
+_n && (Je(t(Xi, null), _n), _n.dataset.reactiveDashboardMounted = "true");

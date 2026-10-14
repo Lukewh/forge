@@ -155,6 +155,14 @@ describe("POST /api/issues", () => {
 // ── POST /api/linear/enqueue ───────────────────────────────────────────
 
 describe("POST /api/linear/enqueue", () => {
+  test("watch PR rejects empty and foreign-repository URLs without enqueueing", async () => {
+    for (const prUrl of ["", "not-a-url", "https://github.com/wrong/repo/pull/123"]) {
+      const { status } = await POST("/api/linear/enqueue", { linearId: "BAND-WATCH-INVALID", prUrl });
+      assert.equal(status, 400);
+    }
+    assert.equal(db["db"].prepare("SELECT id FROM issues WHERE linear_id = ?").get("BAND-WATCH-INVALID"), undefined);
+  });
+
   test("enqueues Linear issue with planning guidance", async () => {
     const { status, body } = await POST("/api/linear/enqueue", { linearId: "BAND-9999", planningGuidance: "Start with the pricing app" });
     assert.equal(status, 200);

@@ -309,7 +309,7 @@ const NAV_ITEMS: NavItem[] = [
 
 const PIPELINE_STAGES: PipelineStage[] = [
   { key: "available", label: "Available", states: ["PENDING"] },
-  { key: "active", label: "Active", states: ["SETTING_UP", "PLANNING", "AI_PLAN_REVIEWING", "WORKING", "AI_REVIEWING", "SPLIT_PLANNING", "SPLITTING", "CREATING_PR", "WATCHING_PR", "IN_MERGE_QUEUE", "FIXING", "PUSHING", "REBASING"] },
+  { key: "active", label: "Active", states: ["SETTING_UP", "PLANNING", "AI_PLAN_REVIEWING", "WORKING", "AI_REVIEWING", "SPLIT_PLANNING", "SPLITTING", "CREATING_PR", "FIXING", "PUSHING", "REBASING"] },
   { key: "awaiting", label: "Awaiting You", states: ["AWAITING_PLAN_APPROVAL", "AWAITING_SPLIT_APPROVAL", "AWAITING_CODE_REVIEW", "AWAITING_FIX_APPROVAL", "AWAITING_FIX_REVIEW", "STEERING", "FAILED", "PAUSED", "IGNORED"] },
 ];
 
@@ -1570,8 +1570,8 @@ function createManualIssue(title: string, description = "", target?: TargetDraft
   return postJson<{ ok: boolean; issueId?: number }>("/api/issues", { title, description, ...target });
 }
 
-function enqueueLinearIssueApi(linearId: string, planningGuidance = "", target?: TargetDraft) {
-  return postJson<{ ok: boolean; issueId?: number }>("/api/linear/enqueue", { linearId, planningGuidance, ...target });
+function enqueueLinearIssueApi(linearId: string, planningGuidance = "", target?: TargetDraft, prUrl?: string) {
+  return postJson<{ ok: boolean; issueId?: number }>("/api/linear/enqueue", { linearId, planningGuidance, ...target, ...(prUrl ? { prUrl } : {}) });
 }
 
 function loadDesktopCapabilities() {
@@ -1805,10 +1805,15 @@ function stageIcon(stage: PipelineStageKey): string {
   return ({ available: "○", active: "▣", awaiting: "⚡" } satisfies Record<PipelineStageKey, string>)[stage];
 }
 
-function BacklogCard({ issue, onEnqueue }: { issue: LinearBacklogIssue; onEnqueue: (linearId: string, planningGuidance?: string, target?: TargetDraft) => void }) {
+function BacklogCard({ issue, onEnqueue }: { issue: LinearBacklogIssue; onEnqueue: (linearId: string, planningGuidance?: string, target?: TargetDraft, prUrl?: string) => void }) {
   const requestEnqueue = async () => {
     const planningGuidance = (await showForgePrompt({ title: `Enqueue ${issue.identifier}`, message: "Add optional planning guidance before Forge creates the plan.", label: "Planning guidance", confirmText: "Enqueue" }))?.trim() ?? "";
     onEnqueue(issue.identifier, planningGuidance);
+  };
+  const requestWatchPr = async () => {
+    const entered = await showForgePrompt({ title: `Watch PR for ${issue.identifier}`, message: "Paste the existing GitHub PR URL. Forge will prepare the worktree and watch the PR, skipping planning and implementation.", label: "GitHub PR URL", confirmText: "Watch PR" });
+    if (!entered?.trim()) return;
+    onEnqueue(issue.identifier, "", undefined, entered.trim());
   };
   return h("article", { class: "forge-v3-backlog-card", "data-linear-id": issue.identifier },
     h("div", { class: "forge-v3-backlog-body" },
@@ -1819,7 +1824,10 @@ function BacklogCard({ issue, onEnqueue }: { issue: LinearBacklogIssue; onEnqueu
         h("span", { class: `forge-v3-priority-meta ${priorityClass(issue.priority)}` }, priorityGlyph(issue.priority), " ", priorityLabel(issue.priority))
       )
     ),
-    h("button", { type: "button", onClick: requestEnqueue }, "Enqueue →")
+    h("div", { class: "forge-v3-backlog-actions" },
+      h("button", { type: "button", onClick: requestEnqueue }, "Enqueue →"),
+      h("button", { type: "button", onClick: requestWatchPr }, "Watch PR")
+    )
   );
 }
 
@@ -1950,7 +1958,7 @@ function CommandPalette({ open, decisions, onClose, onNavigate, onRefresh, onOpe
   );
 }
 
-function QueuePipelineView({ issues, decisions, linearBacklog, selectedIssueId, addIssueOpen, onOpenIssue, onIssueAction, onResolveDecision, onReviewNext, onReviewIssue, onAddIssue, onCloseAddIssue, onRefreshLinear, onCreateManualIssue, onEnqueueLinear }: { issues: Issue[]; decisions: Decision[]; linearBacklog: LinearBacklogIssue[]; selectedIssueId: number | null; addIssueOpen: boolean; onOpenIssue: (issueId: number) => void; onIssueAction: (issueId: number, action: IssueAction) => void; onResolveDecision: (decisionId: number, verdict: DecisionVerdict, feedback?: unknown) => void; onReviewNext: () => void; onReviewIssue: (issueId: number, decisionId?: number) => void; onAddIssue: () => void; onCloseAddIssue: () => void; onRefreshLinear: () => void; onCreateManualIssue: (title: string, description?: string, target?: TargetDraft) => void; onEnqueueLinear: (linearId: string, planningGuidance?: string, target?: TargetDraft) => void }) {
+function QueuePipelineView({ issues, decisions, linearBacklog, selectedIssueId, addIssueOpen, onOpenIssue, onIssueAction, onResolveDecision, onReviewNext, onReviewIssue, onAddIssue, onCloseAddIssue, onRefreshLinear, onCreateManualIssue, onEnqueueLinear }: { issues: Issue[]; decisions: Decision[]; linearBacklog: LinearBacklogIssue[]; selectedIssueId: number | null; addIssueOpen: boolean; onOpenIssue: (issueId: number) => void; onIssueAction: (issueId: number, action: IssueAction) => void; onResolveDecision: (decisionId: number, verdict: DecisionVerdict, feedback?: unknown) => void; onReviewNext: () => void; onReviewIssue: (issueId: number, decisionId?: number) => void; onAddIssue: () => void; onCloseAddIssue: () => void; onRefreshLinear: () => void; onCreateManualIssue: (title: string, description?: string, target?: TargetDraft) => void; onEnqueueLinear: (linearId: string, planningGuidance?: string, target?: TargetDraft, prUrl?: string) => void }) {
   const [queueSearch, setQueueSearch] = useState("");
   const savedPrefs = useMemo(() => {
     try {
@@ -1985,11 +1993,12 @@ function QueuePipelineView({ issues, decisions, linearBacklog, selectedIssueId, 
   const grouped = useMemo(() => {
     const next = new Map<PipelineStageKey, Issue[]>();
     PIPELINE_STAGES.forEach((stage) => next.set(stage.key, []));
-    visibleIssues.forEach((issue) => next.get(classifyIssueToPipelineStage(issue))?.push(issue));
+    visibleIssues.filter((issue) => !["WATCHING_PR", "IN_MERGE_QUEUE"].includes(issue.state ?? "")).forEach((issue) => next.get(classifyIssueToPipelineStage(issue))?.push(issue));
     next.forEach((stageIssues, stage) => next.set(stage, sortIssuesByProcessStage(stageIssues, stage)));
     return next;
   }, [visibleIssues]);
-  const visibleBacklog = useMemo(() => linearBacklog.filter((issue) => backlogMatchesQueueSearch(issue, queueSearch)).slice(0, 12), [linearBacklog, queueSearch]);
+  const visibleBacklog = useMemo(() => linearBacklog.filter((issue) => backlogMatchesQueueSearch(issue, queueSearch)), [linearBacklog, queueSearch]);
+  const watchingIssues = visibleIssues.filter((issue) => ["WATCHING_PR", "IN_MERGE_QUEUE"].includes(issue.state ?? ""));
   const mockMode = mockStatesEnabled();
   const targetDraft = (): TargetDraft => ({ targetKind: targetKind.trim(), targetPaths: targetPaths.trim(), avoidPaths: avoidPaths.trim(), scopeNotes: scopeNotes.trim() });
   const resetTargetDraft = () => { setTargetKind(""); setTargetPaths(""); setAvoidPaths(""); setScopeNotes(""); };
@@ -2074,7 +2083,7 @@ function QueuePipelineView({ issues, decisions, linearBacklog, selectedIssueId, 
               stage.key === "available" ? h("button", { type: "button", class: "forge-v3-col-head-btn", onClick: onRefreshLinear }, "↻ Sync") : null,
               h("span", { class: `forge-v3-col-count ${stageCount && stage.key === "awaiting" ? "bad" : ""}` }, String(stageCount))
             ),
-            h("div", { class: `forge-v3-col-cards forge-v3-pipeline-list ${stage.key === "available" ? "forge-v3-available-split" : ""}` },
+            h("div", { class: `forge-v3-col-cards forge-v3-pipeline-list ${stage.key === "available" ? "forge-v3-available-split" : stage.key === "awaiting" ? "forge-v3-awaiting-split" : ""}` },
               stage.key === "available"
                 ? [
                     h("div", { class: "forge-v3-available-backlog" },
@@ -2089,7 +2098,24 @@ function QueuePipelineView({ issues, decisions, linearBacklog, selectedIssueId, 
                         : h("p", { class: "forge-v3-empty" }, queueSearch || queueFilter !== "all" ? "No queued issues match" : "No queued issues")
                     )
                   ]
-                : stageIssues.length === 0
+                : stage.key === "awaiting"
+                  ? [
+                      h("div", { class: "forge-v3-awaiting-actions", "aria-label": "Awaiting you issues" },
+                        stageIssues.length
+                          ? stageIssues.map((issue) => h(IssueCard, { key: issue.id, issue, selected: selectedIssueId === issue.id, onOpenIssue, onIssueAction, onReviewIssue }))
+                          : h("p", { class: "forge-v3-empty" }, queueSearch || queueFilter !== "all" ? "No issues match the active filters" : "Nothing awaiting you")
+                      ),
+                      h("header", { class: "forge-v3-col-head forge-v3-watching-head" },
+                        h("span", { class: "forge-v3-col-label" }, "Watching PRs"),
+                        h("span", { class: "forge-v3-col-count" }, String(watchingIssues.length))
+                      ),
+                      h("div", { class: "forge-v3-watching-prs", "aria-label": "Watching pull requests" },
+                        watchingIssues.length
+                          ? watchingIssues.map((issue) => h(IssueCard, { key: issue.id, issue, selected: selectedIssueId === issue.id, onOpenIssue, onIssueAction, onReviewIssue }))
+                          : h("p", { class: "forge-v3-empty" }, queueSearch || queueFilter !== "all" ? "No watched PRs match the active filters" : "No PRs being watched")
+                      )
+                    ]
+                  : stageIssues.length === 0
                   ? h("p", { class: "forge-v3-empty" }, queueSearch || queueFilter !== "all" ? "No issues match the active filters" : "No issues")
                   : stageIssues.map((issue) => h(IssueCard, { key: issue.id, issue, selected: selectedIssueId === issue.id, onOpenIssue, onIssueAction, onReviewIssue }))
             )
@@ -3008,11 +3034,17 @@ function IssueDetailPanel({ issueId, issuePreview, reloadKey, autoOpenDiffKey, o
       onClose();
       return;
     }
+    let prUrl = "";
+    if (option.state === "WATCHING_PR") {
+      const entered = await showForgePrompt({ title: "Link GitHub PR / Stack", message: `Paste GitHub PR URL(s) for ${label}. You can paste one PR URL (Forge will auto-discover parent/child PRs in the stack) or multiple URLs separated by commas/newlines.`, label: "PR URL(s)", confirmText: "Link and watch" });
+      if (!entered?.trim()) return;
+      prUrl = entered.trim();
+    }
     const warning = option.risky ? " This is a risky recovery action and may clear or bypass pending workflow gates." : "";
     const confirmed = await showForgeConfirm({ title: "Jump workflow state?", message: `Move ${label} to ${option.state}?${warning}`, confirmText: "Jump state", danger: option.risky });
     if (!confirmed) return;
     setJumpModalOpen(false);
-    onIssueAction(issue.id, "advance", { nextState: option.state });
+    onIssueAction(issue.id, "advance", { nextState: option.state, prUrl });
   };
   const advanceIssue = async () => {
     if (!issue?.id) return;
@@ -3772,7 +3804,7 @@ function DashboardShell() {
 
   const refreshLinearBacklog = () => runAction("Linear backlog refreshed", () => getJson<LinearBacklogIssue[]>("/api/linear/issues").then((issues) => setLinearBacklog(Array.isArray(issues) ? issues : [])));
   const createManualIssueFromQueue = (title: string, description = "", target?: TargetDraft) => runAction("Manual issue created", () => createManualIssue(title, description, target).then((result) => { if (result.issueId) openIssue(result.issueId); }));
-  const enqueueLinearIssue = (linearId: string, planningGuidance = "", target?: TargetDraft) => runAction(`Enqueued ${linearId}`, () => enqueueLinearIssueApi(linearId, planningGuidance, target).then((result) => { if (result.issueId) openIssue(result.issueId); }).then(() => getJson<LinearBacklogIssue[]>("/api/linear/issues")).then((issues) => setLinearBacklog(Array.isArray(issues) ? issues : [])));
+  const enqueueLinearIssue = (linearId: string, planningGuidance = "", target?: TargetDraft, prUrl?: string) => runAction(prUrl ? `Watching PR for ${linearId}` : `Enqueued ${linearId}`, () => enqueueLinearIssueApi(linearId, planningGuidance, target, prUrl).then((result) => { if (result.issueId) openIssue(result.issueId); }).then(() => getJson<LinearBacklogIssue[]>("/api/linear/issues")).then((issues) => setLinearBacklog(Array.isArray(issues) ? issues : [])));
 
   const requestNotificationPermission = () => {
     if (desktopNotificationsAvailable) {

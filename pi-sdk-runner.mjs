@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 import {
@@ -11,6 +12,26 @@ import {
   resolveCliModel,
   SessionManager,
 } from "@earendil-works/pi-coding-agent";
+
+function applyVertexEnv() {
+  const configPath = path.join(os.homedir(), ".pi", "agent", "settings", "pi-vertex.json");
+  if (!fs.existsSync(configPath)) return;
+  try {
+    const cfg = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    if (cfg.googleCloudProject && !process.env.GOOGLE_CLOUD_PROJECT && !process.env.GCLOUD_PROJECT) {
+      process.env.GOOGLE_CLOUD_PROJECT = cfg.googleCloudProject;
+    }
+    if (cfg.googleCloudLocation) {
+      process.env.GOOGLE_CLOUD_LOCATION = cfg.googleCloudLocation;
+    }
+    const creds = cfg.googleApplicationCredentials || cfg.credentialsFile;
+    if (creds && !process.env.GOOGLE_APPLICATION_CREDENTIALS && fs.existsSync(creds)) {
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = creds;
+    }
+  } catch {}
+}
+
+applyVertexEnv();
 
 function getArg(flag) {
   const index = process.argv.indexOf(flag);
@@ -85,24 +106,33 @@ if (modelName) {
   if (result.warning) console.error(`[forge:pi-sdk] WARN: ${result.warning}`);
 }
 
+let assistantActivitySeen = false;
+
 function writeEvent(event) {
   process.stdout.write(JSON.stringify(event) + "\n");
+}
+
+function markAssistantActivity() {
+  assistantActivitySeen = true;
 }
 
 const unsubscribe = session.subscribe((event) => {
   if (event.type === "message_update") {
     const update = event.assistantMessageEvent;
     if (update?.type === "text_delta") {
+      markAssistantActivity();
       writeEvent({ type: "text_delta", delta: update.delta });
       return;
     }
     if (update?.type === "thinking_delta") {
+      markAssistantActivity();
       writeEvent({ type: "thinking_delta", delta: update.delta });
       return;
     }
   }
 
   if (event.type === "tool_execution_start") {
+    markAssistantActivity();
     writeEvent({
       type: "tool_start",
       toolName: event.toolName,
@@ -112,6 +142,7 @@ const unsubscribe = session.subscribe((event) => {
   }
 
   if (event.type === "tool_execution_update") {
+    markAssistantActivity();
     writeEvent({
       type: "tool_update",
       toolName: event.toolName,
@@ -121,6 +152,7 @@ const unsubscribe = session.subscribe((event) => {
   }
 
   if (event.type === "tool_execution_end") {
+    markAssistantActivity();
     writeEvent({
       type: "tool_end",
       toolName: event.toolName,
@@ -132,6 +164,10 @@ const unsubscribe = session.subscribe((event) => {
 try {
   writeEvent({ type: "prompt", text: prompt });
   await session.prompt(prompt);
+  if (!assistantActivitySeen) {
+    console.error("[forge:pi-sdk] ERROR: model returned no assistant output or tool activity");
+    process.exitCode = 1;
+  }
 } finally {
   unsubscribe();
   session.dispose();

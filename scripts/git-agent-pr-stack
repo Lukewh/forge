@@ -35,23 +35,56 @@ function baseBranch(issue) {
   }
 }
 
-function seedSingleBranchStack(issue) {
-  const existing = db.prepare("SELECT * FROM pr_stack WHERE issue_id = ? ORDER BY position ASC").all(issue.id);
-  if (existing.length) return existing;
-  let branch = null;
+function branchesFromPlan(issue) {
   try {
     const content = fs.readFileSync(issue.project_file_path, "utf-8");
-    branch = content.match(/^branch-name:\s*(.+)$/m)?.[1]?.trim();
-  } catch {}
-  if (!branch) return [];
-  const row = db.prepare("INSERT INTO pr_stack (issue_id, gt_branch, position, status) VALUES (?, ?, 1, 'open') RETURNING *").get(issue.id, branch);
-  return [row];
+    const branches = [];
+    const headers = [...content.matchAll(/^##\s+PR\s+(\d+)\s+[—-].*$/gm)];
+    for (let i = 0; i < headers.length; i += 1) {
+      const header = headers[i];
+      const next = headers[i + 1];
+      const position = Number(header[1]);
+      const section = content.slice(header.index, next?.index ?? content.length);
+      const branch = section.match(/^\*\*Branch:\*\*\s*(.+)$/m)?.[1]?.trim();
+      if (position && branch) branches.push({ position, branch });
+    }
+    if (branches.length) return branches.sort((a, b) => a.position - b.position);
+
+    const branch = content.match(/^branch-name:\s*(.+)$/m)?.[1]?.trim();
+    return branch ? [{ position: 1, branch }] : [];
+  } catch {
+    return [];
+  }
+}
+
+function seedPrStackFromPlan(issue) {
+  const existing = db.prepare("SELECT * FROM pr_stack WHERE issue_id = ? ORDER BY position ASC").all(issue.id);
+  const planBranches = branchesFromPlan(issue);
+  if (existing.length) {
+    const existingBranches = existing.map(pr => pr.gt_branch);
+    const planBranchNames = planBranches.map(pr => pr.branch);
+    const staleSingleDefault = existing.length === 1 && planBranchNames.length > 1 && !planBranchNames.includes(existing[0].gt_branch);
+    if (!staleSingleDefault) return existing;
+    console.log(`[forge:git-agent] Existing pr_stack has default branch ${existing[0].gt_branch}, but plan defines ${planBranches.length} PR branches; rebuilding stack from plan.`);
+    db.prepare("DELETE FROM pr_stack WHERE issue_id = ?").run(issue.id);
+  }
+
+  if (!planBranches.length) return [];
+  const inserted = [];
+  let prevId = null;
+  for (const item of planBranches) {
+    const row = db.prepare("INSERT INTO pr_stack (issue_id, gt_branch, position, status, base_pr_id) VALUES (?, ?, ?, 'open', ?) RETURNING *")
+      .get(issue.id, item.branch, item.position, prevId);
+    inserted.push(row);
+    prevId = row.id;
+  }
+  return inserted;
 }
 
 try {
   const issue = db.prepare("SELECT * FROM issues WHERE id = ?").get(issueId);
   if (!issue) throw new Error(`Issue not found: ${issueId}`);
-  const prStack = seedSingleBranchStack(issue);
+  const prStack = seedPrStackFromPlan(issue);
   if (!prStack.length) {
     console.error("[forge:git-agent] No PR stack or branch-name found; falling back to LLM git-agent");
     db.close();

@@ -30,6 +30,8 @@ Execution outline:
 8. Delete old remote branches and old local branches.
 9. Update plan.md with an execution log listing old PRs/branches replaced and new PRs created.
 
+PR titles and visible descriptions must not reference Forge, agents, or the automation that produced them. Describe only the code, issue, testing, and stack/replacement relationships.
+
 Use `gh` for GitHub PR operations. Prefer explicit commands whose output can be audited in the run log. Use `gh stack link` for GitHub's built-in stack feature after all PRs have been created/updated with REST calls through `gh api`. Do not use Graphite for any PR, stack, submit, restack, or branch operation. Do not post GitHub comments while splitting; use PR bodies and plan.md for replacement notes.
 
 Do **not** rely on `gh pr create`, `gh pr edit`, or `gh stack submit` when Forge needs specific titles/descriptions. Use GitHub REST through `gh api` for PR creation and title/body updates; avoid GraphQL title/body mutations because GitHub is moving stacked-PR metadata workflows away from those paths. Do **not** let `gh stack link` auto-create missing PRs unless you immediately inspect and correct each PR with REST PATCH; prefer creating every PR explicitly first.

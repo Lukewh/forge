@@ -79,6 +79,74 @@ function deriveGitWorktreePath(branchName) {
   return path.join(WORKTREE_ROOT, `${repoName}.${safeName}`);
 }
 
+function findExistingWorktreeForBranch(repoPath, branchName) {
+  try {
+    const out = execFileSync("git", ["-C", repoPath, "worktree", "list", "--porcelain"], { encoding: "utf-8", timeout: 15000 });
+    const lines = out.split("\n");
+    let cur = null;
+    for (const line of lines) {
+      if (line.startsWith("worktree ")) {
+        cur = { path: line.slice(9).trim() };
+      } else if (line.startsWith("branch ") && cur) {
+        cur.branch = line.slice(7).trim().replace(/^refs\/heads\//, "");
+        if (cur.branch === branchName) return cur.path;
+      }
+    }
+  } catch {}
+  return null;
+}
+
+function isBranchMerged(repoPath, branchName) {
+  try {
+    const mergedOutput = execFileSync("git", ["-C", repoPath, "branch", "--merged", `origin/${DEFAULT_BRANCH}`], { encoding: "utf-8", timeout: 15000 });
+    const lines = mergedOutput.split("\n").map(l => l.trim().replace(/^[\*\+]\s+/, ""));
+    if (lines.includes(branchName)) return true;
+  } catch {}
+
+  const repo = getSetting("github_repo");
+  if (repo) {
+    try {
+      const ghRaw = execFileSync("gh", ["pr", "list", "--repo", repo, "--head", branchName, "--state", "all", "--json", "state"], { encoding: "utf-8", timeout: 15000 });
+      const prs = JSON.parse(ghRaw || "[]");
+      if (prs.length > 0 && prs.every(p => p.state === "MERGED")) return true;
+    } catch {}
+  }
+  return false;
+}
+
+function handleWorktreeCollision(repoPath, branchName, desiredWtPath) {
+  const existingPath = findExistingWorktreeForBranch(repoPath, branchName);
+  const pathToCheck = existingPath || (fs.existsSync(desiredWtPath) ? desiredWtPath : null);
+  if (!pathToCheck && !existingPath) return null;
+
+  log(`Detected worktree collision for branch '${branchName}' at: ${pathToCheck || existingPath}`);
+
+  if (isBranchMerged(repoPath, branchName)) {
+    log(`Branch '${branchName}' is already merged. Removing old worktree and branch to set up a clean one…`);
+    if (existingPath) {
+      try {
+        execFileSync("git", ["-C", repoPath, "worktree", "remove", existingPath, "--force"], { timeout: 30000 });
+        log(`Removed old worktree at ${existingPath}`);
+      } catch (err) {
+        log(`WARN: Failed to remove old worktree via git: ${err.message}`);
+        try { fs.rmSync(existingPath, { recursive: true, force: true }); } catch {}
+      }
+    }
+    try {
+      execFileSync("git", ["-C", repoPath, "worktree", "prune"], { timeout: 15000 });
+      execFileSync("git", ["-C", repoPath, "branch", "-D", branchName], { timeout: 15000 });
+      log(`Deleted merged branch '${branchName}'`);
+    } catch (err) {
+      log(`WARN: Failed to delete merged branch '${branchName}': ${err.message}`);
+    }
+    return null; // Cleared! Ready to create fresh worktree
+  }
+
+  // Not merged: switch to and reuse existing worktree
+  log(`Branch '${branchName}' is not merged. Reusing existing worktree at ${pathToCheck}`);
+  return pathToCheck;
+}
+
 function setupGitWorktree(branchName) {
   const wtPath = deriveGitWorktreePath(branchName);
   fs.mkdirSync(path.dirname(wtPath), { recursive: true });
@@ -88,6 +156,11 @@ function setupGitWorktree(branchName) {
     execFileSync("git", ["-C", REPO_ROOT, "fetch", "--prune", "origin", `+refs/heads/${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}`], { timeout: 30000 });
   } catch (e) {
     log(`WARN: git fetch failed: ${e.message} — continuing anyway`);
+  }
+
+  const existingReusePath = handleWorktreeCollision(REPO_ROOT, branchName, wtPath);
+  if (existingReusePath) {
+    return existingReusePath;
   }
 
   if (fs.existsSync(wtPath)) {
@@ -103,8 +176,12 @@ function setupGitWorktree(branchName) {
     });
     return wtPath;
   } catch (e) {
-    log(`git worktree add -b failed (${e.message}) — trying existing branch…`);
+    log(`git worktree add -b failed (${e.message}) — checking collision…`);
+    const collisionPath = handleWorktreeCollision(REPO_ROOT, branchName, wtPath);
+    if (collisionPath) return collisionPath;
+
     try {
+      log(`Trying existing branch ${branchName}…`);
       execFileSync("git", ["-C", REPO_ROOT, "worktree", "add", wtPath, branchName], {
         encoding: "utf-8", timeout: 60000,
       });
@@ -140,6 +217,11 @@ function setupWtWorktree(branchName) {
     log(`WARN: git fetch failed: ${e.message} — continuing anyway`);
   }
 
+  const existingReusePath = handleWorktreeCollision(WT_ROOT, branchName, "");
+  if (existingReusePath) {
+    return existingReusePath;
+  }
+
   try {
     const baseRef = `refs/remotes/origin/${DEFAULT_BRANCH}`;
     log(`Creating worktree from ${baseRef}…`);
@@ -148,7 +230,10 @@ function setupWtWorktree(branchName) {
     });
     log("Worktree created");
   } catch (e) {
-    log(`wt switch --create failed (${e.message}) — trying switch to existing…`);
+    log(`wt switch --create failed (${e.message}) — checking collision…`);
+    const collisionPath = handleWorktreeCollision(WT_ROOT, branchName, "");
+    if (collisionPath) return collisionPath;
+
     execFileSync("wt", ["switch", "--no-hooks", branchName], {
       cwd: WT_ROOT, encoding: "utf-8", timeout: 30000,
     });

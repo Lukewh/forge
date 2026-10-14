@@ -14,6 +14,8 @@ Dashboard: <http://localhost:3142>
 
 ## Screenshots
 
+The queue has three columns: available/queued issues on the left, active agent work in the middle, and a split right column with **Awaiting You** above **Watching PRs** (including the merge queue). Each right-column section scrolls independently.
+
 The screenshots below use a sanitized demo database. Issue IDs, titles, repository names, and paths are fictional.
 
 ### Pipeline dashboard
@@ -31,6 +33,12 @@ The screenshots below use a sanitized demo database. Issue IDs, titles, reposito
 ---
 
 ## What Forge does
+
+Multi-PR pushes use `gh stack rebase` followed by `gh stack push` to restack and push all active layers. Existing stacks are imported from GitHub (including merged ancestors); new stacks adopt the planned branches locally. A failed restack blocks completion and conflicts go to the rebaser, which continues with `gh stack rebase --continue`. The backend requires `gh stack` support.
+
+Use **Watch PR** beside **Enqueue** in the Linear backlog to attach an existing GitHub PR. Forge prepares or reuses its worktree, creates the project file, discovers the stack, and goes directly to PR watching without planning or implementation. Watching itself also works without a worktree; code changes still require one.
+
+Coder/fixer no-op detection tracks HEAD, working-tree status, and every active stack branch. A fixer may report already-fixed feedback using a run-specific evidence file, but Forge only accepts it when it covers the approved target comments and identifies commits still unpushed to the freshly fetched target branch. Empty runs without progress or valid evidence fail.
 
 ```text
 Linear issue

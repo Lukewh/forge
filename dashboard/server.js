@@ -27,6 +27,7 @@ const fs = require("fs");
 const http = require("http");
 const { execFileSync, execFile, spawn } = require("child_process");
 const pty = require("node-pty");
+const { prepareWatchedWorktree } = require("../lib/watched-worktree.js");
 const { WebSocket, WebSocketServer } = require("ws");
 
 // Promisified execFile — non-blocking, won't freeze the event loop
@@ -1809,9 +1810,10 @@ app.patch("/api/issues/:id", async (req, res) => {
       break;
     }
     case "advance": {
-      const { nextState } = req.body;
+      const { nextState, prUrl } = req.body;
       const allowed = ["WORKING", "CREATING_PR", "FIXING", "PUSHING", "PLANNING", "AI_REVIEWING", "WATCHING_PR", "IN_MERGE_QUEUE", "SPLIT_PLANNING", "SPLITTING", "REBASING", "DONE"];
       if (!allowed.includes(nextState)) return res.status(400).json({ error: `Invalid nextState: ${nextState}` });
+      if (nextState === "WATCHING_PR" && typeof prUrl === "string" && prUrl.trim()) await linkPrUrlToIssue(issue, prUrl, { prepareWorkspace: !issue.wt_path || !fs.existsSync(issue.wt_path) });
       run(`UPDATE issues SET previous_state = state, state = ?, locked_at = NULL, updated_at = datetime('now') WHERE id = ?`, nextState, id);
       run(`INSERT INTO activity_log (issue_id, type, actor, message) VALUES (?, 'advanced', 'user', ?)`,
         id, `Manually advanced to ${nextState} (was stuck in ${qOne("SELECT previous_state FROM issues WHERE id = ?", id)?.previous_state})`);
@@ -2351,6 +2353,198 @@ app.post("/api/issues/:id/vm-launch", (req, res) => {
     res.status(500).json({ error: e.message, output: `${e.stdout?.toString?.() ?? ""}${e.stderr?.toString?.() ?? ""}`, launchRef, changedFiles, classification });
   }
 });
+
+function parseGithubPrNumbers(value) {
+  const text = String(value || "").trim();
+  if (!text) return [];
+  const matches = [...text.matchAll(/(?:github\.com\/[^/]+\/[^/]+\/pull\/(\d+)|#(\d+)|\b(\d{4,7})\b)/gi)];
+  const numbers = matches.map(m => Number(m[1] || m[2] || m[3])).filter(Boolean);
+  return [...new Set(numbers)];
+}
+
+function parseGithubPrNumber(value) {
+  const numbers = parseGithubPrNumbers(value);
+  return numbers[0] ?? null;
+}
+
+async function fetchGithubPrData(repo, prIdentifier) {
+  const args = ["pr", "view", String(prIdentifier), "--json", "number,headRefName,baseRefName,state,url"];
+  if (repo && repo.trim()) args.push("--repo", repo.trim());
+  try {
+    const raw = await execAsync("gh", args, { cwd: FORGE_DIR, timeout: 15000 });
+    return JSON.parse(raw || "{}");
+  } catch {
+    return null;
+  }
+}
+
+async function discoverPrStackFromPr(repo, initialPrData, defaultBranch = "main") {
+  if (!initialPrData || !initialPrData.number) return [];
+  const prByNumber = new Map([[Number(initialPrData.number), initialPrData]]);
+  const prByHead = new Map();
+  if (initialPrData.headRefName) prByHead.set(initialPrData.headRefName, initialPrData);
+
+  // Traverse down toward base branch (e.g. main)
+  let current = initialPrData;
+  while (current && current.baseRefName && current.baseRefName !== defaultBranch) {
+    const parentData = await fetchGithubPrData(repo, current.baseRefName);
+    if (!parentData || !parentData.number || prByNumber.has(Number(parentData.number))) break;
+    prByNumber.set(Number(parentData.number), parentData);
+    if (parentData.headRefName) prByHead.set(parentData.headRefName, parentData);
+    current = parentData;
+  }
+
+  // Traverse up to find any PRs based on the initial PR head branch
+  let currentHead = initialPrData.headRefName;
+  while (currentHead) {
+    const listArgs = ["pr", "list", "--base", currentHead, "--state", "all", "--json", "number,headRefName,baseRefName,state,url"];
+    if (repo && repo.trim()) listArgs.push("--repo", repo.trim());
+    let children = [];
+    try {
+      const raw = await execAsync("gh", listArgs, { cwd: FORGE_DIR, timeout: 15000 });
+      children = JSON.parse(raw || "[]");
+    } catch {}
+    if (!children.length) break;
+    const child = children[0];
+    if (!child || !child.number || prByNumber.has(Number(child.number))) break;
+    prByNumber.set(Number(child.number), child);
+    if (child.headRefName) prByHead.set(child.headRefName, child);
+    currentHead = child.headRefName;
+  }
+
+  // Sort topologically: parent before child
+  const allPrs = [...prByNumber.values()];
+  const sorted = [];
+  const visited = new Set();
+
+  function visit(pr) {
+    if (visited.has(pr.number)) return;
+    visited.add(pr.number);
+    // If baseRefName matches another PR's headRefName, visit parent first
+    const parent = allPrs.find(p => p.headRefName === pr.baseRefName);
+    if (parent) visit(parent);
+    sorted.push(pr);
+  }
+
+  for (const pr of allPrs) visit(pr);
+  return sorted;
+}
+
+async function linkPrUrlToIssue(issue, prUrl, { prepareWorkspace = false } = {}) {
+  const url = String(prUrl || "").trim();
+  if (!url) return null;
+  const repo = qOne("SELECT value FROM settings WHERE key = 'github_repo'")?.value ?? "";
+  const defaultBranch = qOne("SELECT value FROM settings WHERE key = 'default_branch'")?.value || "main";
+
+  const prNumbers = parseGithubPrNumbers(url);
+  if (!prNumbers.length) throw new Error("Could not parse any GitHub PR numbers from input");
+
+  let prStackItems = [];
+
+  if (prNumbers.length > 1) {
+    // User supplied multiple PR URLs/numbers in order
+    for (const num of prNumbers) {
+      const data = await fetchGithubPrData(repo, num);
+      if (data && data.number) {
+        prStackItems.push(data);
+      } else {
+        prStackItems.push({ number: num, headRefName: `pr-${num}`, baseRefName: defaultBranch, state: "open", url: `https://github.com/${repo}/pull/${num}` });
+      }
+    }
+  } else {
+    // Single PR provided: auto-discover stack if stacked
+    const singleData = await fetchGithubPrData(repo, prNumbers[0]);
+    if (singleData && singleData.number) {
+      const discovered = await discoverPrStackFromPr(repo, singleData, defaultBranch);
+      prStackItems = discovered.length ? discovered : [singleData];
+    } else {
+      prStackItems = [{ number: prNumbers[0], headRefName: `pr-${prNumbers[0]}`, baseRefName: defaultBranch, state: "open", url }];
+    }
+  }
+
+  if (!prStackItems.length) throw new Error("Could not load PR information from GitHub");
+
+  if (prepareWorkspace) {
+    // Require authoritative branch data before creating a worktree.
+    for (const item of prStackItems) {
+      const verified = await fetchGithubPrData(repo, item.number);
+      if (!verified?.headRefName) throw new Error(`Could not load PR #${item.number} from GitHub. Check repository and GitHub authentication.`);
+      Object.assign(item, verified);
+    }
+    const primary = prStackItems[0];
+    const repoRoot = qOne("SELECT value FROM settings WHERE key = 'repo_root'")?.value || qOne("SELECT value FROM settings WHERE key = 'wt_root'")?.value;
+    const worktreeRoot = qOne("SELECT value FROM settings WHERE key = 'worktree_root'")?.value;
+    const wtPath = prepareWatchedWorktree({ repoRoot, worktreeRoot, branch: primary.headRefName, prNumber: primary.number });
+    if (!issue.project_file_path) {
+      const projectFilePath = path.join(FORGE_DIR, "projects", String(issue.id), "plan.md");
+      fs.mkdirSync(path.dirname(projectFilePath), { recursive: true });
+      if (!fs.existsSync(projectFilePath)) fs.writeFileSync(projectFilePath, [
+        "---", `linear-id: ${issue.linear_id || ""}`, `pr-url: ${primary.url}`, `base-branch: ${defaultBranch}`,
+        `branch-name: ${primary.headRefName}`, "---", "", "# PR Stack", "",
+        ...prStackItems.flatMap((item, index) => [`## PR ${index + 1} — Existing PR #${item.number}`, `**Branch:** ${item.headRefName}`, `**PR:** ${item.url}`, ""]),
+      ].join("\n"), "utf-8");
+      issue.project_file_path = projectFilePath;
+    }
+    run("UPDATE issues SET wt_path = ?, project_file_path = ?, updated_at = datetime('now') WHERE id = ?", wtPath, issue.project_file_path, issue.id);
+    issue.wt_path = wtPath;
+  }
+
+  // Clear existing pr_stack for this issue and rebuild cleanly
+  run("DELETE FROM pr_stack WHERE issue_id = ?", issue.id);
+
+  let prevId = null;
+  for (let i = 0; i < prStackItems.length; i++) {
+    const item = prStackItems[i];
+    const position = i + 1;
+    const prNumber = Number(item.number);
+    const branch = item.headRefName || `pr-${prNumber}`;
+    const status = String(item.state || "open").toLowerCase();
+
+    // Prepare local branch in worktree if available
+    if (issue.wt_path && fs.existsSync(issue.wt_path)) {
+      try {
+        try {
+          gitInWorktree(issue.wt_path, ["fetch", "--prune", "origin", `+refs/heads/${branch}:refs/remotes/origin/${branch}`], { timeout: 60000 });
+        } catch {
+          gitInWorktree(issue.wt_path, ["fetch", "--prune", "origin", `+refs/pull/${prNumber}/head:refs/remotes/origin/${branch}`], { timeout: 60000 });
+        }
+        try {
+          gitInWorktree(issue.wt_path, ["show-ref", "--verify", `refs/heads/${branch}`], { timeout: 10000 });
+        } catch {
+          gitInWorktree(issue.wt_path, ["branch", branch, `refs/remotes/origin/${branch}`], { timeout: 30000 });
+        }
+      } catch (error) {
+        run(`INSERT INTO activity_log (issue_id, type, actor, message, metadata) VALUES (?, 'pr_link_warning', 'system', ?, ?)`,
+          issue.id, `Linked PR #${prNumber}, but could not prepare local branch ${branch}`, JSON.stringify({ error: error?.message || String(error), branch, prNumber }));
+      }
+    }
+
+    const row = db.prepare(
+      "INSERT INTO pr_stack (issue_id, gt_branch, position, pr_number, status, base_pr_id) VALUES (?, ?, ?, ?, ?, ?) RETURNING id"
+    ).get(issue.id, branch, position, prNumber, status, prevId);
+    prevId = row?.id ?? null;
+  }
+
+  const primaryPr = prStackItems[0];
+  const primaryUrl = primaryPr.url || (repo ? `https://github.com/${repo}/pull/${primaryPr.number}` : url);
+
+  if (issue.project_file_path && fs.existsSync(issue.project_file_path)) {
+    try {
+      const text = fs.readFileSync(issue.project_file_path, "utf-8");
+      const next = text.includes("pr-url:")
+        ? text.replace(/^pr-url:.*$/m, `pr-url: ${primaryUrl}`)
+        : text.replace(/^---\n/, `---\npr-url: ${primaryUrl}\n`);
+      fs.writeFileSync(issue.project_file_path, next, "utf-8");
+    } catch {}
+  }
+
+  const stackSummary = prStackItems.map((p, idx) => `#${p.number} (pos ${idx + 1}, ${p.headRefName})`).join(", ");
+  run(`INSERT INTO activity_log (issue_id, type, actor, message, metadata) VALUES (?, 'pr_linked', 'user', ?, ?)`,
+    issue.id, `Linked PR stack (${prStackItems.length} PR${prStackItems.length > 1 ? "s" : ""}): ${stackSummary}`,
+    JSON.stringify({ prCount: prStackItems.length, prStack: prStackItems.map((p, idx) => ({ position: idx + 1, number: p.number, branch: p.headRefName, status: p.state })) }));
+
+  return { prNumber: primaryPr.number, branch: primaryPr.headRefName, status: primaryPr.state, url: primaryUrl, stackCount: prStackItems.length };
+}
 
 app.post("/api/issues/:id/sync-prs", async (req, res) => {
   const issue = qOne("SELECT * FROM issues WHERE id = ?", req.params.id);
@@ -3103,6 +3297,24 @@ app.patch("/api/settings", (req, res) => {
 
 // ── Agent prompts (for settings editor) ──────────────────────────────
 
+function applyVertexEnv() {
+  const configPath = path.join(os.homedir(), ".pi", "agent", "settings", "pi-vertex.json");
+  if (!fs.existsSync(configPath)) return;
+  try {
+    const cfg = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    if (cfg.googleCloudProject && !process.env.GOOGLE_CLOUD_PROJECT && !process.env.GCLOUD_PROJECT) {
+      process.env.GOOGLE_CLOUD_PROJECT = cfg.googleCloudProject;
+    }
+    if (cfg.googleCloudLocation) {
+      process.env.GOOGLE_CLOUD_LOCATION = cfg.googleCloudLocation;
+    }
+    const creds = cfg.googleApplicationCredentials || cfg.credentialsFile;
+    if (creds && !process.env.GOOGLE_APPLICATION_CREDENTIALS && fs.existsSync(creds)) {
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = creds;
+    }
+  } catch {}
+}
+
 let modelCatalogCache = { fetchedAt: 0, payload: null };
 
 function publicModelShape(model, modelRegistry) {
@@ -3122,6 +3334,7 @@ function publicModelShape(model, modelRegistry) {
 }
 
 async function loadAvailableModels() {
+  applyVertexEnv();
   const now = Date.now();
   if (modelCatalogCache.payload && now - modelCatalogCache.fetchedAt < 5 * 60 * 1000) return modelCatalogCache.payload;
   const pi = await import("@earendil-works/pi-coding-agent");
@@ -3416,7 +3629,14 @@ app.get("/api/linear/issues", async (_req, res) => {
 });
 
 app.post("/api/linear/enqueue", async (req, res) => {
-  const { linearId, planningGuidance, targetKind, targetPaths, avoidPaths, scopeNotes } = req.body;
+  const { linearId, planningGuidance, targetKind, targetPaths, avoidPaths, scopeNotes, prUrl } = req.body;
+  const watchPr = typeof prUrl === "string" && prUrl.trim().length > 0;
+  if (prUrl !== undefined && !watchPr) return res.status(400).json({ error: "PR URL required" });
+  if (watchPr) {
+    const repo = qOne("SELECT value FROM settings WHERE key = 'github_repo'")?.value || "";
+    const match = prUrl.trim().match(/^https:\/\/github\.com\/([^/]+\/[^/]+)\/pull\/(\d+)\/?$/i);
+    if (!match || match[1].toLowerCase() !== repo.trim().toLowerCase()) return res.status(400).json({ error: "Provide a GitHub PR URL in the configured github_repo." });
+  }
   if (!linearId) return res.status(400).json({ error: "linearId required" });
 
   const existing = qOne("SELECT id FROM issues WHERE linear_id = ?", linearId);
@@ -3451,12 +3671,27 @@ app.post("/api/linear/enqueue", async (req, res) => {
     });
     const result = run(
       `INSERT INTO issues
-       (source, linear_id, title, priority, steering_context, target_kind, target_paths_json, avoid_paths_json, scope_notes, project_map_snapshot_json)
-       VALUES ('linear', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      linearId, data.title ?? linearId, data.priority ?? 0, steeringContext,
+       (source, state, linear_id, title, priority, steering_context, target_kind, target_paths_json, avoid_paths_json, scope_notes, project_map_snapshot_json)
+       VALUES ('linear', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      watchPr ? "PAUSED" : "PENDING", linearId, data.title ?? linearId, data.priority ?? 0, steeringContext,
       target.target_kind, target.target_paths_json, target.avoid_paths_json, target.scope_notes, target.project_map_snapshot_json
     );
     const newIssueId = result.lastInsertRowid;
+    if (watchPr) {
+      try {
+        await linkPrUrlToIssue(qOne("SELECT * FROM issues WHERE id = ?", newIssueId), prUrl, { prepareWorkspace: true });
+        run("UPDATE issues SET state = 'WATCHING_PR', previous_state = 'PENDING', updated_at = datetime('now') WHERE id = ?", newIssueId);
+      } catch (error) {
+        // Do not strand an issue with no PR/worktree or make the next attempt
+        // fail as "Already in Forge". Preserve any Git worktree we prepared.
+        db.transaction(() => {
+          run("DELETE FROM pr_stack WHERE issue_id = ?", newIssueId);
+          run("DELETE FROM activity_log WHERE issue_id = ?", newIssueId);
+          run("DELETE FROM issues WHERE id = ?", newIssueId);
+        })();
+        return res.status(500).json({ error: `Watch PR setup failed: ${error.message}. Correct the configuration and try again.` });
+      }
+    }
     if (steeringContext) {
       run(
         `INSERT INTO activity_log (issue_id, type, actor, message)
@@ -3467,7 +3702,7 @@ app.post("/api/linear/enqueue", async (req, res) => {
     if (fetchViaDesktop) enqueueDesktopJob("linear.fetchIssue", { issueId: newIssueId, linearId });
     broadcast("issue_added", { issueId: newIssueId, linearId });
     // Move Linear issue to In Progress immediately on enqueue
-    syncLinearState(newIssueId, "SETTING_UP").catch(() => {});
+    syncLinearState(newIssueId, watchPr ? "WATCHING_PR" : "SETTING_UP").catch(() => {});
     res.json({ ok: true, issueId: newIssueId });
   } catch (e) {
     res.status(500).json({ error: e.message ?? String(e) });

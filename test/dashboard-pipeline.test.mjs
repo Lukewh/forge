@@ -38,6 +38,18 @@ describe("dashboard v3 queue pipeline", () => {
     assert.match(src, /forge-v3-pipeline-column/);
   });
 
+  test("right column separates human approvals from PR watching", () => {
+    const src = read(`${FORGE_DIR}/dashboard/frontend/src/main.ts`);
+    assert.match(src, /visibleIssues\.filter\(\(issue\) => !\["WATCHING_PR", "IN_MERGE_QUEUE"\]/);
+    assert.match(src, /const watchingIssues = visibleIssues\.filter\(\(issue\) => \["WATCHING_PR", "IN_MERGE_QUEUE"\]/);
+    assert.match(src, /forge-v3-awaiting-actions/);
+    assert.match(src, /Watching PRs/);
+    assert.match(src, /String\(watchingIssues\.length\)/);
+    assert.match(src, /forge-v3-watching-prs/);
+    const css = read(`${FORGE_DIR}/dashboard/frontend/src/style.css`);
+    assert.match(css, /\.forge-v3-awaiting-actions,\.forge-v3-watching-prs\{flex:1 1 0;min-height:0;overflow-y:auto/);
+  });
+
   test("queue view implements search, quick filters, and sorting helpers", () => {
     const src = readAllDashboardSource();
 

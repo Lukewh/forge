@@ -4,7 +4,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { makeGitAgentPlan, makeRebasePlan, parsePlanFrontmatter } from "../lib/deterministic-agents.js";
+import { makeGitAgentPlan, makeRebasePlan, parsePlanFrontmatter, restackGithubStack } from "../lib/deterministic-agents.js";
 
 test("parsePlanFrontmatter extracts base branch, branch name, and title", () => {
   const plan = `---\nlinear-id: BAND-123\nbase-branch: release/2026\nbranch-name: user/band-123\n---\nImplement the thing.\n\n# PR Stack\n`;
@@ -47,21 +47,20 @@ test("makeGitAgentPlan upserts PR metadata through REST during PR creation", () 
 
   assert.deepEqual(plan.steps.map(step => step.kind), [
     "fetch-base",
-    "checkout",
-    "pull-branch",
-    "rebase",
-    "push",
+    "stack-restack",
     "upsert-pr",
-    "checkout",
-    "pull-branch",
-    "rebase",
-    "push",
     "upsert-pr",
     "write-prs-json",
   ]);
   assert.equal(plan.steps.find(step => step.kind === "upsert-pr").base, "main");
   assert.equal(plan.steps.filter(step => step.kind === "upsert-pr")[1].base, "user/issue-part-1");
   assert.equal(plan.steps.find(step => step.kind === "upsert-pr").title, "feat: add audit filters (1/2)");
+  for (const step of plan.steps.filter(step => step.kind === "upsert-pr")) {
+    assert.doesNotMatch(step.body, /Forge|deterministic git agent/);
+    assert.match(step.body, /- Not run\./);
+  }
+  assert.match(plan.steps.filter(step => step.kind === "upsert-pr")[0].body, /base PR for this stack/);
+  assert.match(plan.steps.filter(step => step.kind === "upsert-pr")[1].body, /stacked on the previous PR/);
 });
 
 test("makeGitAgentPlan uses MP conventional PR titles from plan stack", () => {
@@ -105,6 +104,50 @@ test("makeGitAgentPlan push mode force-pushes rebased existing PR branches", () 
   assert.deepEqual(plan.steps.map(step => step.kind), ["fetch-base", "checkout", "pull-branch", "rebase", "push", "upsert-pr", "write-prs-json"]);
   assert.equal(plan.steps.find(step => step.kind === "push").forceWithLease, true);
   assert.equal(plan.steps.find(step => step.kind === "upsert-pr").title, "feat: add audit filters");
+});
+
+test("multi-PR push plans restack the whole stack before updating PR metadata", () => {
+  const plan = makeGitAgentPlan({
+    state: "PUSHING", baseBranch: "main", issue: {},
+    prStack: [
+      { id: 1, gt_branch: "backend", position: 1, pr_number: 42, status: "open" },
+      { id: 2, gt_branch: "frontend", position: 2, base_pr_id: 1, pr_number: 43, status: "open" },
+    ],
+  });
+  assert.deepEqual(plan.steps.map(step => step.kind), ["fetch-base", "stack-restack", "upsert-pr", "upsert-pr", "write-prs-json"]);
+  assert.deepEqual(plan.steps[1], { kind: "stack-restack", branches: ["backend", "frontend"], prNumber: 42 });
+});
+
+test("existing stacks import full remote metadata then cascade rebase and push", () => {
+  const calls = [];
+  restackGithubStack({ cwd: "/tmp", baseBranch: "main", branches: ["backend", "frontend"], prNumber: 42, repo: "owner/repo", run: (cmd, args) => calls.push([cmd, ...args]) });
+  assert.deepEqual(calls, [
+    ["gh", "stack", "checkout", "https://github.com/owner/repo/pull/42"],
+    ["gh", "stack", "rebase", "--remote", "origin"],
+    ["gh", "stack", "push", "--remote", "origin"],
+  ]);
+});
+
+test("new stacks adopt branches in order before rebase and push", () => {
+  const calls = [];
+  restackGithubStack({ cwd: "/tmp", baseBranch: "release", branches: ["a", "b"], run: (cmd, args) => calls.push(args) });
+  assert.deepEqual(calls[0], ["stack", "init", "--base", "release", "a", "b"]);
+  assert.equal(calls.length, 3);
+});
+
+test("stack rebase failure prevents push and propagates the error", () => {
+  const calls = [];
+  assert.throws(() => restackGithubStack({ cwd: "/tmp", baseBranch: "main", branches: ["a", "b"], run: (cmd, args) => {
+    calls.push(args);
+    if (args[1] === "rebase") throw new Error("conflict");
+  } }), /conflict/);
+  assert.equal(calls.length, 2);
+});
+
+test("paused stack rebases continue without checking out or reinitializing branches", () => {
+  const calls = [];
+  restackGithubStack({ cwd: "/tmp", continuing: true, run: (cmd, args) => calls.push(args) });
+  assert.deepEqual(calls, [["stack", "rebase", "--continue"], ["stack", "push", "--remote", "origin"]]);
 });
 
 test("sync-worktree-to-base can continue when PR branch divergence is patch-equivalent", () => {

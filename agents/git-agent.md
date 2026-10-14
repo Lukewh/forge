@@ -72,6 +72,8 @@ The context may include an **Issue Target Contract**. It is authoritative for PR
 
 ## PR description format
 
+PR titles and visible descriptions must not reference Forge, agents, or the automation that produced them. Describe the code, issue, testing, and stack relationships directly. For example, say "base PR for this stack", not "base PR for this Forge stack", and "Not run", not "Not run by deterministic git agent".
+
 Write PR descriptions in this format:
 
 ```markdown

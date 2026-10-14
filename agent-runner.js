@@ -23,6 +23,7 @@ const path = require("path");
 const os = require("os");
 const { buildRuntimeEnvironmentContext, sanitizeHistoricalRuntimeNoise } = require("./lib/runtime-context.js");
 const { installWorktreeSafety, removeTrackedRootNodeModulesSymlinkCommit, removeUntrackedRootNodeModulesSymlink } = require("./lib/worktree-safety.js");
+const { branchHeads, hasWorktreeProgress, validateAlreadyFixedReport } = require("./lib/agent-progress.js");
 
 // ── Parse args ──────────────────────────────────────────────────────
 
@@ -241,6 +242,60 @@ function worktreeStatusPorcelain(cwd) {
 
 function worktreeCurrentBranch(cwd) {
   return gitOutput(cwd, ["branch", "--show-current"]).trim() || gitOutput(cwd, ["rev-parse", "--abbrev-ref", "HEAD"]).trim();
+}
+
+function findExistingWorktreeForBranch(repoPath, branchName) {
+  try {
+    const out = execFileSync("git", ["-C", repoPath, "worktree", "list", "--porcelain"], { encoding: "utf-8", timeout: 15000 });
+    const lines = out.split("\n");
+    let cur = null;
+    for (const line of lines) {
+      if (line.startsWith("worktree ")) {
+        cur = { path: line.slice(9).trim() };
+      } else if (line.startsWith("branch ") && cur) {
+        cur.branch = line.slice(7).trim().replace(/^refs\/heads\//, "");
+        if (cur.branch === branchName) return cur.path;
+      }
+    }
+  } catch {}
+  return null;
+}
+
+function isBranchMerged(repoPath, branchName) {
+  try {
+    const mergedOutput = execFileSync("git", ["-C", repoPath, "branch", "--merged", `origin/${DEFAULT_BRANCH}`], { encoding: "utf-8", timeout: 15000 });
+    const lines = mergedOutput.split("\n").map(l => l.trim().replace(/^[\*\+]\s+/, ""));
+    if (lines.includes(branchName)) return true;
+  } catch {}
+
+  const repo = getSetting("github_repo");
+  if (repo) {
+    try {
+      const ghRaw = execFileSync("gh", ["pr", "list", "--repo", repo, "--head", branchName, "--state", "all", "--json", "state"], { encoding: "utf-8", timeout: 15000 });
+      const prs = JSON.parse(ghRaw || "[]");
+      if (prs.length > 0 && prs.every(p => p.state === "MERGED")) return true;
+    } catch {}
+  }
+  return false;
+}
+
+function removeMergedBranchWorktree(repoPath, branchName, existingPath) {
+  if (existingPath) {
+    try {
+      execFileSync("git", ["-C", repoPath, "worktree", "remove", existingPath, "--force"], { timeout: 30000, stdio: "pipe" });
+      log(`Removed stale merged worktree ${existingPath}`);
+    } catch (err) {
+      log(`WARN: Failed to remove stale merged worktree ${existingPath}: ${err.message}`);
+      try { fs.rmSync(existingPath, { recursive: true, force: true }); } catch {}
+    }
+  }
+  try { execFileSync("git", ["-C", repoPath, "worktree", "prune"], { timeout: 15000, stdio: "pipe" }); } catch {}
+  try {
+    execFileSync("git", ["-C", repoPath, "branch", "-D", branchName], { timeout: 15000, stdio: "pipe" });
+    log(`Deleted stale merged branch ${branchName}`);
+  } catch (err) {
+    log(`WARN: Failed to delete stale merged branch ${branchName}: ${err.message}`);
+  }
 }
 
 function ensureHandoffFile(issueRow) {
@@ -486,6 +541,8 @@ function buildContextBundle(issueRow, linearData, assetMap) {
       const targetComments = fixComments.filter(c => targetPr.pr_number && Number(c.prNumber) === Number(targetPr.pr_number));
       const laterComments = fixComments.filter(c => !targetPr.pr_number || Number(c.prNumber) !== Number(targetPr.pr_number));
       if (targetComments.length) lines.push(`Target PR comments in this batch: ${targetComments.length}.`);
+      const decision = latestApprovedFixDecision(issueRow);
+      lines.push(`If all approved target comments are ALREADY fixed by existing unpushed commits, verify the code and tests rather than creating an empty/redundant commit. Write ${path.join(getProjectDir(issueRow), `run-${runId}-already-fixed.json`)} with JSON: {"runId":${runId},"decisionId":${decision?.id ?? "null"},"branch":${JSON.stringify(targetPr.gt_branch)},"commentIds":["every approved target comment ID"],"commitIds":["full 40-character SHA of each existing unpushed fix commit"],"summary":"Explain how those commits address each approved comment and what validation you ran"}. Forge verifies the report matches this run/decision and those commits exist on the target branch but not its refreshed remote head. Already-pushed fixes or unsupported claims do not bypass the no-op guard.`);
       if (laterComments.length) lines.push(`Comments for other PRs are present (${laterComments.length}); do not apply those requested changes in this run unless the same code must move into the target PR to satisfy the target PR review.`);
 
       // Inject recent branch commit log so the fixer understands deliberate history
@@ -1242,6 +1299,20 @@ function runDeterministicAgentIfAvailable(issueRow, cwd) {
   return null;
 }
 
+function worktreeChangeSnapshot(cwd, branches = []) {
+  if (!cwd || !fs.existsSync(cwd)) return null;
+  try {
+    return {
+      head: execFileSync("git", ["rev-parse", "HEAD"], { cwd, encoding: "utf-8", timeout: 10000 }).trim(),
+      status: worktreeStatusPorcelain(cwd).trim(),
+      branches: branchHeads(cwd, branches),
+    };
+  } catch (e) {
+    log(`WARN: Could not snapshot worktree changes: ${e.message}`);
+    return null;
+  }
+}
+
 function validateScopeBeforeGitAgent(issueRow, cwd) {
   const avoidPaths = parseJson(issueRow.avoid_paths_json, []);
   if (!avoidPaths.length || !cwd || !fs.existsSync(cwd)) return true;
@@ -1297,8 +1368,8 @@ function queueRebaserForGitAgentConflict(issueRow, cwd) {
   const context = [
     "Git-agent encountered a rebase conflict while pushing a GitHub-native PR stack (`gh stack`).",
     "Continue the existing paused rebase in the same worktree. Resolve conflicts carefully, preserving behavior and the approved fix.",
-    "After the paused rebase completes, continue rebasing any remaining stack branches onto their intended parent branches and push affected branches with --force-with-lease.",
-    "Use git + gh only; do not use Graphite/gt. After all branches are pushed, ensure the GitHub stack remains linked with `gh stack link --base <base> <pr1> <pr2> ...` if needed.",
+    "For multi-PR stacks, resolve the paused conflict and run `gh stack rebase --continue` so gh completes the cascading rebase. Then push all active branches with `gh stack push --remote origin`.",
+    "Use git + gh only; do not use Graphite/gt. Preserve imported GitHub stack metadata, including merged ancestors; do not relink only a subset of existing PRs.",
     "",
     `Worktree: ${cwd}`,
     `Failed state: ${issueRow.state}`,
@@ -1376,7 +1447,7 @@ async function main() {
   fs.writeFileSync(userPromptPath, userPrompt, "utf-8");
 
   // Determine working directory
-  const cwd = issueRow.wt_path && fs.existsSync(issueRow.wt_path)
+  let cwd = issueRow.wt_path && fs.existsSync(issueRow.wt_path)
     ? issueRow.wt_path
     : WT_ROOT;
 
@@ -1388,7 +1459,11 @@ async function main() {
     } catch (e) {
       log(`WARN: Could not install worktree safety hooks: ${e.message}`);
     }
-    let skipBaseSync = false;
+    // gh stack owns the cascading rebase for multi-PR pushes. Rebasing the
+    // currently checked-out child directly onto main first loses stack context.
+    let skipBaseSync = agentType === "git-agent" && db.prepare(
+      "SELECT COUNT(*) AS count FROM pr_stack WHERE issue_id = ?"
+    ).get(issueRow.id).count > 1;
     if (agentType === "coder") {
       if (isRebaseInProgress(cwd)) {
         log("ERROR: Coder preflight found an in-progress rebase; refusing to resume dirty implementation work inside a paused rebase.");
@@ -1462,14 +1537,46 @@ async function main() {
           log(`Checking out deterministic fixer target branch ${targetPr.gt_branch} (position ${targetPr.position}, PR #${targetPr.pr_number ?? "unknown"})…`);
           execFileSync("git", ["checkout", targetPr.gt_branch], { cwd, timeout: 60000, stdio: "pipe" });
         } catch (e) {
-          log(`ERROR: Could not check out fixer target branch ${targetPr.gt_branch}: ${e.message}`);
-          finishRun(1);
-          logActivity("agent_failed", "Failed to check out deterministic fixer target branch", { branch: targetPr.gt_branch, error: e.message });
-          transition("FAILED");
-          unlock();
-          db.close();
-          logStream.end();
-          process.exit(1);
+          const existingPath = findExistingWorktreeForBranch(cwd, targetPr.gt_branch);
+          const merged = isBranchMerged(cwd, targetPr.gt_branch);
+
+          if (existingPath && !merged) {
+            log(`Fixer target branch ${targetPr.gt_branch} is already checked out at ${existingPath}; reusing that worktree.`);
+            db.prepare("UPDATE issues SET wt_path = ?, updated_at = datetime('now') WHERE id = ?").run(existingPath, issueRow.id);
+            issueRow.wt_path = existingPath;
+            cwd = existingPath;
+            logActivity("worktree_reused", "Fixer reused existing target branch worktree", { branch: targetPr.gt_branch, path: existingPath });
+          } else if (merged) {
+            log(`Fixer target branch ${targetPr.gt_branch} appears merged; removing stale checkout/branch and recreating locally.`);
+            removeMergedBranchWorktree(cwd, targetPr.gt_branch, existingPath);
+            try {
+              try {
+                execFileSync("git", ["fetch", "--prune", "origin", `+refs/heads/${targetPr.gt_branch}:refs/remotes/origin/${targetPr.gt_branch}`], { cwd, timeout: 60000, stdio: "pipe" });
+                execFileSync("git", ["checkout", "-B", targetPr.gt_branch, `refs/remotes/origin/${targetPr.gt_branch}`], { cwd, timeout: 60000, stdio: "pipe" });
+              } catch {
+                execFileSync("git", ["checkout", "-B", targetPr.gt_branch, `refs/remotes/origin/${DEFAULT_BRANCH}`], { cwd, timeout: 60000, stdio: "pipe" });
+              }
+              logActivity("worktree_collision_resolved", "Fixer recreated stale merged target branch", { branch: targetPr.gt_branch, removedPath: existingPath });
+            } catch (recreateErr) {
+              log(`ERROR: Could not recreate fixer target branch ${targetPr.gt_branch}: ${recreateErr.message}`);
+              finishRun(1);
+              logActivity("agent_failed", "Failed to recreate merged fixer target branch", { branch: targetPr.gt_branch, error: recreateErr.message });
+              transition("FAILED");
+              unlock();
+              db.close();
+              logStream.end();
+              process.exit(1);
+            }
+          } else {
+            log(`ERROR: Could not check out fixer target branch ${targetPr.gt_branch}: ${e.message}`);
+            finishRun(1);
+            logActivity("agent_failed", "Failed to check out deterministic fixer target branch", { branch: targetPr.gt_branch, error: e.message });
+            transition("FAILED");
+            unlock();
+            db.close();
+            logStream.end();
+            process.exit(1);
+          }
         }
       }
     }
@@ -1576,6 +1683,12 @@ async function main() {
   }
 
   // Spawn deterministic script when available; otherwise fall back to pi SDK runner.
+  const progressBranches = db.prepare("SELECT gt_branch FROM pr_stack WHERE issue_id = ? AND status NOT IN ('merged', 'closed') ORDER BY position").all(issueId).map(pr => pr.gt_branch);
+  const alreadyFixedPath = path.join(getProjectDir(issueRow), `run-${runId}-already-fixed.json`);
+  if (agentType === "fixer") {
+    try { fs.unlinkSync(alreadyFixedPath); } catch (error) { if (error.code !== "ENOENT") throw error; }
+  }
+  const worktreeBeforeAgent = ["coder", "fixer"].includes(agentType) ? worktreeChangeSnapshot(cwd, progressBranches) : null;
   let exitCode = 1;
   const deterministicExitCode = runDeterministicAgentIfAvailable(issueRow, cwd);
   if (deterministicExitCode !== null) {
@@ -1657,6 +1770,36 @@ async function main() {
     } catch (e) {
       log(`ERROR: Worktree safety cleanup failed: ${e.message}`);
       logActivity("agent_failed", `Worktree safety cleanup failed: ${e.message}`);
+      transition("FAILED");
+      unlock();
+      db.close();
+      logStream.end();
+      process.exit(1);
+    }
+  }
+
+  if (["coder", "fixer"].includes(agentType)) {
+    const worktreeAfterAgent = worktreeChangeSnapshot(cwd, progressBranches);
+    let verifiedAlreadyFixed = false;
+    if (agentType === "fixer" && worktreeBeforeAgent && worktreeAfterAgent && !hasWorktreeProgress(worktreeBeforeAgent, worktreeAfterAgent)) {
+      const decision = latestApprovedFixDecision(issueRow);
+      const target = fixerTargetPr(issueRow);
+      const feedback = parseJsonMaybe(decision?.feedback_json, {});
+      const comments = fixDecisionComments(issueRow).filter(comment =>
+        (!comment.prNumber || Number(comment.prNumber) === Number(target?.pr_number)) &&
+        (Array.isArray(feedback.approvedIds) ? feedback.approvedIds.map(String).includes(String(comment.id)) : !feedback.skippedIds?.map(String).includes(String(comment.id)))
+      );
+      try {
+        const report = JSON.parse(fs.readFileSync(alreadyFixedPath, "utf-8"));
+        verifiedAlreadyFixed = validateAlreadyFixedReport({ cwd, report, runId, decisionId: decision?.id, commentIds: comments.map(comment => comment.id), branch: target?.gt_branch });
+        if (verifiedAlreadyFixed) logActivity("fix_already_present", "Verified approved fixes are already committed locally and need pushing", report);
+      } catch (error) {
+        log(`Already-fixed report unavailable or invalid: ${error.message}`);
+      }
+    }
+    if (!hasWorktreeProgress(worktreeBeforeAgent, worktreeAfterAgent) && !verifiedAlreadyFixed) {
+      log(`ERROR: ${agentType} exited successfully but made no worktree changes or commits.`);
+      logActivity("agent_failed", `${agentType} exited successfully but made no worktree changes or commits`);
       transition("FAILED");
       unlock();
       db.close();

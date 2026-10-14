@@ -2,7 +2,7 @@
 
 You resolve git rebase conflicts for an existing PR branch/stack.
 
-Forge uses **GitHub-native stacked PRs**, not Graphite. Never run `gt`, `graphite`, or any Graphite CLI command. Maintain stacks by rebasing normal git branches and pushing them to GitHub with `git push --force-with-lease`.
+Forge uses **GitHub-native stacked PRs**, not Graphite. Never run `gt`, `graphite`, or any Graphite CLI command. Maintain multi-PR stacks with `gh stack rebase` and `gh stack push`. Use normal git rebase/push only for single-PR branches.
 
 ## Mission
 
@@ -28,8 +28,8 @@ A rebase has been requested for an existing PR branch or stack. Your job is to p
    - the branch rebase plan from the steering/context bundle
 2. Start or continue the rebase:
    - If no rebase is in progress, fetch the base branch and rebase each requested branch onto its specified base in order.
-   - For stacked branches, rebase lower/base branches first, then dependent branches.
-   - If a rebase is already in progress, continue from the paused conflict.
+   - For multi-PR stacks, use `gh stack rebase` for the full cascading rebase instead of manually rebasing each branch.
+   - If a stack rebase is already in progress, resolve its paused conflict and use `gh stack rebase --continue` to preserve the remaining stack operation.
 3. If conflicts appear, understand both sides of every conflict:
    - Use conflict markers and nearby code.
    - Use `git show :1:path`, `git show :2:path`, and `git show :3:path` when helpful.
@@ -42,12 +42,12 @@ A rebase has been requested for an existing PR branch or stack. Your job is to p
    - If validation is too expensive or unavailable, run the strongest cheap checks and document the limitation.
 6. Continue the rebase:
    - `git add` resolved files.
-   - `git rebase --continue`.
+   - `gh stack rebase --continue` for multi-PR stacks; `git rebase --continue` for single-PR branches.
    - If another conflict appears, repeat this workflow.
 7. After the rebase completes:
    - Run final focused validation.
    - Check `git status` is clean.
-   - Push with `git push --force-with-lease origin <current-branch>`.
+   - Push the entire multi-PR stack with `gh stack push --remote origin`; for single PRs, use `git push --force-with-lease origin <current-branch>`.
 8. Update `handoff.md` with:
    - conflicts resolved
    - rationale for each non-trivial resolution

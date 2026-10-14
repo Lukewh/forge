@@ -256,7 +256,7 @@ function getPrStatus(prNumber, cwd) {
     return null;
   }
   const data = ghJson(["pr", "view", String(prNumber), "--repo", repo, "--json",
-    "state,reviews,reviewDecision,mergedAt,comments,statusCheckRollup,mergeable"], cwd);
+    "state,reviews,reviewDecision,mergedAt,comments,statusCheckRollup,mergeable,mergeStateStatus,baseRefOid,headRefOid"], cwd);
   return data;
 }
 
@@ -418,23 +418,13 @@ function main() {
   // always invoked with --repo for the same reason. So when the worktree is
   // missing or git metadata is broken, we fall back to FORGE_DIR and keep
   // running rather than bailing.
-  let effectiveCwd = wtPath;
+  let effectiveCwd = wtPath || FORGE_DIR;
 
   if (!wtPath) {
-    // wt_path is NULL — this is a genuine setup failure with no fallback.
-    log(`ERROR: wt_path is NULL for issue #${issueId}. Transitioning to FAILED.`);
-    db.prepare(`
-      UPDATE issues
-      SET state = 'FAILED', previous_state = state, locked_at = NULL, agent_pid = NULL, updated_at = datetime('now')
-      WHERE id = ?
-    `).run(issueId);
-    db.prepare(`INSERT INTO activity_log (issue_id, type, actor, message) VALUES (?, 'agent_failed', 'watcher', 'wt_path is NULL — cannot watch PRs. Issue moved to FAILED.')`).run(issueId);
-    finishRun(1);
-    db.close();
-    process.exit(1);
+    log(`No worktree configured for issue #${issueId}; watching linked PRs via GitHub from FORGE_DIR.`);
   }
 
-  if (!fs.existsSync(wtPath)) {
+  if (wtPath && !fs.existsSync(wtPath)) {
     // wt_path is set but the directory no longer exists on disk.
     // gh commands work fine from any valid cwd, so fall back to FORGE_DIR.
     // Log a warning to activity_log once per session (deduplicated by checking
@@ -545,10 +535,13 @@ function main() {
       });
     }
 
-    // Detect merge conflicts
+    // Detect merge conflicts / required rebases. Include head/base SHAs in synthetic
+    // IDs so a newly-stale PR is surfaced again after the base branch moves.
     const conflictComments = [];
-    if (status.mergeable === "CONFLICTING") {
-      const conflictId = `merge-conflict-${pr.pr_number}`;
+    const baseShort = String(status.baseRefOid || "base").slice(0, 12);
+    const headShort = String(status.headRefOid || "head").slice(0, 12);
+    if (status.mergeable === "CONFLICTING" || status.mergeStateStatus === "DIRTY") {
+      const conflictId = `merge-conflict-${pr.pr_number}-${headShort}-${baseShort}`;
       conflictComments.push({
         id:          conflictId,
         author:      "github",
@@ -556,6 +549,18 @@ function main() {
         line:        null,
         body:        `PR #${pr.pr_number} has merge conflicts with its base branch and cannot be merged until they are resolved. Rebase or merge the base branch into this branch to fix.`,
         reviewState: "MERGE_CONFLICT",
+        prNumber:    pr.pr_number,
+        createdAt:   new Date().toISOString(),
+      });
+    } else if (status.mergeStateStatus === "BEHIND") {
+      const rebaseId = `rebase-needed-${pr.pr_number}-${headShort}-${baseShort}`;
+      conflictComments.push({
+        id:          rebaseId,
+        author:      "github",
+        path:        "",
+        line:        null,
+        body:        `PR #${pr.pr_number} is behind its base branch and needs to be rebased before it can merge.`,
+        reviewState: "REBASE_NEEDED",
         prNumber:    pr.pr_number,
         createdAt:   new Date().toISOString(),
       });
